@@ -1,0 +1,11 @@
+/package-lock.json
+/target/
+/node_modules/
+/src/main/frontend/generated
+/package.json
+/pocket-app.iml
+/src/main/bundles/dev.bundle
+/tsconfig.json
+/types.d.ts
+/vite.config.ts
+/vite.generated.ts
