@@ -48,8 +48,8 @@ public class WalletBalanceSumOfDepositsCharts extends Component implements HasSi
                 "window.renderWalletBalanceDepositAndWallet($0, $1, $2, $3)",
                 getElement(),
                 datesJson.get("data"),
-                walletBalanceJson,
-                sumOfDepositsJson
+                walletBalanceJson.get("data"),
+                sumOfDepositsJson.get("data")
         );
     }
 }
