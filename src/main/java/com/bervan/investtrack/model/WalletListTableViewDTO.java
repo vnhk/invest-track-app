@@ -15,7 +15,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class WalletListTableViewDTO implements BaseDTO<UUID>, PersistableTableData<UUID> {
-    @Id
     private UUID id;
 
     @VaadinBervanColumn(displayName = "Name", internalName = "name")
