@@ -101,6 +101,11 @@
         </dependency>
         <dependency>
             <groupId>com.bervan</groupId>
+            <artifactId>core</artifactId>
+            <version>latest</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bervan</groupId>
             <artifactId>ie-entities</artifactId>
             <version>latest</version>
         </dependency>
