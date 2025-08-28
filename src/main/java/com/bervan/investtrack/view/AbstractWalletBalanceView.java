@@ -18,7 +18,7 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/wallet-balance/";
 
     public AbstractWalletBalanceView() {
-        add(new InvestTrackPageLayout(ROUTE_NAME));
+        add(new InvestTrackPageLayout(ROUTE_NAME, null));
 
         List<String> dates = List.of(
                 "01/2025", "02/2025", "03/2025", "04/2025", "05/2025", "06/2025",

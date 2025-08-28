@@ -20,7 +20,7 @@ import java.util.UUID;
 @Slf4j
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletsView extends AbstractBervanTableDTOView<UUID, Wallet, WalletListTableViewDTO> {
-    public static final String ROUTE_NAME = "/invest-track-app/wallets/";
+    public static final String ROUTE_NAME = "/invest-track-app/wallets";
 
     public AbstractWalletsView(BaseService<UUID, Wallet> service, BervanLogger logger) {
         super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, Wallet.class, WalletListTableViewDTO.class);
