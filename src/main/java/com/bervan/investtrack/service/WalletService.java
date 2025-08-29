@@ -59,7 +59,7 @@ public class WalletService extends BaseService<UUID, Wallet> {
         return save(wallet);
     }
 
-    private Wallet findById(UUID walletId) {
+    public Wallet findById(UUID walletId) {
         return repository.findById(walletId).orElseThrow(() -> new IllegalArgumentException("Wallet with id " + walletId + " not found"));
     }
 }

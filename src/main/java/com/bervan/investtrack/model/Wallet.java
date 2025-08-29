@@ -83,4 +83,15 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
         this.deleted = deleted;
     }
 
+    public void updateReturnRate() {
+        BigDecimal netInvestment = calculateNetInvestment();
+        if (netInvestment.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal totalReturn = calculateTotalReturn();
+            this.returnRate = totalReturn.divide(netInvestment, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+        } else {
+            this.returnRate = BigDecimal.ZERO;
+        }
+    }
+
 }

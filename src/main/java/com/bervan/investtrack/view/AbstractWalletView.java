@@ -12,10 +12,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -127,33 +129,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         });
     }
 
-    private void createWalletForm() {
-        nameField = new TextField("Wallet Name");
-        nameField.setReadOnly(true);
-
-        descriptionField = new TextArea("Description");
-        descriptionField.setReadOnly(true);
-
-        currencyField = new TextField("Currency");
-        currencyField.setReadOnly(true);
-
-        initialValueField = new BigDecimalField("Initial Value");
-        initialValueField.setReadOnly(true);
-
-        currentValueField = new BigDecimalField("Current Value");
-        currentValueField.setReadOnly(true);
-
-        riskLevelCombo = new ComboBox<>("Risk Level");
-        riskLevelCombo.setItems(Constants.RISK_LEVEL);
-        riskLevelCombo.setReadOnly(true);
-
-        editWalletBtn = new Button("Edit Wallet", e -> toggleEditMode());
-
-        saveWalletBtn = new Button("Save Changes", e -> saveWallet());
-        saveWalletBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        saveWalletBtn.setVisible(false);
-    }
-
     private void createSnapshotForm() {
         snapshotDatePicker = new DatePicker("Snapshot Date");
         snapshotDatePicker.setValue(LocalDate.now().withDayOfMonth(1).minusDays(1)); // Last day of previous month
@@ -182,6 +157,14 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         snapshotGrid.addColumn(snapshot -> formatCurrency(snapshot.getMonthlyEarnings(), wallet.getCurrency()))
                 .setHeader("Earnings");
         snapshotGrid.addColumn(WalletSnapshot::getNotes).setHeader("Notes");
+
+        // Add delete action column for snapshots
+        snapshotGrid.addComponentColumn(snapshot -> {
+            Button deleteBtn = new Button("Delete");
+            deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
+            deleteBtn.addClickListener(e -> confirmDeleteSnapshot(snapshot));
+            return deleteBtn;
+        }).setHeader("Actions");
     }
 
     private void setupLayout() {
@@ -245,28 +228,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         walletBinder.readBean(wallet);
     }
 
-    private void showWalletForm() {
-        contentArea.removeAll();
-
-        FormLayout walletForm = new FormLayout();
-        walletForm.add(nameField, descriptionField, currencyField, initialValueField,
-                currentValueField, riskLevelCombo);
-        walletForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("500px", 2)
-        );
-
-        HorizontalLayout buttons = new HorizontalLayout();
-        if (editMode) {
-            buttons.add(saveWalletBtn, new Button("Cancel", e -> cancelEdit()));
-        } else {
-            buttons.add(editWalletBtn);
-        }
-
-        contentArea.add(walletForm, buttons);
-    }
-
-
     private void showSnapshotForm() {
         contentArea.removeAll();
 
@@ -320,11 +281,11 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
             editMode = false;
             setFieldsReadOnly(true);
 
-            Notification.show("Wallet updated successfully!", 3000, Notification.Position.TOP_CENTER);
+            showSuccessNotification("Wallet updated successfully!");
             showWalletForm();
 
         } catch (ValidationException e) {
-            Notification.show("Please check the data validity", 3000, Notification.Position.MIDDLE);
+            showErrorNotification("Please check the data validity");
         }
     }
 
@@ -337,12 +298,12 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
             wallet = service.addSnapshot(wallet.getId(), snapshot);
 
-            Notification.show("Monthly snapshot saved successfully!", 3000, Notification.Position.TOP_CENTER);
+            showSuccessNotification("Monthly snapshot saved successfully!");
             refreshSnapshotGrid();
             snapshotBinder.readBean(new WalletSnapshot()); // Clear form
 
         } catch (ValidationException e) {
-            Notification.show("Please check the snapshot data validity", 3000, Notification.Position.MIDDLE);
+            showErrorNotification("Please check the snapshot data validity");
         }
     }
 
@@ -359,4 +320,197 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         if (percentage == null) return "0.00%";
         return String.format("%.2f%%", percentage);
     }
+
+    private void createWalletForm() {
+        nameField = new TextField("Wallet Name");
+        nameField.setReadOnly(true);
+
+        descriptionField = new TextArea("Description");
+        descriptionField.setReadOnly(true);
+
+        currencyField = new TextField("Currency");
+        currencyField.setReadOnly(true);
+
+        initialValueField = new BigDecimalField("Initial Value");
+        initialValueField.setReadOnly(true);
+
+        currentValueField = new BigDecimalField("Current Value");
+        currentValueField.setReadOnly(true);
+
+        riskLevelCombo = new ComboBox<>("Risk Level");
+        riskLevelCombo.setItems(Constants.RISK_LEVEL);
+        riskLevelCombo.setReadOnly(true);
+
+        editWalletBtn = new Button("Edit Wallet", e -> toggleEditMode());
+
+        saveWalletBtn = new Button("Save Changes", e -> saveWallet());
+        saveWalletBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveWalletBtn.setVisible(false);
+
+        // Add delete button
+        Button deleteWalletBtn = new Button("Delete Portfolio", e -> confirmDeleteWallet());
+        deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        deleteWalletBtn.getStyle().set("margin-left", "auto");
+    }
+
+    private void showWalletForm() {
+        contentArea.removeAll();
+
+        FormLayout walletForm = new FormLayout();
+        walletForm.add(nameField, descriptionField, currencyField, initialValueField,
+                currentValueField, riskLevelCombo);
+        walletForm.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
+
+        HorizontalLayout buttons = new HorizontalLayout();
+        if (editMode) {
+            buttons.add(saveWalletBtn, new Button("Cancel", e -> cancelEdit()));
+        } else {
+            buttons.add(editWalletBtn);
+        }
+
+        // Add delete button (always visible)
+        Button deleteWalletBtn = new Button("Delete Portfolio", e -> confirmDeleteWallet());
+        deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        buttons.add(deleteWalletBtn);
+
+        contentArea.add(walletForm, buttons);
+    }
+
+    private void confirmDeleteWallet() {
+        Dialog confirmDialog = new Dialog();
+        confirmDialog.setHeaderTitle("Delete Portfolio");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.add(new com.vaadin.flow.component.html.Span(
+                "Are you sure you want to delete the portfolio '" + wallet.getName() + "'? " +
+                        "This will also delete all snapshots and cannot be undone."
+        ));
+
+        HorizontalLayout buttonsLayout = new HorizontalLayout();
+
+        Button confirmBtn = new Button("Delete", e -> {
+            deleteWallet();
+            confirmDialog.close();
+        });
+        confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+        Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+
+        buttonsLayout.add(cancelBtn, confirmBtn);
+
+        dialogLayout.add(buttonsLayout);
+        confirmDialog.add(dialogLayout);
+        confirmDialog.open();
+    }
+
+    private void confirmDeleteSnapshot(WalletSnapshot snapshot) {
+        Dialog confirmDialog = new Dialog();
+        confirmDialog.setHeaderTitle("Delete Snapshot");
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.add(new com.vaadin.flow.component.html.Span(
+                "Are you sure you want to delete the snapshot from " + snapshot.getSnapshotDate() + "? " +
+                        "This cannot be undone."
+        ));
+
+        HorizontalLayout buttonsLayout = new HorizontalLayout();
+
+        Button confirmBtn = new Button("Delete", e -> {
+            deleteSnapshot(snapshot);
+            confirmDialog.close();
+        });
+        confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+        Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+
+        buttonsLayout.add(cancelBtn, confirmBtn);
+
+        dialogLayout.add(buttonsLayout);
+        confirmDialog.add(dialogLayout);
+        confirmDialog.open();
+    }
+
+    private void deleteWallet() {
+        try {
+            service.deleteById(wallet.getId());
+            showSuccessNotification("Portfolio deleted successfully!");
+
+            getUI().ifPresent(ui -> ui.navigate("/"));
+
+        } catch (Exception e) {
+            log.error("Failed to delete wallet: {}", wallet.getId(), e);
+            showErrorNotification("Failed to delete portfolio: " + e.getMessage());
+        }
+    }
+
+    private void deleteSnapshot(WalletSnapshot snapshot) {
+        try {
+            snapshotService.deleteById(snapshot.getId());
+
+            wallet = service.findById(wallet.getId());
+
+            showSuccessNotification("Snapshot deleted successfully! Portfolio values recalculated.");
+
+            // Refresh all displays
+            refreshSnapshotGrid();
+            loadWalletData(); // Refresh wallet form with new values
+
+            // If we're showing wallet details, refresh the summary card
+            if (tabSheet.getSelectedIndex() == 0) {
+                setupLayout(); // This will recreate the summary card with updated values
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to delete snapshot: {}", snapshot.getId(), e);
+            showErrorNotification("Failed to delete snapshot: " + e.getMessage());
+        }
+    }
+
+    private void recalculateWalletValues(Wallet wallet) {
+        List<WalletSnapshot> remainingSnapshots = snapshotService.findByWalletId(wallet.getId());
+
+        if (remainingSnapshots.isEmpty()) {
+            // No snapshots left - reset to initial values
+            wallet.setCurrentValue(wallet.getInitialValue());
+            wallet.setReturnRate(BigDecimal.ZERO);
+        } else {
+            // Find the latest snapshot by date
+            WalletSnapshot latestSnapshot = remainingSnapshots.stream()
+                    .max((s1, s2) -> s1.getSnapshotDate().compareTo(s2.getSnapshotDate()))
+                    .orElse(null);
+
+            if (latestSnapshot != null) {
+                // Update current value to the latest snapshot's portfolio value
+                wallet.setCurrentValue(latestSnapshot.getPortfolioValue());
+
+                // Recalculate totals from all remaining snapshots
+                BigDecimal totalDeposits = remainingSnapshots.stream()
+                        .map(WalletSnapshot::getMonthlyDeposit)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalWithdrawals = remainingSnapshots.stream()
+                        .map(WalletSnapshot::getMonthlyWithdrawal)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalEarnings = remainingSnapshots.stream()
+                        .map(WalletSnapshot::getMonthlyEarnings)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                // Update wallet totals
+                wallet.setTotalDeposits(totalDeposits);
+                wallet.setTotalWithdrawals(totalWithdrawals);
+                wallet.setTotalEarnings(totalEarnings);
+
+                // Recalculate return rate
+                wallet.updateReturnRate();
+            }
+        }
+    }
+
 }
