@@ -51,7 +51,7 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
                     sumOfDeposits.add(deposit.add(sumOfDeposits.isEmpty() ? BigDecimal.ZERO : sumOfDeposits.get(sumOfDeposits.size() - 1)));
                 }
 
-                gridContainer.add(createWalletTile(wallet.getName(), dates, balances, deposits));
+                gridContainer.add(createWalletTile(wallet.getName(), dates, balances, sumOfDeposits));
             });
 
             add(gridContainer);
