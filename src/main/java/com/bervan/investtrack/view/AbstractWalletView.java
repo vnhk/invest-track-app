@@ -367,9 +367,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         currencyField = new TextField("Currency");
         currencyField.setReadOnly(true);
 
-        currentValueField = new BigDecimalField("Current Value");
-        currentValueField.setReadOnly(true);
-
         riskLevelCombo = new ComboBox<>("Risk Level");
         riskLevelCombo.setItems(Constants.RISK_LEVEL);
         riskLevelCombo.setReadOnly(true);
