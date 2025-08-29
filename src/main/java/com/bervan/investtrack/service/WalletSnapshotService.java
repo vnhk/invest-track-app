@@ -1,9 +1,12 @@
 package com.bervan.investtrack.service;
 
+import com.bervan.common.search.SearchRequest;
 import com.bervan.common.search.SearchService;
+import com.bervan.common.search.model.SearchOperation;
 import com.bervan.common.service.BaseService;
 import com.bervan.history.model.BaseRepository;
 import com.bervan.investtrack.model.WalletSnapshot;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +19,8 @@ public class WalletSnapshotService extends BaseService<UUID, WalletSnapshot> {
     }
 
     public List<WalletSnapshot> findByWalletId(UUID id) {
-        return ((WalletSnapshotRepository) repository).findByWalletId(id);
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.addCriterion("WALLET_ID", WalletSnapshot.class, "wallet.id", SearchOperation.EQUALS_OPERATION, id.toString());
+        return load(searchRequest, Pageable.ofSize(1000000)).stream().toList();
     }
 }

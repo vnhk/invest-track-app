@@ -16,6 +16,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
@@ -158,7 +159,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
                 .setHeader("Earnings");
         snapshotGrid.addColumn(WalletSnapshot::getNotes).setHeader("Notes");
 
-        // Add delete action column for snapshots
         snapshotGrid.addComponentColumn(snapshot -> {
             Button deleteBtn = new Button("Delete");
             deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
@@ -196,8 +196,8 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         VerticalLayout item = new VerticalLayout();
         item.setSpacing(false);
         item.setPadding(false);
-        item.add(new com.vaadin.flow.component.html.Span(label));
-        com.vaadin.flow.component.html.Span valueSpan = new com.vaadin.flow.component.html.Span(value);
+        item.add(new Span(label));
+        Span valueSpan = new Span(value);
         valueSpan.addClassName("summary-value");
         item.add(valueSpan);
         return item;
@@ -348,7 +348,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         saveWalletBtn.setVisible(false);
 
         // Add delete button
-        Button deleteWalletBtn = new Button("Delete Portfolio", e -> confirmDeleteWallet());
+        Button deleteWalletBtn = new Button("Delete Wallet", e -> confirmDeleteWallet());
         deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         deleteWalletBtn.getStyle().set("margin-left", "auto");
     }
@@ -366,13 +366,14 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
         HorizontalLayout buttons = new HorizontalLayout();
         if (editMode) {
+            saveWalletBtn.setVisible(true);
             buttons.add(saveWalletBtn, new Button("Cancel", e -> cancelEdit()));
         } else {
             buttons.add(editWalletBtn);
         }
 
         // Add delete button (always visible)
-        Button deleteWalletBtn = new Button("Delete Portfolio", e -> confirmDeleteWallet());
+        Button deleteWalletBtn = new Button("Delete Wallet", e -> confirmDeleteWallet());
         deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         buttons.add(deleteWalletBtn);
 
@@ -381,10 +382,10 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
     private void confirmDeleteWallet() {
         Dialog confirmDialog = new Dialog();
-        confirmDialog.setHeaderTitle("Delete Portfolio");
+        confirmDialog.setHeaderTitle("Delete Wallet");
 
         VerticalLayout dialogLayout = new VerticalLayout();
-        dialogLayout.add(new com.vaadin.flow.component.html.Span(
+        dialogLayout.add(new Span(
                 "Are you sure you want to delete the portfolio '" + wallet.getName() + "'? " +
                         "This will also delete all snapshots and cannot be undone."
         ));
@@ -411,7 +412,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         confirmDialog.setHeaderTitle("Delete Snapshot");
 
         VerticalLayout dialogLayout = new VerticalLayout();
-        dialogLayout.add(new com.vaadin.flow.component.html.Span(
+        dialogLayout.add(new Span(
                 "Are you sure you want to delete the snapshot from " + snapshot.getSnapshotDate() + "? " +
                         "This cannot be undone."
         ));
@@ -442,7 +443,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
         } catch (Exception e) {
             log.error("Failed to delete wallet: {}", wallet.getId(), e);
-            showErrorNotification("Failed to delete portfolio: " + e.getMessage());
+            showErrorNotification("Failed to Delete Wallet: " + e.getMessage());
         }
     }
 
@@ -451,6 +452,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
             snapshotService.deleteById(snapshot.getId());
 
             wallet = service.findById(wallet.getId());
+            recalculateWalletValues(wallet);
 
             showSuccessNotification("Snapshot deleted successfully! Portfolio values recalculated.");
 

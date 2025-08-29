@@ -26,9 +26,6 @@ public class WalletSnapshot extends BervanBaseEntity<UUID> {
     private BigDecimal monthlyDeposit;
     private BigDecimal monthlyWithdrawal;
     private BigDecimal monthlyEarnings;
-    private BigDecimal cumulativeDeposits;
-    private BigDecimal cumulativeWithdrawals;
-    private BigDecimal cumulativeEarnings;
     private BigDecimal monthlyReturnRate;
     private String notes;
 

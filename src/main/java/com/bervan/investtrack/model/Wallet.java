@@ -26,12 +26,20 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
     private String name;
     private String description;
     private String currency;
+
+    @Transient
     private BigDecimal initialValue = BigDecimal.ZERO;
+    @Transient
     private BigDecimal currentValue = BigDecimal.ZERO;
+    @Transient
     private BigDecimal totalDeposits = BigDecimal.ZERO;
+    @Transient
     private BigDecimal totalWithdrawals = BigDecimal.ZERO;
+    @Transient
     private BigDecimal totalEarnings = BigDecimal.ZERO;
+    @Transient
     private BigDecimal returnRate = BigDecimal.ZERO;
+
     private String riskLevel;
     private LocalDateTime createdDate;
 
@@ -52,7 +60,7 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
         this.currency = currency;
     }
 
-        public BigDecimal calculateTotalReturn() {
+    public BigDecimal calculateTotalReturn() {
         return currentValue.subtract(calculateNetInvestment());
     }
 
