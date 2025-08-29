@@ -51,7 +51,7 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
                     sumOfDeposits.add(deposit.add(sumOfDeposits.isEmpty() ? BigDecimal.ZERO : sumOfDeposits.get(sumOfDeposits.size() - 1)));
                 }
 
-                gridContainer.add(createWalletTile(wallet.getName(), dates, balances, sumOfDeposits));
+                gridContainer.add(createWalletTile(wallet.getName() + " (" + formatPercentage(wallet.getReturnRate()) + ")", dates, balances, sumOfDeposits));
             });
 
             add(gridContainer);
@@ -59,6 +59,11 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
             log.error("Failed to load wallets: {}", e.getMessage(), e);
             showErrorNotification("Failed to load wallets!");
         }
+    }
+
+    private String formatPercentage(BigDecimal percentage) {
+        if (percentage == null) return "0.00%";
+        return String.format("%.2f%%", percentage);
     }
 
     private Div getGridContainer() {
