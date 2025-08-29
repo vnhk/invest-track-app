@@ -7,6 +7,7 @@ import com.bervan.ieentities.ExcelIEEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @Getter
 @Setter
+@Where(clause = "deleted = false or deleted is null")
 public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableData<UUID>, ExcelIEEntity<UUID>, BaseModel<UUID> {
     @Id
     private UUID id;
@@ -31,6 +33,7 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
 
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @OrderBy("snapshotDate ASC")
+    @Where(clause = "deleted = false or deleted is null")
     private List<WalletSnapshot> snapshots = new ArrayList<>();
 
     private LocalDateTime modificationDate;
