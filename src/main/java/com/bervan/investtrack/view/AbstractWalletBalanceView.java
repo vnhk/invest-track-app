@@ -30,7 +30,6 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
         try {
             add(new InvestTrackPageLayout(ROUTE_NAME, null));
 
-
             Set<Wallet> wallets = service.load(Pageable.ofSize(16));
             if (wallets.size() > 16) {
                 showWarningNotification("Too many wallets loaded. Only the first 16 will be displayed.");
@@ -46,6 +45,12 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
                     balances.add(snapshot.getPortfolioValue());
                     deposits.add(snapshot.getMonthlyDeposit());
                 }
+
+                List<BigDecimal> sumOfDeposits = new ArrayList<>();
+                for (BigDecimal deposit : deposits) {
+                    sumOfDeposits.add(deposit.add(sumOfDeposits.isEmpty() ? BigDecimal.ZERO : sumOfDeposits.get(sumOfDeposits.size() - 1)));
+                }
+
                 gridContainer.add(createWalletTile(wallet.getName(), dates, balances, deposits));
             });
 
@@ -113,78 +118,4 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
 
         return tile;
     }
-
-
-//    private List<BigDecimal> generatePLNData() {
-//        return List.of(
-//                BigDecimal.valueOf(5000), BigDecimal.valueOf(5200), BigDecimal.valueOf(4800),
-//                BigDecimal.valueOf(5500), BigDecimal.valueOf(5800), BigDecimal.valueOf(6200),
-//                BigDecimal.valueOf(6500), BigDecimal.valueOf(6800), BigDecimal.valueOf(7200),
-//                BigDecimal.valueOf(7500), BigDecimal.valueOf(7800), BigDecimal.valueOf(8200)
-//        );
-//    }
-//
-//    private List<BigDecimal> generatePLNDeposits() {
-//        return List.of(
-//                BigDecimal.valueOf(5000), BigDecimal.valueOf(5000), BigDecimal.valueOf(5000),
-//                BigDecimal.valueOf(5500), BigDecimal.valueOf(5500), BigDecimal.valueOf(6000),
-//                BigDecimal.valueOf(6000), BigDecimal.valueOf(6500), BigDecimal.valueOf(6500),
-//                BigDecimal.valueOf(7000), BigDecimal.valueOf(7000), BigDecimal.valueOf(7500)
-//        );
-//    }
-//
-//    private List<BigDecimal> generateEURData() {
-//        return List.of(
-//                BigDecimal.valueOf(1200), BigDecimal.valueOf(1250), BigDecimal.valueOf(1180),
-//                BigDecimal.valueOf(1320), BigDecimal.valueOf(1400), BigDecimal.valueOf(1380),
-//                BigDecimal.valueOf(1450), BigDecimal.valueOf(1520), BigDecimal.valueOf(1600),
-//                BigDecimal.valueOf(1680), BigDecimal.valueOf(1750), BigDecimal.valueOf(1820)
-//        );
-//    }
-//
-//
-//    private List<BigDecimal> generateEURDeposits() {
-//        return List.of(
-//                BigDecimal.valueOf(1200), BigDecimal.valueOf(1200), BigDecimal.valueOf(1200),
-//                BigDecimal.valueOf(1300), BigDecimal.valueOf(1300), BigDecimal.valueOf(1400),
-//                BigDecimal.valueOf(1400), BigDecimal.valueOf(1500), BigDecimal.valueOf(1500),
-//                BigDecimal.valueOf(1600), BigDecimal.valueOf(1600), BigDecimal.valueOf(1700)
-//        );
-//    }
-//
-//    private List<BigDecimal> generateIKEData() {
-//        return List.of(
-//                BigDecimal.valueOf(2000), BigDecimal.valueOf(2100), BigDecimal.valueOf(1950),
-//                BigDecimal.valueOf(2200), BigDecimal.valueOf(2350), BigDecimal.valueOf(2500),
-//                BigDecimal.valueOf(2600), BigDecimal.valueOf(2750), BigDecimal.valueOf(2900),
-//                BigDecimal.valueOf(3050), BigDecimal.valueOf(3200), BigDecimal.valueOf(3400)
-//        );
-//    }
-//
-//    private List<BigDecimal> generateIKEDeposits() {
-//        return List.of(
-//                BigDecimal.valueOf(2000), BigDecimal.valueOf(2000), BigDecimal.valueOf(2000),
-//                BigDecimal.valueOf(2200), BigDecimal.valueOf(2200), BigDecimal.valueOf(2400),
-//                BigDecimal.valueOf(2400), BigDecimal.valueOf(2600), BigDecimal.valueOf(2600),
-//                BigDecimal.valueOf(2800), BigDecimal.valueOf(2800), BigDecimal.valueOf(3000)
-//        );
-//    }
-//
-//    private List<BigDecimal> generateIKZEData() {
-//        return List.of(
-//                BigDecimal.valueOf(1500), BigDecimal.valueOf(1580), BigDecimal.valueOf(1520),
-//                BigDecimal.valueOf(1650), BigDecimal.valueOf(1720), BigDecimal.valueOf(1800),
-//                BigDecimal.valueOf(1880), BigDecimal.valueOf(1950), BigDecimal.valueOf(2020),
-//                BigDecimal.valueOf(2100), BigDecimal.valueOf(2180), BigDecimal.valueOf(2300)
-//        );
-//    }
-//
-//    private List<BigDecimal> generateIKZEDeposits() {
-//        return List.of(
-//                BigDecimal.valueOf(1500), BigDecimal.valueOf(1500), BigDecimal.valueOf(1500),
-//                BigDecimal.valueOf(1600), BigDecimal.valueOf(1600), BigDecimal.valueOf(1700),
-//                BigDecimal.valueOf(1700), BigDecimal.valueOf(1800), BigDecimal.valueOf(1800),
-//                BigDecimal.valueOf(1900), BigDecimal.valueOf(1900), BigDecimal.valueOf(2000)
-//        );
-//    }
 }

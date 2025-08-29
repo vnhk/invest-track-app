@@ -315,7 +315,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     }
 
     private void refreshSnapshotGrid() {
-        snapshotGrid.setItems(snapshotService.findByWalletId(wallet.getId()));
+        snapshotGrid.setItems(wallet.getSnapshots());
     }
 
     private String formatCurrency(BigDecimal amount, String currency) {
