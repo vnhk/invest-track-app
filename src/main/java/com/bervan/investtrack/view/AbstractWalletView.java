@@ -1,13 +1,13 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.AbstractPageView;
+import com.bervan.common.BervanButton;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Constants;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.WalletSnapshotService;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -32,8 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -55,11 +53,10 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private TextField nameField;
     private TextArea descriptionField;
     private TextField currencyField;
-    private BigDecimalField initialValueField;
     private BigDecimalField currentValueField;
     private ComboBox<String> riskLevelCombo;
-    private Button saveWalletBtn;
-    private Button editWalletBtn;
+    private BervanButton saveWalletBtn;
+    private BervanButton editWalletBtn;
 
     // Snapshot form components
     private DatePicker snapshotDatePicker;
@@ -68,7 +65,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private BigDecimalField monthlyWithdrawalField;
     private BigDecimalField monthlyEarningsField;
     private TextArea snapshotNotesField;
-    private Button saveSnapshotBtn;
+    private BervanButton saveSnapshotBtn;
     private Grid<WalletSnapshot> snapshotGrid;
 
     private Binder<Wallet> walletBinder = new Binder<>(Wallet.class);
@@ -91,7 +88,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private void init(String walletName) {
         try {
             add(new InvestTrackPageLayout(ROUTE_NAME, walletName));
-            wallet = service.getWalletByName(walletName).iterator().next();
+            wallet = service.getWalletWithSnapshots(walletName);
 
             initializeComponents();
             setupLayout();
@@ -140,7 +137,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         monthlyEarningsField = new BigDecimalField("Monthly Earnings");
         snapshotNotesField = new TextArea("Notes");
 
-        saveSnapshotBtn = new Button("Save Snapshot", e -> saveSnapshot());
+        saveSnapshotBtn = new BervanButton("Save Snapshot", e -> saveSnapshot());
         saveSnapshotBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         snapshotGrid = new Grid<>(WalletSnapshot.class, false);
@@ -160,7 +157,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         snapshotGrid.addColumn(WalletSnapshot::getNotes).setHeader("Notes");
 
         snapshotGrid.addComponentColumn(snapshot -> {
-            Button deleteBtn = new Button("Delete");
+            BervanButton deleteBtn = new BervanButton("Delete");
             deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
             deleteBtn.addClickListener(e -> confirmDeleteSnapshot(snapshot));
             return deleteBtn;
@@ -203,17 +200,20 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         return item;
     }
 
+    // Update binding to remove fields that shouldn't be edited
     private void setupBindings() {
-        // Wallet binder
+        // Wallet binder - remove calculated fields from binding
         walletBinder.forField(nameField).asRequired("Name is required")
                 .bind(Wallet::getName, Wallet::setName);
         walletBinder.bind(descriptionField, Wallet::getDescription, Wallet::setDescription);
         walletBinder.bind(currencyField, Wallet::getCurrency, Wallet::setCurrency);
-        walletBinder.bind(initialValueField, Wallet::getInitialValue, Wallet::setInitialValue);
-        walletBinder.bind(currentValueField, Wallet::getCurrentValue, Wallet::setCurrentValue);
         walletBinder.bind(riskLevelCombo, Wallet::getRiskLevel, Wallet::setRiskLevel);
 
-        // Snapshot binder
+        // Remove bindings for calculated fields:
+        // - initialValueField (calculated)
+        // - currentValueField (calculated)
+
+        // Snapshot binder remains the same
         snapshotBinder.forField(snapshotDatePicker).asRequired("Date is required")
                 .bind(WalletSnapshot::getSnapshotDate, WalletSnapshot::setSnapshotDate);
         snapshotBinder.forField(portfolioValueField).asRequired("Portfolio value is required")
@@ -261,8 +261,9 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         nameField.setReadOnly(readOnly);
         descriptionField.setReadOnly(readOnly);
         currencyField.setReadOnly(readOnly);
-        initialValueField.setReadOnly(readOnly);
-        currentValueField.setReadOnly(readOnly);
+        // Remove these since they're calculated:
+        // initialValueField.setReadOnly(readOnly);
+        // currentValueField.setReadOnly(readOnly);
         riskLevelCombo.setReadOnly(readOnly);
     }
 
@@ -302,8 +303,14 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
             refreshSnapshotGrid();
             snapshotBinder.readBean(new WalletSnapshot()); // Clear form
 
+            // Refresh wallet data and UI since calculated values changed
+            loadWalletData();
+            if (tabSheet.getSelectedIndex() == 0) {
+                setupLayout(); // Refresh summary card
+            }
+
         } catch (ValidationException e) {
-            showErrorNotification("Please check the snapshot data validity");
+            showSuccessNotification("Please check the snapshot data validity");
         }
     }
 
@@ -331,9 +338,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         currencyField = new TextField("Currency");
         currencyField.setReadOnly(true);
 
-        initialValueField = new BigDecimalField("Initial Value");
-        initialValueField.setReadOnly(true);
-
         currentValueField = new BigDecimalField("Current Value");
         currentValueField.setReadOnly(true);
 
@@ -341,14 +345,14 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         riskLevelCombo.setItems(Constants.RISK_LEVEL);
         riskLevelCombo.setReadOnly(true);
 
-        editWalletBtn = new Button("Edit Wallet", e -> toggleEditMode());
+        editWalletBtn = new BervanButton("Edit Wallet", e -> toggleEditMode());
 
-        saveWalletBtn = new Button("Save Changes", e -> saveWallet());
+        saveWalletBtn = new BervanButton("Save Changes", e -> saveWallet());
         saveWalletBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveWalletBtn.setVisible(false);
 
-        // Add delete button
-        Button deleteWalletBtn = new Button("Delete Wallet", e -> confirmDeleteWallet());
+        // Add delete BervanButton
+        BervanButton deleteWalletBtn = new BervanButton("Delete Wallet", e -> confirmDeleteWallet());
         deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
         deleteWalletBtn.getStyle().set("margin-left", "auto");
     }
@@ -357,27 +361,27 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         contentArea.removeAll();
 
         FormLayout walletForm = new FormLayout();
-        walletForm.add(nameField, descriptionField, currencyField, initialValueField,
+        walletForm.add(nameField, descriptionField, currencyField,
                 currentValueField, riskLevelCombo);
         walletForm.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1),
                 new FormLayout.ResponsiveStep("500px", 2)
         );
 
-        HorizontalLayout buttons = new HorizontalLayout();
+        HorizontalLayout BervanButtons = new HorizontalLayout();
         if (editMode) {
             saveWalletBtn.setVisible(true);
-            buttons.add(saveWalletBtn, new Button("Cancel", e -> cancelEdit()));
+            BervanButtons.add(saveWalletBtn, new BervanButton("Cancel", e -> cancelEdit()));
         } else {
-            buttons.add(editWalletBtn);
+            BervanButtons.add(editWalletBtn);
         }
 
-        // Add delete button (always visible)
-        Button deleteWalletBtn = new Button("Delete Wallet", e -> confirmDeleteWallet());
+        // Add delete BervanButton (always visible)
+        BervanButton deleteWalletBtn = new BervanButton("Delete Wallet", e -> confirmDeleteWallet());
         deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        buttons.add(deleteWalletBtn);
+        BervanButtons.add(deleteWalletBtn);
 
-        contentArea.add(walletForm, buttons);
+        contentArea.add(walletForm, BervanButtons);
     }
 
     private void confirmDeleteWallet() {
@@ -390,19 +394,19 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
                         "This will also delete all snapshots and cannot be undone."
         ));
 
-        HorizontalLayout buttonsLayout = new HorizontalLayout();
+        HorizontalLayout BervanButtonsLayout = new HorizontalLayout();
 
-        Button confirmBtn = new Button("Delete", e -> {
+        BervanButton confirmBtn = new BervanButton("Delete", e -> {
             deleteWallet();
             confirmDialog.close();
         });
         confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
-        Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+        BervanButton cancelBtn = new BervanButton("Cancel", e -> confirmDialog.close());
 
-        buttonsLayout.add(cancelBtn, confirmBtn);
+        BervanButtonsLayout.add(cancelBtn, confirmBtn);
 
-        dialogLayout.add(buttonsLayout);
+        dialogLayout.add(BervanButtonsLayout);
         confirmDialog.add(dialogLayout);
         confirmDialog.open();
     }
@@ -417,19 +421,19 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
                         "This cannot be undone."
         ));
 
-        HorizontalLayout buttonsLayout = new HorizontalLayout();
+        HorizontalLayout BervanButtonsLayout = new HorizontalLayout();
 
-        Button confirmBtn = new Button("Delete", e -> {
+        BervanButton confirmBtn = new BervanButton("Delete", e -> {
             deleteSnapshot(snapshot);
             confirmDialog.close();
         });
         confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
-        Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+        BervanButton cancelBtn = new BervanButton("Cancel", e -> confirmDialog.close());
 
-        buttonsLayout.add(cancelBtn, confirmBtn);
+        BervanButtonsLayout.add(cancelBtn, confirmBtn);
 
-        dialogLayout.add(buttonsLayout);
+        dialogLayout.add(BervanButtonsLayout);
         confirmDialog.add(dialogLayout);
         confirmDialog.open();
     }
@@ -449,20 +453,20 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
     private void deleteSnapshot(WalletSnapshot snapshot) {
         try {
-            snapshotService.deleteById(snapshot.getId());
+            service.deleteSnapshot(snapshot.getId());
 
-            wallet = service.findById(wallet.getId());
-            recalculateWalletValues(wallet);
+            // Reload wallet with updated snapshots for fresh calculations
+            wallet = service.getWalletWithSnapshots(wallet.getName());
 
-            showSuccessNotification("Snapshot deleted successfully! Portfolio values recalculated.");
+            showSuccessNotification("Snapshot deleted successfully!");
 
             // Refresh all displays
             refreshSnapshotGrid();
-            loadWalletData(); // Refresh wallet form with new values
+            loadWalletData(); // Refresh wallet form with new calculated values
 
-            // If we're showing wallet details, refresh the summary card
+            // Refresh summary card with new calculated values
             if (tabSheet.getSelectedIndex() == 0) {
-                setupLayout(); // This will recreate the summary card with updated values
+                setupLayout();
             }
 
         } catch (Exception e) {
@@ -470,49 +474,4 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
             showErrorNotification("Failed to delete snapshot: " + e.getMessage());
         }
     }
-
-    private void recalculateWalletValues(Wallet wallet) {
-        List<WalletSnapshot> remainingSnapshots = snapshotService.findByWalletId(wallet.getId());
-
-        if (remainingSnapshots.isEmpty()) {
-            // No snapshots left - reset to initial values
-            wallet.setCurrentValue(wallet.getInitialValue());
-            wallet.setReturnRate(BigDecimal.ZERO);
-        } else {
-            // Find the latest snapshot by date
-            WalletSnapshot latestSnapshot = remainingSnapshots.stream()
-                    .max((s1, s2) -> s1.getSnapshotDate().compareTo(s2.getSnapshotDate()))
-                    .orElse(null);
-
-            if (latestSnapshot != null) {
-                // Update current value to the latest snapshot's portfolio value
-                wallet.setCurrentValue(latestSnapshot.getPortfolioValue());
-
-                // Recalculate totals from all remaining snapshots
-                BigDecimal totalDeposits = remainingSnapshots.stream()
-                        .map(WalletSnapshot::getMonthlyDeposit)
-                        .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                BigDecimal totalWithdrawals = remainingSnapshots.stream()
-                        .map(WalletSnapshot::getMonthlyWithdrawal)
-                        .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                BigDecimal totalEarnings = remainingSnapshots.stream()
-                        .map(WalletSnapshot::getMonthlyEarnings)
-                        .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                // Update wallet totals
-                wallet.setTotalDeposits(totalDeposits);
-                wallet.setTotalWithdrawals(totalWithdrawals);
-                wallet.setTotalEarnings(totalEarnings);
-
-                // Recalculate return rate
-                wallet.updateReturnRate();
-            }
-        }
-    }
-
 }

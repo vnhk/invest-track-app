@@ -49,17 +49,33 @@ public class WalletService extends BaseService<UUID, Wallet> {
         snapshot.setId(UUID.randomUUID());
         snapshot.setWallet(wallet);
 
-        // Update current wallet value based on snapshot
-        wallet.setCurrentValue(snapshot.getPortfolioValue());
-
-        // Save snapshot first
         snapshotService.save(snapshot);
 
-        // Save wallet with updated current value
-        return save(wallet);
+        return findById(walletId);
     }
 
-    public Wallet findById(UUID walletId) {
+    @Transactional
+    public void deleteWallet(UUID walletId) {
+        Wallet wallet = findById(walletId);
+
+        wallet.getSnapshots().forEach(e -> snapshotService.deleteById(e.getId()));
+
+        repository.deleteById(walletId);
+    }
+
+    @Transactional
+    public void deleteSnapshot(UUID snapshotId) {
+        snapshotService.deleteById(snapshotId);
+    }
+
+    @Transactional(readOnly = true)
+    public Wallet getWalletWithSnapshots(String walletName) {
+        Wallet wallet = getWalletByName(walletName).iterator().next();
+        wallet.getSnapshots().size(); // This triggers lazy loading
+        return wallet;
+    }
+
+    private Wallet findById(UUID walletId) {
         return repository.findById(walletId).orElseThrow(() -> new IllegalArgumentException("Wallet with id " + walletId + " not found"));
     }
 }

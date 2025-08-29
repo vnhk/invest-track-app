@@ -12,11 +12,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-//@HistorySupported
 @Getter
 @Setter
 public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableData<UUID>, ExcelIEEntity<UUID>, BaseModel<UUID> {
@@ -26,20 +26,6 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
     private String name;
     private String description;
     private String currency;
-
-    @Transient
-    private BigDecimal initialValue = BigDecimal.ZERO;
-    @Transient
-    private BigDecimal currentValue = BigDecimal.ZERO;
-    @Transient
-    private BigDecimal totalDeposits = BigDecimal.ZERO;
-    @Transient
-    private BigDecimal totalWithdrawals = BigDecimal.ZERO;
-    @Transient
-    private BigDecimal totalEarnings = BigDecimal.ZERO;
-    @Transient
-    private BigDecimal returnRate = BigDecimal.ZERO;
-
     private String riskLevel;
     private LocalDateTime createdDate;
 
@@ -60,12 +46,71 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
         this.currency = currency;
     }
 
-    public BigDecimal calculateTotalReturn() {
-        return currentValue.subtract(calculateNetInvestment());
+    // Calculate fields dynamically from snapshots
+    @Transient
+    public BigDecimal getInitialValue() {
+        if (snapshots.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return snapshots.stream()
+                .min((s1, s2) -> s1.getSnapshotDate().compareTo(s2.getSnapshotDate()))
+                .map(WalletSnapshot::getPortfolioValue)
+                .orElse(BigDecimal.ZERO);
     }
 
-    private BigDecimal calculateNetInvestment() {
-        return totalDeposits.subtract(totalWithdrawals);
+    @Transient
+    public BigDecimal getCurrentValue() {
+        if (snapshots.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return snapshots.stream()
+                .max((s1, s2) -> s1.getSnapshotDate().compareTo(s2.getSnapshotDate()))
+                .map(WalletSnapshot::getPortfolioValue)
+                .orElse(BigDecimal.ZERO);
+    }
+
+    @Transient
+    public BigDecimal getTotalDeposits() {
+        return snapshots.stream()
+                .map(WalletSnapshot::getMonthlyDeposit)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transient
+    public BigDecimal getTotalWithdrawals() {
+        return snapshots.stream()
+                .map(WalletSnapshot::getMonthlyWithdrawal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transient
+    public BigDecimal getTotalEarnings() {
+        return snapshots.stream()
+                .map(WalletSnapshot::getMonthlyEarnings)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transient
+    public BigDecimal getReturnRate() {
+        BigDecimal netInvestment = calculateNetInvestment();
+        if (netInvestment.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal totalReturn = calculateTotalReturn();
+            return totalReturn.divide(netInvestment, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+        } else {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public BigDecimal calculateTotalReturn() {
+        return getCurrentValue().subtract(calculateNetInvestment());
+    }
+
+    public BigDecimal calculateNetInvestment() {
+        return getTotalDeposits().subtract(getTotalWithdrawals());
     }
 
     public String getTableFilterableColumnValue() {
@@ -90,16 +135,4 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
     }
-
-    public void updateReturnRate() {
-        BigDecimal netInvestment = calculateNetInvestment();
-        if (netInvestment.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal totalReturn = calculateTotalReturn();
-            this.returnRate = totalReturn.divide(netInvestment, 4, java.math.RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
-        } else {
-            this.returnRate = BigDecimal.ZERO;
-        }
-    }
-
 }
