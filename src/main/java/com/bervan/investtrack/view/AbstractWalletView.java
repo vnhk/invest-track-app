@@ -244,11 +244,40 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
         contentArea.add(new H3("Monthly Snapshot"));
         contentArea.add(snapshotForm);
-        contentArea.add(saveSnapshotBtn);
+
+        HorizontalLayout buttonsLayout = new HorizontalLayout();
+        buttonsLayout.add(saveSnapshotBtn);
+
+        BervanButton exportCsvBtn = new BervanButton("Export to CSV", e -> exportSnapshotsToCSV());
+        exportCsvBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        buttonsLayout.add(exportCsvBtn);
+
+        contentArea.add(buttonsLayout);
         contentArea.add(new H3("Snapshot History"));
         contentArea.add(snapshotGrid);
 
         refreshSnapshotGrid();
+    }
+
+    private void exportSnapshotsToCSV() {
+        try {
+            String csvContent = snapshotService.exportSnapshotsToCsv(wallet.getId());
+
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("Export Snapshots to CSV");
+            dialog.setWidth("80vw");
+            TextArea textArea = new TextArea("Exported Snapshots");
+            textArea.setWidthFull();
+            textArea.setValue(csvContent);
+            dialog.add(textArea);
+
+            dialog.open();
+
+            showSuccessNotification("CSV file exported successfully!");
+        } catch (Exception e) {
+            log.error("Failed to export snapshots to CSV", e);
+            showErrorNotification("Failed to export snapshots!");
+        }
     }
 
     private void toggleEditMode() {
