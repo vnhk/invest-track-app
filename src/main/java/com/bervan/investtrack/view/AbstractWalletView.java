@@ -145,7 +145,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     }
 
     private void setupSnapshotGrid() {
-        snapshotGrid.addColumn(WalletSnapshot::getSnapshotDate).setHeader("Date");
+        snapshotGrid.addColumn(WalletSnapshot::getSnapshotDate).setHeader("Date").setSortable(true);
         snapshotGrid.addColumn(snapshot -> formatCurrency(snapshot.getPortfolioValue(), wallet.getCurrency()))
                 .setHeader("Portfolio Value");
         snapshotGrid.addColumn(snapshot -> formatCurrency(snapshot.getMonthlyDeposit(), wallet.getCurrency()))
