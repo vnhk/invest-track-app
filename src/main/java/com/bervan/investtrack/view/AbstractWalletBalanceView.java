@@ -3,6 +3,7 @@ package com.bervan.investtrack.view;
 import com.bervan.common.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Wallet;
+import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.WalletService;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
@@ -13,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -24,32 +27,33 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
 
     public AbstractWalletBalanceView(WalletService service) {
         this.service = service;
-        add(new InvestTrackPageLayout(ROUTE_NAME, null));
+        try {
+            add(new InvestTrackPageLayout(ROUTE_NAME, null));
 
 
-        Set<Wallet> wallets = service.load(Pageable.ofSize(16));
-        if (wallets.size() > 16) {
-            showWarningNotification("Too many wallets loaded. Only the first 16 will be displayed.");
+            Set<Wallet> wallets = service.load(Pageable.ofSize(16));
+            if (wallets.size() > 16) {
+                showWarningNotification("Too many wallets loaded. Only the first 16 will be displayed.");
+            }
+
+            Div gridContainer = getGridContainer();
+            wallets.forEach(wallet -> {
+                List<String> dates = new ArrayList<>();
+                List<BigDecimal> balances = new ArrayList<>();
+                List<BigDecimal> deposits = new ArrayList<>();
+                for (WalletSnapshot snapshot : wallet.getSnapshots()) {
+                    dates.add(snapshot.getSnapshotDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+                    balances.add(snapshot.getPortfolioValue());
+                    deposits.add(snapshot.getMonthlyDeposit());
+                }
+                gridContainer.add(createWalletTile(wallet.getName(), dates, balances, deposits));
+            });
+
+            add(gridContainer);
+        } catch (Exception e) {
+            log.error("Failed to load wallets: {}", e.getMessage(), e);
+            showErrorNotification("Failed to load wallets!");
         }
-
-
-//        List<String> dates = List.of(
-//                "01/2025", "02/2025", "03/2025", "04/2025", "05/2025", "06/2025",
-//                "07/2025", "08/2025", "09/2025", "10/2025", "11/2025", "12/2025"
-//        );
-
-        Div gridContainer = getGridContainer();
-
-//        gridContainer.add(
-//                createWalletTile("PLN", dates, generatePLNData(), generatePLNDeposits()),
-//                createWalletTile("EUR", dates, generateEURData(), generateEURDeposits()),
-//                createWalletTile("IKE", dates, generateIKEData(), generateIKEDeposits()),
-//                createWalletTile("IKZE", dates, generateIKZEData(), generateIKZEDeposits())
-//        );
-
-
-
-        add(gridContainer);
     }
 
     private Div getGridContainer() {

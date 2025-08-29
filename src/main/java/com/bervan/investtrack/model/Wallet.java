@@ -29,7 +29,8 @@ public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableDa
     private String riskLevel;
     private LocalDateTime createdDate;
 
-    @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @OrderBy("snapshotDate ASC")
     private List<WalletSnapshot> snapshots = new ArrayList<>();
 
     private LocalDateTime modificationDate;

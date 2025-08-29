@@ -2,6 +2,7 @@ package com.bervan.investtrack.model;
 
 import com.bervan.common.model.BervanBaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,10 +22,15 @@ public class WalletSnapshot extends BervanBaseEntity<UUID> {
     @JoinColumn(name = "wallet_id", nullable = false)
     private Wallet wallet;
 
+    @NotNull
     private LocalDate snapshotDate;
+    @NotNull
     private BigDecimal portfolioValue;
+    @NotNull
     private BigDecimal monthlyDeposit;
+    @NotNull
     private BigDecimal monthlyWithdrawal;
+    @NotNull
     private BigDecimal monthlyEarnings;
     private BigDecimal monthlyReturnRate;
     private String notes;

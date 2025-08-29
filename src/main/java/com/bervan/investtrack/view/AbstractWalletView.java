@@ -131,10 +131,10 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         snapshotDatePicker = new DatePicker("Snapshot Date");
         snapshotDatePicker.setValue(LocalDate.now().withDayOfMonth(1).minusDays(1)); // Last day of previous month
 
-        portfolioValueField = new BigDecimalField("Portfolio Value");
-        monthlyDepositField = new BigDecimalField("Monthly Deposit");
-        monthlyWithdrawalField = new BigDecimalField("Monthly Withdrawal");
-        monthlyEarningsField = new BigDecimalField("Monthly Earnings");
+        portfolioValueField = new BigDecimalField("Portfolio Value", BigDecimal.ZERO, "");
+        monthlyDepositField = new BigDecimalField("Monthly Deposit", BigDecimal.ZERO, "");
+        monthlyWithdrawalField = new BigDecimalField("Monthly Withdrawal", BigDecimal.ZERO, "");
+        monthlyEarningsField = new BigDecimalField("Monthly Earnings", BigDecimal.ZERO, "");
         snapshotNotesField = new TextArea("Notes");
 
         saveSnapshotBtn = new BervanButton("Save Snapshot", e -> saveSnapshot());
@@ -309,8 +309,8 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
                 setupLayout(); // Refresh summary card
             }
 
-        } catch (ValidationException e) {
-            showSuccessNotification("Please check the snapshot data validity");
+        } catch (Exception e) {
+            showErrorNotification("Please check the snapshot data validity");
         }
     }
 
