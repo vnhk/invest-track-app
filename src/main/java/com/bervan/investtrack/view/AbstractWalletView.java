@@ -53,7 +53,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private TextField nameField;
     private TextArea descriptionField;
     private TextField currencyField;
-    private BigDecimalField currentValueField;
     private ComboBox<String> riskLevelCombo;
     private BervanButton saveWalletBtn;
     private BervanButton editWalletBtn;
@@ -387,8 +386,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         contentArea.removeAll();
 
         FormLayout walletForm = new FormLayout();
-        walletForm.add(nameField, descriptionField, currencyField,
-                currentValueField, riskLevelCombo);
+        walletForm.add(nameField, descriptionField, currencyField, riskLevelCombo);
         walletForm.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1),
                 new FormLayout.ResponsiveStep("500px", 2)
