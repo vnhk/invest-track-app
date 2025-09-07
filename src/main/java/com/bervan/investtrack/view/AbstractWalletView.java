@@ -1,7 +1,7 @@
 package com.bervan.investtrack.view;
 
-import com.bervan.common.AbstractPageView;
-import com.bervan.common.BervanButton;
+import com.bervan.common.view.AbstractPageView;
+import com.bervan.common.component.BervanButton;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Constants;
 import com.bervan.investtrack.model.Wallet;
