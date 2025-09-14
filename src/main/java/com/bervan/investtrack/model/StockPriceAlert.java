@@ -8,7 +8,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +19,6 @@ import java.util.UUID;
 @Setter
 public class StockPriceAlert extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
 
     @VaadinBervanColumn(displayName = "Alert Name", internalName = "alertName")

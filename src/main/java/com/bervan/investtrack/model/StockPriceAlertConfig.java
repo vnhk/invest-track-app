@@ -3,15 +3,12 @@ package com.bervan.investtrack.model;
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
 import com.bervan.common.model.VaadinBervanColumn;
-import com.bervan.common.model.VaadinDynamicMultiDropdownBervanColumn;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -20,7 +17,6 @@ import java.util.UUID;
 @Setter
 public class StockPriceAlertConfig extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
     @VaadinBervanColumn(displayName = "Price", internalName = "price")
     private BigDecimal price;
