@@ -5,10 +5,10 @@ import com.bervan.common.search.SearchService;
 import com.bervan.common.service.BaseService;
 import com.bervan.common.service.EmailService;
 import com.bervan.investtrack.model.StockPriceAlert;
+import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.service.scrap.ScrapStockPriceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,7 +27,7 @@ public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
     }
 
 
-//    @Scheduled(cron = "0 0/5 * * * *")
+    //    @Scheduled(cron = "0 0/5 * * * *")
     public void notifyAboutStockPrices() {
         log.info("notifyAboutStockPrices[scheduled] started");
 
@@ -64,5 +64,13 @@ public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
             }
         }
 
+    }
+
+    public List<String> loadEmails(StockPriceAlert stockPriceAlert) {
+        return ((StockPriceAlertRepository) repository).loadAllEmails(stockPriceAlert);
+    }
+
+    public StockPriceAlertConfig loadStockPriceAlertConfig(StockPriceAlert stockPriceAlert) {
+        return ((StockPriceAlertRepository) repository).loadStockPriceAlertConfig(stockPriceAlert);
     }
 }

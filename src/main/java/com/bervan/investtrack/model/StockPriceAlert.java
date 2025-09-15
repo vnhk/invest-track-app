@@ -33,6 +33,7 @@ public class StockPriceAlert extends BervanBaseEntity<UUID> implements Persistab
     @VaadinBervanColumn(displayName = "Emails", internalName = "emails", extension = VaadinDynamicMultiDropdownBervanColumn.class)
     private List<String> emails = new ArrayList<>();
     @OneToOne(cascade = CascadeType.ALL)
+    @VaadinBervanColumn(displayName = "Alert Configuration", internalName = "alertConfiguration", extension = VaadinStockPriceAlertConfigColumn.class)
     private StockPriceAlertConfig stockPriceAlertConfig;
     private Boolean deleted = false;
 
