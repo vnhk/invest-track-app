@@ -6,16 +6,10 @@ import com.bervan.common.model.VaadinBervanColumnConfig;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
-import com.vaadin.flow.component.Text;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Hr;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 
-@Service
 public class StockPriceConfigColumnBuilder implements ComponentForFieldBuilder {
 
     @Override
@@ -37,17 +31,7 @@ public class StockPriceConfigColumnBuilder implements ComponentForFieldBuilder {
                 return;
             }
 
-            stockPriceAlertConfig = item.getStockPriceAlertConfig();
-            if (stockPriceAlertConfig != null) {
-                String sb = (stockPriceAlertConfig.getOperator() == null ? "" : stockPriceAlertConfig.getOperator()) +
-                        (stockPriceAlertConfig.getPrice() == null ? "" : stockPriceAlertConfig.getPrice()) +
-                        " (" +
-                        (stockPriceAlertConfig.getAmountOfNotifications() == null ? "" : stockPriceAlertConfig.getAmountOfNotifications()) +
-                        " left).";
-                add(new Div(new Text(sb), new Hr()));
-            } else {
-                add(new Span("Config not created."));
-            }
+
         }
 
         @Override

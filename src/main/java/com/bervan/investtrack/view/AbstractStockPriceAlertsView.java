@@ -1,12 +1,11 @@
 package com.bervan.investtrack.view;
 
-import com.bervan.common.model.VaadinBervanColumnConfig;
+import com.bervan.common.component.table.builders.ImageColumnGridBuilder;
 import com.bervan.common.service.BaseService;
 import com.bervan.common.view.AbstractBervanTableView;
 import com.bervan.core.model.BervanLogger;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceAlert;
-import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
 import com.bervan.investtrack.service.StockPriceAlertService;
 import com.vaadin.flow.component.dependency.CssImport;
 import lombok.extern.slf4j.Slf4j;
@@ -21,24 +20,11 @@ public abstract class AbstractStockPriceAlertsView extends AbstractBervanTableVi
 
     public AbstractStockPriceAlertsView(BaseService<UUID, StockPriceAlert> service, BervanLogger logger) {
         super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, StockPriceAlert.class);
-
+        AbstractBervanTableView.addColumnForGridBuilder(PriceAlertConfigColumnBuilder.getInstance());
         componentHelper = new StockPriceAlertComponentHelper(((StockPriceAlertService) service));
         renderCommonComponents();
     }
 
-    @Override
-    protected boolean isCustomExtensionAsGridColumn(VaadinBervanColumnConfig config) {
-        if (config.getExtension() == VaadinStockPriceAlertConfigColumn.class) {
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    protected void buildColumnInGridForCustomExtension(VaadinBervanColumnConfig config) {
-
-    }
 
     @Override
     protected List<String> getFieldsToFetchForTable() {
