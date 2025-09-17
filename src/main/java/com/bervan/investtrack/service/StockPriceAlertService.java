@@ -29,8 +29,7 @@ public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
         this.scrapStockPriceServices = scrapStockPriceServices;
     }
 
-
-    @Scheduled(cron = "0 0/5 * * * *")
+    @Scheduled(cron = "0 0/5 9-17 * * MON-FRI")
     public void notifyAboutStockPrices() {
         log.info("notifyAboutStockPrices[scheduled] started");
 
