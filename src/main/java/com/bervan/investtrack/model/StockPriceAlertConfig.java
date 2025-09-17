@@ -26,8 +26,8 @@ public class StockPriceAlertConfig extends BervanBaseEntity<UUID> implements Per
     private Integer amountOfNotifications = 1; //decrease every time
     @VaadinBervanColumn(displayName = "How Often Check (m)?", internalName = "checkIntervalMinutes")
     private Integer checkIntervalMinutes = 60;
-    @VaadinBervanColumn(displayName = "How many % change?", internalName = "anotherNotificationEachPercentage")
-    private Integer anotherNotificationEachPercentage = 60;
+    @VaadinBervanColumn(displayName = "How many % change to notify again?", internalName = "anotherNotificationEachPercentage")
+    private Integer anotherNotificationEachPercentage = 10;
     private LocalDateTime previouslyNotifiedDate;
     private BigDecimal previouslyNotifiedPrice;
     private LocalDateTime previouslyCheckedDate;

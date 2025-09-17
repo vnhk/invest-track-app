@@ -1,7 +1,6 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.component.CommonComponentUtils;
-import com.bervan.common.component.table.builders.ImageColumnGridBuilder;
 import com.bervan.common.service.BaseService;
 import com.bervan.common.view.AbstractBervanTableView;
 import com.bervan.core.model.BervanLogger;

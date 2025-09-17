@@ -1,12 +1,14 @@
 package com.bervan.investtrack.service;
 
 import com.bervan.common.component.AutoConfigurableField;
+import com.bervan.common.component.CommonComponentHelper;
 import com.bervan.common.component.CommonComponentUtils;
 import com.bervan.common.component.builders.ComponentForFieldBuilder;
 import com.bervan.common.model.VaadinBervanColumnConfig;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,6 +20,7 @@ import java.util.UUID;
 @Slf4j
 public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     private static final StockPriceConfigFieldBuilder INSTANCE = new StockPriceConfigFieldBuilder();
+    private CommonComponentHelper<UUID, StockPriceAlertConfig> componentHelper = new CommonComponentHelper<>(StockPriceAlertConfig.class);
 
     private StockPriceConfigFieldBuilder() {
 
@@ -42,9 +45,9 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     }
 
     private class StockPriceAlertConfigAutoConfigurableField extends VerticalLayout implements AutoConfigurableField<StockPriceAlertConfig> {
-        private StockPriceAlertConfig stockPriceAlertConfig;
         private final Map<Field, AutoConfigurableField> fieldsHolder = new HashMap<>();
         private final Map<Field, VerticalLayout> fieldsLayoutHolder = new HashMap<>();
+        private StockPriceAlertConfig stockPriceAlertConfig;
         private boolean readOnly;
 
         public StockPriceAlertConfigAutoConfigurableField(StockPriceAlert stockPriceAlert) {
@@ -58,9 +61,8 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
             }
 
             try {
-
                 VerticalLayout verticalLayout = CommonComponentUtils.buildFormLayout(StockPriceAlertConfig.class, stockPriceAlertConfig, fieldsHolder, fieldsLayoutHolder);
-                add(verticalLayout);
+                add(new H3("Alert price config"), verticalLayout);
             } catch (Exception e) {
                 log.error("Could not build form layout for StockPriceAlertConfig", e);
                 throw new RuntimeException("Could not build form layout for Stock Price Alert Config");
@@ -69,7 +71,15 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
 
         @Override
         public StockPriceAlertConfig getValue() {
-            //either use fieldsHolder or use the code from AbstractBervanEntityView that will build everything...
+            for (Map.Entry<Field, AutoConfigurableField> fieldAutoConfigurableFieldEntry : fieldsHolder.entrySet()) {
+                try {
+                    fieldAutoConfigurableFieldEntry.getKey().setAccessible(true);
+                    fieldAutoConfigurableFieldEntry.getKey().set(stockPriceAlertConfig, componentHelper.getFieldValueForNewItemDialog(fieldAutoConfigurableFieldEntry));
+                    fieldAutoConfigurableFieldEntry.getKey().setAccessible(false);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Could not set field value for Stock Price Alert Config");
+                }
+            }
 
             return stockPriceAlertConfig;
         }
