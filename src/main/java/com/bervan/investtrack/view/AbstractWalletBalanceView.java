@@ -43,7 +43,7 @@ public abstract class AbstractWalletBalanceView extends AbstractPageView {
                 for (WalletSnapshot snapshot : wallet.getSnapshots()) {
                     dates.add(snapshot.getSnapshotDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
                     balances.add(snapshot.getPortfolioValue());
-                    deposits.add(snapshot.getMonthlyDeposit());
+                    deposits.add(snapshot.getMonthlyDeposit().subtract(snapshot.getMonthlyWithdrawal()));
                 }
 
                 List<BigDecimal> sumOfDeposits = new ArrayList<>();
