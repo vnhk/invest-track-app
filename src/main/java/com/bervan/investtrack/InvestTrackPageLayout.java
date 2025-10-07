@@ -12,8 +12,8 @@ public class InvestTrackPageLayout extends MenuNavigationComponent {
         super(routeName, notVisibleButtonRoutes);
 
         addButtonIfVisible(menuButtonsRow, AbstractWalletBalanceView.ROUTE_NAME, "Wallet Balance", VaadinIcon.DASHBOARD.create());
-        addButtonIfVisible(menuButtonsRow, AbstractWalletsView.ROUTE_NAME, "Wallets", VaadinIcon.WALLET.create());
         addButtonIfVisible(menuButtonsRow, AbstractStockPriceAlertsView.ROUTE_NAME, "Alerts", VaadinIcon.ALARM.create());
+        addButtonIfVisible(menuButtonsRow, AbstractWalletsView.ROUTE_NAME, "Wallets", VaadinIcon.WALLET.create());
         if (walletName != null && !walletName.isEmpty()) {
             addButtonIfVisible(menuButtonsRow, AbstractWalletsView.ROUTE_NAME, walletName, VaadinIcon.INFO_CIRCLE.create());
         }
