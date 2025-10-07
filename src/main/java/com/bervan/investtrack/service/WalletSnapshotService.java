@@ -40,7 +40,6 @@ public class WalletSnapshotService extends BaseService<UUID, WalletSnapshot> {
             csv.append(snapshot.getMonthlyDeposit()).append(",");
             csv.append(snapshot.getMonthlyWithdrawal()).append(",");
             csv.append(snapshot.getMonthlyEarnings()).append(",");
-            csv.append(snapshot.getMonthlyReturnRate() != null ? snapshot.getMonthlyReturnRate().toString() : "0").append(",");
             csv.append("\"").append(snapshot.getNotes() != null ? snapshot.getNotes().replace("\"", "\"\"") : "").append("\"");
             csv.append("\n");
         }
