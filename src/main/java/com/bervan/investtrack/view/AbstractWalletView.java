@@ -1,7 +1,8 @@
 package com.bervan.investtrack.view;
 
-import com.bervan.common.view.AbstractPageView;
 import com.bervan.common.component.BervanButton;
+import com.bervan.common.component.BervanButtonStyle;
+import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Constants;
 import com.bervan.investtrack.model.Wallet;
@@ -328,17 +329,24 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
             wallet = service.addSnapshot(wallet.getId(), snapshot);
 
             showSuccessNotification("Monthly snapshot saved successfully!");
-            refreshSnapshotGrid();
-            snapshotBinder.readBean(new WalletSnapshot()); // Clear form
+            WalletSnapshot newSnapshot = new WalletSnapshot();
+            newSnapshot.setSnapshotDate(LocalDate.now());
+            newSnapshot.setMonthlyDeposit(BigDecimal.ZERO);
+            newSnapshot.setMonthlyWithdrawal(BigDecimal.ZERO);
+            newSnapshot.setMonthlyEarnings(BigDecimal.ZERO);
+            newSnapshot.setNotes("");
+            newSnapshot.setPortfolioValue(wallet.getCurrentValue());
+            snapshotBinder.readBean(newSnapshot); // Clear form
 
-            // Refresh wallet data and UI since calculated values changed
             loadWalletData();
             if (tabSheet.getSelectedIndex() == 0) {
                 setupLayout(); // Refresh summary card
             }
 
+            refreshSnapshotGrid();
         } catch (Exception e) {
             showErrorNotification("Please check the snapshot data validity");
+            log.error("Failed to save snapshot: {}", wallet.getId(), e);
         }
     }
 
@@ -376,9 +384,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         saveWalletBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveWalletBtn.setVisible(false);
 
-        // Add delete BervanButton
-        BervanButton deleteWalletBtn = new BervanButton("Delete Wallet", e -> confirmDeleteWallet());
-        deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        BervanButton deleteWalletBtn = new BervanButton("Delete Wallet", e -> confirmDeleteWallet(), BervanButtonStyle.WARNING);
         deleteWalletBtn.getStyle().set("margin-left", "auto");
     }
 
@@ -392,20 +398,20 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
                 new FormLayout.ResponsiveStep("500px", 2)
         );
 
-        HorizontalLayout BervanButtons = new HorizontalLayout();
+        HorizontalLayout buttons = new HorizontalLayout();
         if (editMode) {
             saveWalletBtn.setVisible(true);
-            BervanButtons.add(saveWalletBtn, new BervanButton("Cancel", e -> cancelEdit()));
+            buttons.add(saveWalletBtn, new BervanButton("Cancel", e -> cancelEdit()));
         } else {
-            BervanButtons.add(editWalletBtn);
+            buttons.add(editWalletBtn);
         }
 
         // Add delete BervanButton (always visible)
         BervanButton deleteWalletBtn = new BervanButton("Delete Wallet", e -> confirmDeleteWallet());
         deleteWalletBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        BervanButtons.add(deleteWalletBtn);
+        buttons.add(deleteWalletBtn);
 
-        contentArea.add(walletForm, BervanButtons);
+        contentArea.add(walletForm, buttons);
     }
 
     private void confirmDeleteWallet() {
@@ -414,23 +420,22 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
         VerticalLayout dialogLayout = new VerticalLayout();
         dialogLayout.add(new Span(
-                "Are you sure you want to delete the portfolio '" + wallet.getName() + "'? " +
+                "Are you sure you want to delete the wallet '" + wallet.getName() + "'? " +
                         "This will also delete all snapshots and cannot be undone."
         ));
 
-        HorizontalLayout BervanButtonsLayout = new HorizontalLayout();
+        HorizontalLayout bervanButtonsLayout = new HorizontalLayout(JustifyContentMode.BETWEEN);
 
-        BervanButton confirmBtn = new BervanButton("Delete", e -> {
+        BervanButton confirmBtn = new BervanButton("DELETE", e -> {
             deleteWallet();
             confirmDialog.close();
-        });
-        confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        }, BervanButtonStyle.SECONDARY);
 
-        BervanButton cancelBtn = new BervanButton("Cancel", e -> confirmDialog.close());
+        BervanButton cancelBtn = new BervanButton("Cancel", e -> confirmDialog.close(), BervanButtonStyle.PRIMARY);
 
-        BervanButtonsLayout.add(cancelBtn, confirmBtn);
+        bervanButtonsLayout.add(cancelBtn, confirmBtn);
 
-        dialogLayout.add(BervanButtonsLayout);
+        dialogLayout.add(bervanButtonsLayout);
         confirmDialog.add(dialogLayout);
         confirmDialog.open();
     }

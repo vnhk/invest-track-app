@@ -49,7 +49,8 @@ public class WalletService extends BaseService<UUID, Wallet> {
         snapshot.setId(UUID.randomUUID());
         snapshot.setWallet(wallet);
 
-        snapshotService.save(snapshot);
+        snapshot = snapshotService.save(snapshot);
+        wallet.getSnapshots().add(snapshot);
 
         return findById(walletId);
     }
