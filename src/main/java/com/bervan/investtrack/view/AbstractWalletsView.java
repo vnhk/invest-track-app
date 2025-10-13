@@ -35,7 +35,7 @@ public abstract class AbstractWalletsView extends AbstractBervanTableDTOView<UUI
                     linkIcon.getStyle().set("cursor", "pointer");
                     return new Anchor(ROUTE_NAME + "/" + ((WalletListTableViewDTO) entity).getName(), new HorizontalLayout(linkIcon));
                 }).setKey("link")
-                .setWidth("10px")
+                .setWidth("6px")
                 .setResizable(false);
     }
 }
