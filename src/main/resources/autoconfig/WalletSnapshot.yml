@@ -1,0 +1,58 @@
+columns:
+  - field: snapshotDate
+    displayName: "Snapshot Date"
+    internalName: "snapshotDate"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+
+  - field: portfolioValue
+    displayName: "Portfolio Value"
+    internalName: "portfolioValue"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 0
+    max: 999999999.99
+
+  - field: monthlyDeposit
+    displayName: "Total Deposit"
+    internalName: "totalDeposit"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 0
+    max: 999999999.99
+
+  - field: monthlyWithdrawal
+    displayName: "Total Withdrawal"
+    internalName: "totalWithdrawal"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 0
+    max: 999999999.99
+
+  - field: monthlyEarnings
+    displayName: "Total Earnings"
+    internalName: "totalEarnings"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: -999999999.99
+    max: 999999999.99
+
+  - field: notes
+    displayName: "Notes"
+    internalName: "notes"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+    min: 0
+    max: 5000

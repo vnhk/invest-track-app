@@ -1,0 +1,38 @@
+columns:
+  - field: name
+    displayName: "Name"
+    internalName: "name"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 3
+    max: 255
+
+  - field: description
+    displayName: "Description"
+    internalName: "description"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+    min: 0
+    max: 512
+
+  - field: currency
+    displayName: "Currency"
+    internalName: "currency"
+    strValues: [ "PLN", "USD", "EUR" ]
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+
+  - field: riskLevel
+    displayName: "Risk Level"
+    internalName: "riskLevel"
+    strValues: [ "Low Risk", "Medium Risk", "High Risk", "Very High Risk" ]
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
