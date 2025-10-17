@@ -37,7 +37,7 @@ public class PriceAlertConfigColumnBuilder implements ColumnForGridBuilder {
 
     @Override
     public <ID extends Serializable, T extends PersistableTableData<ID>> boolean supports(String extension, ClassViewAutoConfigColumn config, Class<T> tClass) {
-        return extension.equals(VaadinStockPriceAlertConfigColumn.class.getSimpleName());
+        return VaadinStockPriceAlertConfigColumn.class.getSimpleName().equals(extension);
     }
 
     @Override

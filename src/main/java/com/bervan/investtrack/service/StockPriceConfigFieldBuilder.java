@@ -29,7 +29,7 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     }
 
     public synchronized static StockPriceConfigFieldBuilder getInstance(BervanViewConfig bervanViewConfig) {
-        if (INSTANCE != null) {
+        if (INSTANCE == null) {
             INSTANCE = new StockPriceConfigFieldBuilder(bervanViewConfig);
         }
         return INSTANCE;
