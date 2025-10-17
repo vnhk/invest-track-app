@@ -1,6 +1,7 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.component.AutoConfigurableField;
+import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.search.SearchRequest;
 import com.bervan.common.search.model.SearchOperation;
 import com.bervan.common.service.BaseService;
@@ -21,8 +22,8 @@ public class WalletSnapshotListView extends AbstractBervanTableView<UUID, Wallet
     private final Wallet wallet;
     private boolean firstLoad = true;
 
-    public WalletSnapshotListView(BaseService<UUID, WalletSnapshot> service, BervanLogger bervanLogger, Wallet wallet) {
-        super(null, service, bervanLogger, WalletSnapshot.class);
+    public WalletSnapshotListView(BaseService<UUID, WalletSnapshot> service, BervanLogger bervanLogger, Wallet wallet, BervanViewConfig bervanViewConfig) {
+        super(null, service, bervanLogger, bervanViewConfig, WalletSnapshot.class);
         this.wallet = wallet;
         pageSize = 10000;
     }

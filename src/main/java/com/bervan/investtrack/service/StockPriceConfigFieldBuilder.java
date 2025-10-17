@@ -4,7 +4,8 @@ import com.bervan.common.component.AutoConfigurableField;
 import com.bervan.common.component.CommonComponentHelper;
 import com.bervan.common.component.CommonComponentUtils;
 import com.bervan.common.component.builders.ComponentForFieldBuilder;
-import com.bervan.common.model.VaadinBervanColumnConfig;
+import com.bervan.common.config.BervanViewConfig;
+import com.bervan.common.config.ClassViewAutoConfigColumn;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
@@ -19,29 +20,33 @@ import java.util.UUID;
 
 @Slf4j
 public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
-    private static final StockPriceConfigFieldBuilder INSTANCE = new StockPriceConfigFieldBuilder();
+    private static StockPriceConfigFieldBuilder INSTANCE;
+    private final BervanViewConfig bervanViewConfig;
     private CommonComponentHelper<UUID, StockPriceAlertConfig> componentHelper = new CommonComponentHelper<>(StockPriceAlertConfig.class);
 
-    private StockPriceConfigFieldBuilder() {
-
+    private StockPriceConfigFieldBuilder(BervanViewConfig bervanViewConfig) {
+        this.bervanViewConfig = bervanViewConfig;
     }
 
-    public static StockPriceConfigFieldBuilder getInstance() {
+    public synchronized static StockPriceConfigFieldBuilder getInstance(BervanViewConfig bervanViewConfig) {
+        if (INSTANCE != null) {
+            INSTANCE = new StockPriceConfigFieldBuilder(bervanViewConfig);
+        }
         return INSTANCE;
     }
 
 
     @Override
-    public AutoConfigurableField build(Field field, Object item, Object value, VaadinBervanColumnConfig config) {
+    public AutoConfigurableField build(Field field, Object item, Object value, ClassViewAutoConfigColumn config) {
         if (item == null) {
-            return new StockPriceAlertConfigAutoConfigurableField(null);
+            return new StockPriceAlertConfigAutoConfigurableField(null, bervanViewConfig);
         }
-        return new StockPriceAlertConfigAutoConfigurableField((StockPriceAlert) item);
+        return new StockPriceAlertConfigAutoConfigurableField((StockPriceAlert) item, bervanViewConfig);
     }
 
     @Override
-    public boolean supports(Class<?> extension, VaadinBervanColumnConfig config) {
-        return config.getExtension().equals(VaadinStockPriceAlertConfigColumn.class);
+    public boolean supports(String typeName, ClassViewAutoConfigColumn config) {
+        return config.getExtension().equals(VaadinStockPriceAlertConfigColumn.class.getSimpleName());
     }
 
     private class StockPriceAlertConfigAutoConfigurableField extends VerticalLayout implements AutoConfigurableField<StockPriceAlertConfig> {
@@ -50,7 +55,7 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
         private StockPriceAlertConfig stockPriceAlertConfig;
         private boolean readOnly;
 
-        public StockPriceAlertConfigAutoConfigurableField(StockPriceAlert stockPriceAlert) {
+        public StockPriceAlertConfigAutoConfigurableField(StockPriceAlert stockPriceAlert, BervanViewConfig bervanViewConfig) {
             if (stockPriceAlert != null) {
                 this.stockPriceAlertConfig = stockPriceAlert.getStockPriceAlertConfig();
             }
@@ -61,7 +66,7 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
             }
 
             try {
-                VerticalLayout verticalLayout = CommonComponentUtils.buildFormLayout(StockPriceAlertConfig.class, stockPriceAlertConfig, fieldsHolder, fieldsLayoutHolder);
+                VerticalLayout verticalLayout = CommonComponentUtils.buildFormLayout(StockPriceAlertConfig.class, stockPriceAlertConfig, fieldsHolder, fieldsLayoutHolder, bervanViewConfig);
                 add(new H3("Alert price config"), verticalLayout);
             } catch (Exception e) {
                 log.error("Could not build form layout for StockPriceAlertConfig", e);

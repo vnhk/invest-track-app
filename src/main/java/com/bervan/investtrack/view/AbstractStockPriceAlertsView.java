@@ -1,6 +1,7 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.component.CommonComponentUtils;
+import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.service.BaseService;
 import com.bervan.common.view.AbstractBervanTableView;
 import com.bervan.core.model.BervanLogger;
@@ -19,10 +20,10 @@ import java.util.UUID;
 public abstract class AbstractStockPriceAlertsView extends AbstractBervanTableView<UUID, StockPriceAlert> {
     public static final String ROUTE_NAME = "/invest-track-app/price-alerts";
 
-    public AbstractStockPriceAlertsView(BaseService<UUID, StockPriceAlert> service, BervanLogger logger) {
-        super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, StockPriceAlert.class);
+    public AbstractStockPriceAlertsView(BaseService<UUID, StockPriceAlert> service, BervanLogger logger, BervanViewConfig bervanViewConfig) {
+        super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, bervanViewConfig, StockPriceAlert.class);
         AbstractBervanTableView.addColumnForGridBuilder(PriceAlertConfigColumnBuilder.getInstance());
-        CommonComponentUtils.addComponentBuilder(StockPriceConfigFieldBuilder.getInstance());
+        CommonComponentUtils.addComponentBuilder(StockPriceConfigFieldBuilder.getInstance(bervanViewConfig));
         renderCommonComponents();
     }
 

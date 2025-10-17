@@ -1,11 +1,9 @@
 package com.bervan.investtrack.model;
 
 import com.bervan.common.model.PersistableTableData;
-import com.bervan.common.model.VaadinBervanColumn;
 import com.bervan.common.user.User;
 import com.bervan.core.model.BaseDTO;
 import com.bervan.core.model.BaseModel;
-import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,16 +15,9 @@ import java.util.UUID;
 public class WalletListTableViewDTO implements BaseDTO<UUID>, PersistableTableData<UUID> {
     private UUID id;
 
-    @VaadinBervanColumn(displayName = "Name", internalName = "name")
     private String name;
-
-    @VaadinBervanColumn(displayName = "Description", internalName = "description")
     private String description;
-
-    @VaadinBervanColumn(displayName = "Currency", internalName = "currency", strValues = {"PLN", "USD", "EUR"})
     private String currency = "PLN";
-
-    @VaadinBervanColumn(displayName = "Risk Level", internalName = "riskLevel", strValues = {"Low Risk", "Medium Risk", "High Risk", "Very High Risk"})
     private String riskLevel;
 
     @Override

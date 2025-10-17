@@ -2,7 +2,6 @@ package com.bervan.investtrack.model;
 
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
-import com.bervan.common.model.VaadinBervanColumn;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -28,21 +27,15 @@ public class WalletSnapshot extends BervanBaseEntity<UUID> implements Persistabl
     private Wallet wallet;
 
     @NotNull
-    @VaadinBervanColumn(displayName = "Snapshot Date", internalName = "snapshotDate")
     private LocalDate snapshotDate;
     @NotNull
-    @VaadinBervanColumn(displayName = "Portfolio Value", internalName = "portfolioValue")
     private BigDecimal portfolioValue;
     @NotNull
-    @VaadinBervanColumn(displayName = "Total Deposit", internalName = "totalDeposit")
     private BigDecimal monthlyDeposit;
     @NotNull
-    @VaadinBervanColumn(displayName = "Total Withdrawal", internalName = "totalWithdrawal")
     private BigDecimal monthlyWithdrawal;
     @NotNull
-    @VaadinBervanColumn(displayName = "Total Earnings", internalName = "totalEarnings")
     private BigDecimal monthlyEarnings;
-    @VaadinBervanColumn(displayName = "Notes", internalName = "notes")
     private String notes;
 
     private LocalDateTime modificationDate;

@@ -1,8 +1,8 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.component.table.builders.ColumnForGridBuilder;
+import com.bervan.common.config.ClassViewAutoConfigColumn;
 import com.bervan.common.model.PersistableTableData;
-import com.bervan.common.model.VaadinBervanColumnConfig;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
 import com.vaadin.flow.component.Text;
@@ -31,13 +31,13 @@ public class PriceAlertConfigColumnBuilder implements ColumnForGridBuilder {
     }
 
     @Override
-    public <ID extends Serializable, T extends PersistableTableData<ID>> Renderer<T> build(Field field, VaadinBervanColumnConfig config) {
+    public <ID extends Serializable, T extends PersistableTableData<ID>> Renderer<T> build(Field field, ClassViewAutoConfigColumn config) {
         return createConfigComponent(field, config);
     }
 
     @Override
-    public <ID extends Serializable, T extends PersistableTableData<ID>> boolean supports(Class<?> extension, VaadinBervanColumnConfig config, Class<T> tClass) {
-        return extension == VaadinStockPriceAlertConfigColumn.class;
+    public <ID extends Serializable, T extends PersistableTableData<ID>> boolean supports(String extension, ClassViewAutoConfigColumn config, Class<T> tClass) {
+        return extension.equals(VaadinStockPriceAlertConfigColumn.class.getSimpleName());
     }
 
     @Override
@@ -50,11 +50,11 @@ public class PriceAlertConfigColumnBuilder implements ColumnForGridBuilder {
         return false;
     }
 
-    private <ID extends Serializable, T extends PersistableTableData<ID>> ComponentRenderer<Span, T> createConfigComponent(Field f, VaadinBervanColumnConfig config) {
+    private <ID extends Serializable, T extends PersistableTableData<ID>> ComponentRenderer<Span, T> createConfigComponent(Field f, ClassViewAutoConfigColumn config) {
         return new ComponentRenderer<>(Span::new, configColumnUpdater(f, config));
     }
 
-    private <ID extends Serializable, T extends PersistableTableData<ID>> SerializableBiConsumer<Span, T> configColumnUpdater(Field f, VaadinBervanColumnConfig config) {
+    private <ID extends Serializable, T extends PersistableTableData<ID>> SerializableBiConsumer<Span, T> configColumnUpdater(Field f, ClassViewAutoConfigColumn config) {
         return (span, record) -> {
             try {
                 span.setClassName("modern-cell-content");

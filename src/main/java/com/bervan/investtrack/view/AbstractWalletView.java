@@ -2,6 +2,7 @@ package com.bervan.investtrack.view;
 
 import com.bervan.common.component.BervanButton;
 import com.bervan.common.component.BervanButtonStyle;
+import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.core.model.BervanLogger;
 import com.bervan.investtrack.InvestTrackPageLayout;
@@ -59,12 +60,14 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
 
     private boolean editMode = false;
     private WalletSnapshotListView snapshotsView;
+    private final BervanViewConfig bervanViewConfig;
 
-    public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanLogger bervanLogger) {
+    public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanLogger bervanLogger, BervanViewConfig bervanViewConfig) {
         super();
         this.service = service;
         this.bervanLogger = bervanLogger;
         this.snapshotService = snapshotService;
+        this.bervanViewConfig = bervanViewConfig;
     }
 
     @Override
@@ -116,7 +119,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     }
 
     private void createSnapshotForm() {
-        snapshotsView = new WalletSnapshotListView(snapshotService, bervanLogger, wallet);
+        snapshotsView = new WalletSnapshotListView(snapshotService, bervanLogger, wallet, bervanViewConfig);
         snapshotsView.renderCommonComponents();
     }
 

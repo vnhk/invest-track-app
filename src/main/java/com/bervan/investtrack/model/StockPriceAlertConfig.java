@@ -2,7 +2,6 @@ package com.bervan.investtrack.model;
 
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
-import com.bervan.common.model.VaadinBervanColumn;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,15 +17,10 @@ import java.util.UUID;
 public class StockPriceAlertConfig extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
     @Id
     private UUID id;
-    @VaadinBervanColumn(displayName = "Price", internalName = "price")
     private BigDecimal price;
-    @VaadinBervanColumn(displayName = "Operator", internalName = "operator", strValues = {"<=", ">="})
     private String operator;
-    @VaadinBervanColumn(displayName = "How many times notify?", internalName = "amountOfNotifications")
     private Integer amountOfNotifications = 1; //decrease every time
-    @VaadinBervanColumn(displayName = "How Often Check (m)?", internalName = "checkIntervalMinutes")
     private Integer checkIntervalMinutes = 60;
-    @VaadinBervanColumn(displayName = "How many % change to notify again?", internalName = "anotherNotificationEachPercentage")
     private Integer anotherNotificationEachPercentage = 10;
     private LocalDateTime previouslyNotifiedDate;
     private BigDecimal previouslyNotifiedPrice;

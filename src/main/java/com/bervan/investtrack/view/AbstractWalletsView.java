@@ -1,5 +1,6 @@
 package com.bervan.investtrack.view;
 
+import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.service.BaseService;
 import com.bervan.common.view.AbstractBervanTableDTOView;
 import com.bervan.core.model.BervanLogger;
@@ -14,7 +15,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
 import java.util.UUID;
 
 @Slf4j
@@ -22,8 +22,8 @@ import java.util.UUID;
 public abstract class AbstractWalletsView extends AbstractBervanTableDTOView<UUID, Wallet, WalletListTableViewDTO> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets";
 
-    public AbstractWalletsView(BaseService<UUID, Wallet> service, BervanLogger logger) {
-        super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, Wallet.class, WalletListTableViewDTO.class);
+    public AbstractWalletsView(BaseService<UUID, Wallet> service, BervanLogger logger, BervanViewConfig bervanViewConfig) {
+        super(new InvestTrackPageLayout(ROUTE_NAME, null), service, logger, Wallet.class, WalletListTableViewDTO.class, bervanViewConfig);
 
         renderCommonComponents();
     }

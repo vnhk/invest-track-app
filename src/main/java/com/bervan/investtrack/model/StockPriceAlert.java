@@ -2,8 +2,6 @@ package com.bervan.investtrack.model;
 
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
-import com.bervan.common.model.VaadinBervanColumn;
-import com.bervan.common.model.VaadinDynamicMultiDropdownBervanColumn;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,19 +19,14 @@ public class StockPriceAlert extends BervanBaseEntity<UUID> implements Persistab
     @Id
     private UUID id;
 
-    @VaadinBervanColumn(displayName = "Alert Name", internalName = "alertName")
     private String name;
-    @VaadinBervanColumn(displayName = "Symbol", internalName = "symbol")
     private String symbol;
-    @VaadinBervanColumn(displayName = "Exchange", internalName = "exchange", strValues = {"GPW"})
     private String exchange;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "stock_price_alert_emails", joinColumns = @JoinColumn(name = "stock_price_alert_id"))
     @Column(name = "email")
-    @VaadinBervanColumn(displayName = "Emails", internalName = "emails", extension = VaadinDynamicMultiDropdownBervanColumn.class)
     private List<String> emails = new ArrayList<>();
     @OneToOne(cascade = CascadeType.ALL)
-    @VaadinBervanColumn(displayName = "Alert Configuration", internalName = "alertConfiguration", extension = VaadinStockPriceAlertConfigColumn.class)
     private StockPriceAlertConfig stockPriceAlertConfig;
     private Boolean deleted = false;
 
