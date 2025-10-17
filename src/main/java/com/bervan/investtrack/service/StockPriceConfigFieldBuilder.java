@@ -46,7 +46,7 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
 
     @Override
     public boolean supports(String typeName, ClassViewAutoConfigColumn config) {
-        return config.getExtension().equals(VaadinStockPriceAlertConfigColumn.class.getSimpleName());
+        return VaadinStockPriceAlertConfigColumn.class.getSimpleName().equals(config.getExtension());
     }
 
     private class StockPriceAlertConfigAutoConfigurableField extends VerticalLayout implements AutoConfigurableField<StockPriceAlertConfig> {
