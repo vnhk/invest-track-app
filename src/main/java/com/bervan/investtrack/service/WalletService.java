@@ -43,17 +43,17 @@ public class WalletService extends BaseService<UUID, Wallet> {
         return load(request, Pageable.ofSize(1));
     }
 
-    @Transactional
-    public Wallet addSnapshot(UUID walletId, WalletSnapshot snapshot) {
-        Wallet wallet = findById(walletId);
-        snapshot.setId(UUID.randomUUID());
-        snapshot.setWallet(wallet);
-
-        snapshot = snapshotService.save(snapshot);
-        wallet.getSnapshots().add(snapshot);
-
-        return findById(walletId);
-    }
+//    @Transactional
+//    public Wallet addSnapshot(UUID walletId, WalletSnapshot snapshot) {
+//        Wallet wallet = findById(walletId);
+//        snapshot.setId(UUID.randomUUID());
+//        snapshot.setWallet(wallet);
+//
+//        snapshot = snapshotService.save(snapshot);
+//        wallet.getSnapshots().add(snapshot);
+//
+//        return findById(walletId);
+//    }
 
     @Transactional
     public void deleteWallet(UUID walletId) {
