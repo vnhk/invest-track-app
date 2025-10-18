@@ -105,6 +105,17 @@ public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
         }
 
         @Override
+        public void validate() {
+            //??????
+        }
+
+        @Override
+        public boolean isInvalid() {
+            //??????
+            return false;
+        }
+
+        @Override
         public void setReadOnly(boolean readOnly) {
             this.readOnly = readOnly;
         }
