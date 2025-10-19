@@ -6,7 +6,6 @@ import com.bervan.common.search.model.SearchOperation;
 import com.bervan.common.service.BaseService;
 import com.bervan.history.model.BaseRepository;
 import com.bervan.investtrack.model.Wallet;
-import com.bervan.investtrack.model.WalletSnapshot;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,7 +75,8 @@ public class WalletService extends BaseService<UUID, Wallet> {
         return wallet;
     }
 
-    private Wallet findById(UUID walletId) {
+    @Override
+    public Wallet findById(UUID walletId) {
         return repository.findById(walletId).orElseThrow(() -> new IllegalArgumentException("Wallet with id " + walletId + " not found"));
     }
 }
