@@ -66,7 +66,7 @@ public class WalletSnapshotListView extends AbstractBervanTableView<UUID, Wallet
     }
 
     @Override
-    protected WalletSnapshot customizeSavingInCreateForm(WalletSnapshot newItem) {
+    protected WalletSnapshot preSaveActions(WalletSnapshot newItem) {
         newItem.setWallet(wallet);
         return newItem;
     }
