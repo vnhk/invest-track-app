@@ -1,4 +1,4 @@
-package com.bervan.investtrack.view;
+package com.bervan.investtrack.view.charts;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasSize;
@@ -45,7 +45,7 @@ public class WalletBalanceSumOfDepositsCharts extends Component implements HasSi
         JreJsonObject sumOfDepositsJson = getJreJsonObject(sumOfDeposits);
 
         UI.getCurrent().getPage().executeJs(
-                "window.renderWalletBalanceDepositAndWallet($0, $1, $2, $3)",
+                "window.renderWalletBalanceDepositAndWalletBalance($0, $1, $2, $3)",
                 getElement(),
                 datesJson.get("data"),
                 walletBalanceJson.get("data"),
