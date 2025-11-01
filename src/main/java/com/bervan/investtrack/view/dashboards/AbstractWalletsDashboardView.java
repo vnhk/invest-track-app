@@ -102,11 +102,10 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             aggregatedBalancesForOneWallet.add(totalBalanceForDate);
             aggregatedDepositsForOneWallet.add(totalDepositsForDate);
 
-            BigDecimal sumOfDepositsForDate = BigDecimal.ZERO;
-            for (BigDecimal aggregatedDeposits : aggregatedDepositsForOneWallet) {
-                sumOfDepositsForDate = sumOfDepositsForDate.add(aggregatedDeposits);
-            }
-            aggregatedSumOfDepositsForOneWallet.add(aggregatedSumOfDepositsForOneWallet.isEmpty() ? BigDecimal.ZERO : aggregatedSumOfDepositsForOneWallet.get(aggregatedSumOfDepositsForOneWallet.size() - 1));
+            BigDecimal previousSum = aggregatedSumOfDepositsForOneWallet.isEmpty()
+                    ? BigDecimal.ZERO
+                    : aggregatedSumOfDepositsForOneWallet.get(aggregatedSumOfDepositsForOneWallet.size() - 1);
+            aggregatedSumOfDepositsForOneWallet.add(previousSum.add(totalDepositsForDate));
         }
     }
 
@@ -128,7 +127,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             }
 
             for (BigDecimal deposit : deposits.get(wallet.getId())) {
-                sumOfDeposits.get(wallet.getId()).add(deposit.add(sumOfDeposits.get(wallet.getId()).isEmpty() ? BigDecimal.ZERO : sumOfDeposits.get(wallet.getId()).get(sumOfDeposits.size() - 1)));
+                sumOfDeposits.get(wallet.getId()).add(deposit.add(sumOfDeposits.get(wallet.getId()).isEmpty() ? BigDecimal.ZERO : sumOfDeposits.get(wallet.getId()).get(sumOfDeposits.get(wallet.getId()).size() - 1)));
             }
         });
     }
