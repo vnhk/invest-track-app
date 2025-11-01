@@ -33,7 +33,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
                 showWarningNotification("Too many wallets loaded. Only the first 16 will be displayed.");
             }
 
-            List<Wallet> sortedWallets = wallets.stream().sorted(Comparator.comparing(Wallet::getReturnRate)).toList();
+            List<Wallet> sortedWallets = wallets.stream().sorted(Comparator.comparing(Wallet::getReturnRate).reversed()).toList();
 
             List<String> aggregatedDatesForOneWallet = new ArrayList<>();
             List<BigDecimal> aggregatedBalancesForOneWallet = new ArrayList<>();
