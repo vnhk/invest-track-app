@@ -4,6 +4,8 @@ import com.bervan.common.component.BervanComboBox;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.view.charts.WalletBalanceSumOfDepositsCharts;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +28,22 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                 buildCharts(wallets, dates, selected, balances, sumOfDeposits, gridContainer);
             });
 
+            BigDecimal totalBalance = BigDecimal.ZERO;
+            BigDecimal totalDeposit = BigDecimal.ZERO;
+
+            if (balances.size() == 1) {
+                UUID walletId = balances.keySet().iterator().next();
+                totalBalance = getTotalBalance(balances, walletId);
+                totalDeposit = getTotalSumOfDeposit(sumOfDeposits, walletId);
+            } else if (balances.size() > 1) {
+                for (Wallet wallet : wallets) {
+                    totalBalance = totalBalance.add(getTotalBalance(balances, wallet.getId()));
+                    totalDeposit = totalDeposit.add(getTotalSumOfDeposit(sumOfDeposits, wallet.getId()));
+                }
+            }
+
+            add(new HorizontalLayout(new H3("Total Balance: " + totalBalance), new H3("| Total Deposit: " + totalDeposit),
+                    new H3("| Total Profit: " + totalBalance.subtract(totalDeposit))));
             add(gridContainer);
 
             buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer);
@@ -33,6 +51,16 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
             log.error("Failed to load wallets: {}", e.getMessage(), e);
             showErrorNotification("Failed to load wallets!");
         }
+    }
+
+    private BigDecimal getTotalBalance(Map<UUID, List<BigDecimal>> balances, UUID walletId) {
+        List<BigDecimal> b = balances.get(walletId);
+        return b.get(b.size() - 1).setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    private BigDecimal getTotalSumOfDeposit(Map<UUID, List<BigDecimal>> sumOfDeposits, UUID walletId) {
+        List<BigDecimal> b = sumOfDeposits.get(walletId);
+        return b.get(b.size() - 1).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     protected void buildCharts(List<Wallet> wallets, Map<UUID, List<String>> dates, String selected, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, Div gridContainer) {

@@ -40,7 +40,6 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
     private final CurrencyConverter currencyConverter;
 
-
     public AbstractWalletsDashboardView(CurrencyConverter currencyConverter, WalletService service) {
         this.currencyConverter = currencyConverter;
         try {
@@ -52,14 +51,14 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             List<Wallet> sortedWallets = wallets.stream().sorted(Comparator.comparing(Wallet::getReturnRate).reversed()).toList();
 
             aggregationSelector.addValueChangeListener(event -> {
-                refreshCharts(sortedWallets);
+                refreshDashboards(sortedWallets);
             });
 
             currencySelector.addValueChangeListener(event -> {
-                refreshCharts(sortedWallets);
+                refreshDashboards(sortedWallets);
             });
 
-            refreshCharts(sortedWallets);
+            refreshDashboards(sortedWallets);
 
         } catch (Exception e) {
             log.error("Failed to load wallets: {}", e.getMessage(), e);
@@ -67,8 +66,28 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         }
     }
 
-    private void refreshCharts(List<Wallet> sortedWallets) {
-        sortedWallets = sortedWallets.stream()
+    private void refreshDashboards(List<Wallet> sortedWallets) {
+        sortedWallets = prepareData(sortedWallets);
+        allWalletsCalculations(sortedWallets);
+        oneWalletCalculations(sortedWallets);
+
+        if (aggregationSelector.getValue().equals("All Wallets")) {
+            createAndAddTabs(sortedWallets, dates, balances, deposits, sumOfDeposits);
+        } else if (aggregationSelector.getValue().equals("One Wallet")) {
+            BigDecimal returnRate = getReturnRateForAggregatedWallets();
+
+            Wallet oneAggregatedWallet = new Wallet();
+            oneAggregatedWallet.setName("Aggregated Wallet (" + returnRate + "%)");
+            oneAggregatedWallet.setId(UUID.randomUUID());
+
+            createAndAddTabs(List.of(oneAggregatedWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDatesForOneWallet),
+                    Map.of(oneAggregatedWallet.getId(), aggregatedBalancesForOneWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDepositsForOneWallet),
+                    Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForOneWallet));
+        }
+    }
+
+    private List<Wallet> prepareData(List<Wallet> sortedWallets) {
+        return sortedWallets.stream()
                 .map(original -> {
                     Wallet copy = new Wallet();
                     copy.setId(original.getId());
@@ -94,23 +113,6 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
                             }).toList());
                     return copy;
                 }).toList();
-
-        allWalletsCalculations(sortedWallets);
-        oneWalletCalculations(sortedWallets);
-
-        if (aggregationSelector.getValue().equals("All Wallets")) {
-            createAndAddTabs(sortedWallets, dates, balances, deposits, sumOfDeposits);
-        } else if (aggregationSelector.getValue().equals("One Wallet")) {
-            BigDecimal returnRate = getReturnRateForAggregatedWallets();
-
-            Wallet oneAggregatedWallet = new Wallet();
-            oneAggregatedWallet.setName("Aggregated Wallet (" + returnRate + "%)");
-            oneAggregatedWallet.setId(UUID.randomUUID());
-
-            createAndAddTabs(List.of(oneAggregatedWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDatesForOneWallet),
-                    Map.of(oneAggregatedWallet.getId(), aggregatedBalancesForOneWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDepositsForOneWallet),
-                    Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForOneWallet));
-        }
     }
 
     private BigDecimal getReturnRateForAggregatedWallets() {

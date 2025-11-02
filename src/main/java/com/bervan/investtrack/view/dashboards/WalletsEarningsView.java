@@ -4,6 +4,8 @@ import com.bervan.common.component.BervanComboBox;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.view.charts.WalletEarningsCharts;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +28,17 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
                 buildCharts(wallets, dates, selected, balances, sumOfDeposits, gridContainer);
             });
 
+            BigDecimal totalEarnings = BigDecimal.ZERO;
+            if (balances.size() == 1) {
+                UUID walletId = sumOfDeposits.keySet().iterator().next();
+                totalEarnings = getTotalEarnings(balances, sumOfDeposits, walletId);
+            } else if (balances.size() > 1) {
+                for (Wallet wallet : wallets) {
+                    totalEarnings = totalEarnings.add(getTotalEarnings(balances, sumOfDeposits, wallet.getId()));
+                }
+            }
+
+            add(new HorizontalLayout(new H3("Total earnings: " + totalEarnings)));
             add(gridContainer);
 
             buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer);
@@ -33,6 +46,14 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
             log.error("Failed to load wallets: {}", e.getMessage(), e);
             showErrorNotification("Failed to load wallets!");
         }
+    }
+
+    private BigDecimal getTotalEarnings(Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, UUID walletId) {
+        BigDecimal totalEarnings;
+        List<BigDecimal> sod = sumOfDeposits.get(walletId);
+        List<BigDecimal> b = balances.get(walletId);
+        totalEarnings = b.get(b.size() - 1).subtract(sod.get(sod.size() - 1)).setScale(2, BigDecimal.ROUND_HALF_UP);
+        return totalEarnings;
     }
 
     protected void buildCharts(List<Wallet> wallets, Map<UUID, List<String>> dates, String selected, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, Div gridContainer) {
