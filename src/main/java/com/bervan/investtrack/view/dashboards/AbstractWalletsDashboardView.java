@@ -15,8 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @CssImport("./invest-track.css")
@@ -35,18 +39,21 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
 
             List<Wallet> sortedWallets = wallets.stream().sorted(Comparator.comparing(Wallet::getReturnRate).reversed()).toList();
 
-            List<String> aggregatedDatesForOneWallet = new ArrayList<>();
-            List<BigDecimal> aggregatedBalancesForOneWallet = new ArrayList<>();
-            List<BigDecimal> aggregatedDepositsForOneWallet = new ArrayList<>();
-            List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
-            //todo it should aggregate by currency
-            oneWalletCalculations(sortedWallets, aggregatedDatesForOneWallet, aggregatedBalancesForOneWallet, aggregatedDepositsForOneWallet, aggregatedSumOfDepositsForOneWallet);
-
             Map<UUID, List<String>> dates = new HashMap<>();
             Map<UUID, List<BigDecimal>> balances = new HashMap<>();
             Map<UUID, List<BigDecimal>> deposits = new HashMap<>();
             Map<UUID, List<BigDecimal>> sumOfDeposits = new HashMap<>();
             allWalletsCalculations(sortedWallets, dates, balances, deposits, sumOfDeposits);
+
+            List<String> aggregatedDatesForOneWallet = new ArrayList<>();
+            List<BigDecimal> aggregatedBalancesForOneWallet = new ArrayList<>();
+            List<BigDecimal> aggregatedDepositsForOneWallet = new ArrayList<>();
+            List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
+            //todo it should aggregate by currency
+            oneWalletCalculations(sortedWallets,
+                    dates, balances, deposits, sumOfDeposits,
+                    aggregatedDatesForOneWallet, aggregatedBalancesForOneWallet, aggregatedDepositsForOneWallet, aggregatedSumOfDepositsForOneWallet);
+
 
             aggregationSelector.addValueChangeListener(event -> {
                 if (event.getValue().equals("All Wallets")) {
@@ -54,9 +61,12 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
                 } else if (event.getValue().equals("One Wallet")) {
                     BigDecimal lastSumOfDeposits = aggregatedSumOfDepositsForOneWallet.get(aggregatedSumOfDepositsForOneWallet.size() - 1);
                     BigDecimal lastBalance = aggregatedBalancesForOneWallet.get(aggregatedBalancesForOneWallet.size() - 1);
+                    BigDecimal totalReturn = lastBalance.subtract(lastSumOfDeposits);
+
                     BigDecimal returnRate = BigDecimal.ZERO;
                     if (!lastSumOfDeposits.equals(BigDecimal.ZERO) && !lastBalance.equals(BigDecimal.ZERO)) {
-                        returnRate = lastBalance.divide(lastSumOfDeposits, 2, BigDecimal.ROUND_HALF_UP);
+                        returnRate = totalReturn.divide(lastSumOfDeposits, 4, java.math.RoundingMode.HALF_UP)
+                                .multiply(BigDecimal.valueOf(100));
                     }
 
                     Wallet oneAggregatedWallet = new Wallet();
@@ -78,35 +88,106 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     }
 
     private void oneWalletCalculations(List<Wallet> sortedWallets,
+                                       Map<UUID, List<String>> dates,
+                                       Map<UUID, List<BigDecimal>> balances,
+                                       Map<UUID, List<BigDecimal>> deposits,
+                                       Map<UUID, List<BigDecimal>> sumOfDeposits,
                                        List<String> aggregatedDatesForOneWallet,
                                        List<BigDecimal> aggregatedBalancesForOneWallet,
                                        List<BigDecimal> aggregatedDepositsForOneWallet,
                                        List<BigDecimal> aggregatedSumOfDepositsForOneWallet) {
-        Map<String, List<WalletSnapshot>> walletSnapshotsForADate = new HashMap<>();
 
-        List<WalletSnapshot> allSnapshotsSorted = sortedWallets.stream().flatMap(wallet -> wallet.getSnapshots().stream()).sorted(Comparator.comparing(WalletSnapshot::getSnapshotDate)).toList();
-        for (WalletSnapshot snapshot : allSnapshotsSorted) {
-            String date = snapshot.getSnapshotDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-            aggregatedDatesForOneWallet.add(date);
-            walletSnapshotsForADate.putIfAbsent(date, new ArrayList<>());
-            walletSnapshotsForADate.get(date).add(snapshot);
-        }
+        Set<LocalDate> allDates = dates.values().stream().flatMap(Collection::stream).map(
+                d -> LocalDate.parse(d, new DateTimeFormatterBuilder().appendPattern("dd-MM-yyyy").toFormatter())
+        ).collect(Collectors.toSet());
 
-        for (String date : aggregatedDatesForOneWallet) {
-            BigDecimal totalBalanceForDate = BigDecimal.ZERO;
-            BigDecimal totalDepositsForDate = BigDecimal.ZERO;
-            for (WalletSnapshot walletSnapshot : walletSnapshotsForADate.get(date)) {
-                totalBalanceForDate = totalBalanceForDate.add(walletSnapshot.getPortfolioValue());
-                totalDepositsForDate = totalDepositsForDate.add(walletSnapshot.getMonthlyDeposit().subtract(walletSnapshot.getMonthlyWithdrawal()));
+        // Map to aggregate values by date
+        Map<LocalDate, BigDecimal> totalBalancesByDate = new TreeMap<>();
+        Map<LocalDate, BigDecimal> totalDepositsByDate = new TreeMap<>();
+        Map<LocalDate, BigDecimal> totalSumOfDepositsByDate = new TreeMap<>();
+
+        // Go through each wallet and add its values
+        for (Wallet wallet : sortedWallets) {
+            UUID id = wallet.getId();
+            List<String> walletDates = dates.getOrDefault(id, List.of());
+            List<BigDecimal> walletBalances = balances.getOrDefault(id, List.of());
+            List<BigDecimal> walletDeposits = deposits.getOrDefault(id, List.of());
+            List<BigDecimal> walletSumOfDeposits = sumOfDeposits.getOrDefault(id, List.of());
+
+            for (int i = 0; i < walletDates.size(); i++) {
+                String sDate = walletDates.get(i);
+                LocalDate date = LocalDate.parse(sDate, new DateTimeFormatterBuilder().appendPattern("dd-MM-yyyy").toFormatter());
+                if (date.getDayOfMonth() != date.lengthOfMonth()) {
+                    date = date.with(TemporalAdjusters.lastDayOfMonth());
+                }
+
+                // For safety, handle possible size mismatches
+                BigDecimal balance = i < walletBalances.size() ? walletBalances.get(i) : BigDecimal.ZERO;
+                BigDecimal deposit = i < walletDeposits.size() ? walletDeposits.get(i) : BigDecimal.ZERO;
+                BigDecimal sumDeposit = i < walletSumOfDeposits.size() ? walletSumOfDeposits.get(i) : BigDecimal.ZERO;
+
+                // Aggregate by date
+                totalBalancesByDate.merge(date, balance, BigDecimal::add);
+                totalDepositsByDate.merge(date, deposit, BigDecimal::add);
+                totalSumOfDepositsByDate.merge(date, sumDeposit, BigDecimal::add);
             }
-            aggregatedBalancesForOneWallet.add(totalBalanceForDate);
-            aggregatedDepositsForOneWallet.add(totalDepositsForDate);
-
-            BigDecimal previousSum = aggregatedSumOfDepositsForOneWallet.isEmpty()
-                    ? BigDecimal.ZERO
-                    : aggregatedSumOfDepositsForOneWallet.get(aggregatedSumOfDepositsForOneWallet.size() - 1);
-            aggregatedSumOfDepositsForOneWallet.add(previousSum.add(totalDepositsForDate));
         }
+
+        // Fill output lists in chronological order
+        for (LocalDate date : totalBalancesByDate.keySet()) {
+            String formattedDate = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+            aggregatedDatesForOneWallet.add(formattedDate);
+            aggregatedBalancesForOneWallet.add(totalBalancesByDate.get(date));
+            aggregatedDepositsForOneWallet.add(totalDepositsByDate.get(date));
+            aggregatedSumOfDepositsForOneWallet.add(totalSumOfDepositsByDate.get(date));
+        }
+        sortAggregatedData(aggregatedDatesForOneWallet, aggregatedBalancesForOneWallet, aggregatedDepositsForOneWallet, aggregatedSumOfDepositsForOneWallet);
+    }
+
+    // Sort all lists by date (keeping values in sync)
+    private void sortAggregatedData(List<String> aggregatedDates,
+                                    List<BigDecimal> aggregatedBalances,
+                                    List<BigDecimal> aggregatedDeposits,
+                                    List<BigDecimal> aggregatedSumOfDeposits) {
+
+        // Create combined list of indices
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < aggregatedDates.size(); i++) {
+            indices.add(i);
+        }
+
+        // Sort indices by parsed LocalDate or fallback to string compare
+        indices.sort(Comparator.comparing((Integer i) -> {
+            String dateStr = aggregatedDates.get(i);
+            try {
+                return LocalDate.parse(dateStr, new DateTimeFormatterBuilder().appendPattern("dd-MM-yyyy").toFormatter());
+            } catch (Exception e) {
+                return LocalDate.MIN; // fallback for invalid dates
+            }
+        }));
+
+        // Reorder all lists using sorted indices
+        List<String> sortedDates = new ArrayList<>();
+        List<BigDecimal> sortedBalances = new ArrayList<>();
+        List<BigDecimal> sortedDeposits = new ArrayList<>();
+        List<BigDecimal> sortedSumOfDeposits = new ArrayList<>();
+
+        for (int idx : indices) {
+            sortedDates.add(aggregatedDates.get(idx));
+            sortedBalances.add(aggregatedBalances.get(idx));
+            sortedDeposits.add(aggregatedDeposits.get(idx));
+            sortedSumOfDeposits.add(aggregatedSumOfDeposits.get(idx));
+        }
+
+        // Replace original lists’ contents
+        aggregatedDates.clear();
+        aggregatedDates.addAll(sortedDates);
+        aggregatedBalances.clear();
+        aggregatedBalances.addAll(sortedBalances);
+        aggregatedDeposits.clear();
+        aggregatedDeposits.addAll(sortedDeposits);
+        aggregatedSumOfDeposits.clear();
+        aggregatedSumOfDeposits.addAll(sortedSumOfDeposits);
     }
 
     private void allWalletsCalculations(List<Wallet> sortedWallets,
