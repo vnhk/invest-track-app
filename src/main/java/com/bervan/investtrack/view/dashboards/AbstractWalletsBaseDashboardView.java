@@ -4,6 +4,10 @@ import com.bervan.common.view.AbstractPageView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +19,39 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
 
     public AbstractWalletsBaseDashboardView() {
         setSizeFull();
+    }
+
+    protected Div createCard(String title, Object value, VaadinIcon iconType) {
+        Icon icon = iconType.create();
+        icon.setSize("30px");
+
+        H3 titleText = new H3(title);
+        titleText.getStyle().set("margin", "0");
+        Span valueText = new Span(value.toString());
+        valueText.getStyle()
+                .set("font-size", "1.5em")
+                .set("font-weight", "600");
+
+        VerticalLayout textLayout = new VerticalLayout(titleText, valueText);
+        textLayout.setSpacing(false);
+        textLayout.setPadding(false);
+        textLayout.setAlignItems(Alignment.START);
+
+        HorizontalLayout content = new HorizontalLayout(icon, textLayout);
+        content.setAlignItems(Alignment.CENTER);
+        content.setWidthFull();
+        content.getStyle().set("gap", "1em");
+
+        Div card = new Div(content);
+        card.setClassName("dashboard-card-value");
+        card.getStyle()
+                .set("border-radius", "12px")
+                .set("box-shadow", "0 2px 6px rgba(0,0,0,0.1)")
+                .set("padding", "16px 24px")
+                .set("width", "280px")
+                .set("text-align", "left");
+
+        return card;
     }
 
     /**

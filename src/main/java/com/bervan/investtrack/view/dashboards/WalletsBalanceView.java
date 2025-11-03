@@ -4,7 +4,7 @@ import com.bervan.common.component.BervanComboBox;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.view.charts.WalletBalanceSumOfDepositsCharts;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +42,12 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                 }
             }
 
-            add(new HorizontalLayout(new H3("Total Balance: " + totalBalance), new H3("| Total Deposit: " + totalDeposit),
-                    new H3("| Total Profit: " + totalBalance.subtract(totalDeposit))));
+            HorizontalLayout horizontalLayout = new HorizontalLayout(createCard("Total Balance", totalBalance, VaadinIcon.MONEY),
+                    createCard("Total Deposit", totalDeposit, VaadinIcon.PIGGY_BANK),
+                    createCard("Total Profit", totalBalance.subtract(totalDeposit), VaadinIcon.TRENDING_UP));
+            horizontalLayout.getStyle().setMarginLeft("20px");
+            add(horizontalLayout);
+
             add(gridContainer);
 
             buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer);

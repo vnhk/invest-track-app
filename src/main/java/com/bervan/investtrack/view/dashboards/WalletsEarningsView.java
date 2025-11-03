@@ -4,7 +4,7 @@ import com.bervan.common.component.BervanComboBox;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.view.charts.WalletEarningsCharts;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +38,10 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
                 }
             }
 
-            add(new HorizontalLayout(new H3("Total earnings: " + totalEarnings)));
-            add(gridContainer);
+            HorizontalLayout horizontalLayout = new HorizontalLayout(
+                    createCard("Total Profit", totalEarnings, VaadinIcon.TRENDING_UP));
+            horizontalLayout.getStyle().setMarginLeft("20px");
+            add(horizontalLayout, gridContainer);
 
             buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer);
         } catch (Exception e) {

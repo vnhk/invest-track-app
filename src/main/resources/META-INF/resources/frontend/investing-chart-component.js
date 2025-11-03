@@ -1,6 +1,18 @@
 import 'https://cdn.jsdelivr.net/npm/chart.js';
 
 window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalances, deposit) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim();
+
+    let charLine1Color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line1-color')
+        .trim();
+
+    let charLine2Color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line2-color')
+        .trim();
+
     if (canvas === null) return;
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
@@ -11,16 +23,16 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
                 {
                     label: 'Wallet balance',
                     data: walletBalances,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: charLine1Color,
+                    borderColor: charLine1Color,
                     borderWidth: 2,
                     fill: false
                 },
                 {
                     label: 'Sum of deposits',
                     data: deposit,
-                    backgroundColor: 'rgb(241,175,85)',
-                    borderColor: 'rgb(58,49,49)',
+                    backgroundColor: charLine2Color,
+                    borderColor: charLine2Color,
                     borderWidth: 2,
                     fill: false
                 }
@@ -28,9 +40,33 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                },
+                title: {
+                    display: false
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: textColor
+                    }
+                },
                 y: {
-                    beginAtZero: false
+                    beginAtZero: false,
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: textColor
+                    }
                 }
             }
         }
@@ -38,6 +74,14 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
 };
 
 window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim();
+
+    let charLine1Color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line1-color')
+        .trim();
+
     if (canvas === null) return;
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
@@ -48,8 +92,8 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
                 {
                     label: 'Wallet Earnings',
                     data: walletEarnings,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: charLine1Color,
+                    borderColor: charLine1Color,
                     borderWidth: 2,
                     fill: false
                 }
@@ -57,9 +101,33 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                },
+                title: {
+                    display: false
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        color: textColor  // X
+                    },
+                    grid: {
+                        color: textColor
+                    }
+                },
                 y: {
-                    beginAtZero: false
+                    beginAtZero: false,
+                    ticks: {
+                        color: textColor // Y
+                    },
+                    grid: {
+                        color: textColor
+                    }
                 }
             }
         }
