@@ -16,21 +16,28 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class FirePathView extends VerticalLayout {
     private static final BigDecimal GLOBAL_TARGET = BigDecimal.valueOf(1_500_000L); // PLN
-    private static final BigDecimal INFLATION = BigDecimal.valueOf(0.03); // 3%
+    private static final BigDecimal INFLATION = BigDecimal.valueOf(0.038); // 3.8% last 10 years in PL
     private final CurrencyConverter currencyConverter;
     private final List<Wallet> wallets;
     private final Map<UUID, List<BigDecimal>> balances;
     private final Map<UUID, List<BigDecimal>> sumOfDeposits;
+    private final Map<UUID, List<String>> dates;
 
-    public FirePathView(CurrencyConverter currencyConverter, List<Wallet> wallets, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, Map<UUID, List<String>> dates) {
+    public FirePathView(CurrencyConverter currencyConverter, List<Wallet> wallets,
+                        Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits,
+                        Map<UUID, List<String>> dates) {
         this.currencyConverter = currencyConverter;
         this.wallets = wallets;
         this.balances = balances;
         this.sumOfDeposits = sumOfDeposits;
+        this.dates = dates;
 
         setSizeFull();
         setPadding(false);
@@ -52,7 +59,6 @@ public class FirePathView extends VerticalLayout {
         HorizontalLayout bottomRow = new HorizontalLayout();
         bottomRow.addClassName("fire-bottom-row");
         bottomRow.setWidthFull();
-        bottomRow.setSpacing(true);
 
         Component progressCard = createProgressCard();
 
@@ -67,7 +73,7 @@ public class FirePathView extends VerticalLayout {
     private Div createStagesCard() {
         Div card = new Div();
         card.addClassName("fire-card");
-        card.setWidthFull();
+        card.setWidth("95%");
 
         H3 title = new H3("FIRE Stages");
         title.addClassName("card-title");
@@ -105,7 +111,6 @@ public class FirePathView extends VerticalLayout {
     }
 
     private List<FireStage> computeStages() {
-        // stage definitions (12 stages)
         List<StageDef> stageDefs = Arrays.asList(
                 new StageDef("Initial Spark", BigDecimal.valueOf(1)),
                 new StageDef("First Milestone", BigDecimal.valueOf(2)),
@@ -121,55 +126,35 @@ public class FirePathView extends VerticalLayout {
                 new StageDef("Full FIRE", BigDecimal.valueOf(100))
         );
 
-        // combined current balance and deposits (converted to PLN)
+        // combined balance and total deposits
         BigDecimal combinedCurrentBalance = BigDecimal.ZERO;
         BigDecimal combinedTotalDeposits = BigDecimal.ZERO;
-        int maxMonths = 0;
-        int totalTimelinePointsWeighted = 0; // not used for now but available if needed
+
+        // detect first and last date for timeline
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        LocalDate firstDate = LocalDate.MAX;
+        LocalDate lastDate = LocalDate.MIN;
 
         for (Wallet wallet : wallets) {
             UUID wId = wallet.getId();
             List<BigDecimal> walletBalances = balances.getOrDefault(wId, Collections.emptyList());
-            List<BigDecimal> walletDeposits = sumOfDeposits.getOrDefault(wId, Collections.emptyList());
+            List<BigDecimal> sumOfWalletDeposits = sumOfDeposits.getOrDefault(wId, Collections.emptyList());
+            List<String> walletDates = dates.getOrDefault(wId, Collections.emptyList());
 
-            if (!walletBalances.isEmpty()) {
-                BigDecimal lastBalance = walletBalances.get(walletBalances.size() - 1);
-                BigDecimal convertedBalance = convert(lastBalance, CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN);
-                combinedCurrentBalance = combinedCurrentBalance.add(convertedBalance);
-                maxMonths = Math.max(maxMonths, walletBalances.size());
-            }
+            combinedCurrentBalance = combinedCurrentBalance.add(convert(walletBalances.get(walletBalances.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
+            combinedTotalDeposits = combinedTotalDeposits.add(convert(sumOfWalletDeposits.get(sumOfWalletDeposits.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
 
-            if (!walletDeposits.isEmpty()) {
-                BigDecimal lastDepositSum = walletDeposits.get(walletDeposits.size() - 1);
-                BigDecimal convertedDeposits = convert(lastDepositSum, CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN);
-                combinedTotalDeposits = combinedTotalDeposits.add(convertedDeposits);
-                maxMonths = Math.max(maxMonths, walletDeposits.size());
+            for (String dStr : walletDates) {
+                LocalDate d = LocalDate.parse(dStr, formatter);
+                if (d.isBefore(firstDate)) firstDate = d;
+                if (d.isAfter(lastDate)) lastDate = d;
             }
         }
 
-        // Estimate average monthly deposit across the observation window.
-        // If there are N months (maxMonths), assume deposits are distributed across those months.
-        BigDecimal avgMonthlyDeposit = BigDecimal.ZERO;
-        if (maxMonths > 0) {
-            avgMonthlyDeposit = combinedTotalDeposits.divide(BigDecimal.valueOf(maxMonths), 18, RoundingMode.HALF_UP);
-        }
+        long monthsBetween = ChronoUnit.MONTHS.between(firstDate.withDayOfMonth(1), lastDate.withDayOfMonth(1)) + 1;
+        double avgMonthlyDeposit = monthsBetween > 0 ? combinedTotalDeposits.divide(BigDecimal.valueOf(monthsBetween), 18, RoundingMode.HALF_UP).doubleValue() : 0.0;
+        double monthlyReturn = getMonthlyReturn(monthsBetween, combinedTotalDeposits, combinedCurrentBalance);
 
-        // Calculate annualized return based on total deposits -> current balance.
-        // if combinedTotalDeposits is zero, treat return as zero.
-        double annualReturn;
-        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
-            annualReturn = 0.0;
-        } else {
-            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
-            double years = Math.max(1.0, ((double) maxMonths) / 12.0); // avoid divide by zero; if months < 12 assume 1 year
-            // annualized geometric return
-            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
-        }
-
-        // monthly return after inflation
-        double monthlyReturn = (annualReturn - INFLATION.doubleValue()) / 12.0;
-
-        // prepare formatter for PLN without decimals
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
         nf.setRoundingMode(RoundingMode.HALF_UP);
@@ -182,30 +167,17 @@ public class FirePathView extends VerticalLayout {
             boolean achieved = howMuchLeft.compareTo(BigDecimal.ZERO) <= 0;
             String howMuchLeftStr = achieved ? "Achieved" : nf.format(howMuchLeft);
 
-            double progress;
-            if (stageAmount.compareTo(BigDecimal.ZERO) == 0) {
-                progress = 0.0;
-            } else {
-                progress = combinedCurrentBalance.divide(stageAmount, 6, RoundingMode.HALF_UP).doubleValue();
-                if (progress > 1.0) progress = 1.0;
-                if (progress < 0.0) progress = 0.0;
-            }
+            double progress = stageAmount.compareTo(BigDecimal.ZERO) == 0 ? 0.0 : combinedCurrentBalance.divide(stageAmount, 6, RoundingMode.HALF_UP).doubleValue();
+            if (progress > 1.0) progress = 1.0;
 
             String monthsStr;
             if (achieved) {
                 monthsStr = "—";
             } else {
-                double monthsNeeded = estimateMonthsToTarget(
-                        combinedCurrentBalance.doubleValue(),
-                        avgMonthlyDeposit.doubleValue(),
-                        monthlyReturn,
-                        stageAmount.doubleValue()
-                );
-                if (Double.isInfinite(monthsNeeded) || Double.isNaN(monthsNeeded) || monthsNeeded > 1200) {
+                double monthsNeeded = estimateMonthsToTarget(combinedCurrentBalance.doubleValue(), avgMonthlyDeposit, monthlyReturn, stageAmount.doubleValue());
+                if (Double.isInfinite(monthsNeeded) || Double.isNaN(monthsNeeded) || monthsNeeded > 1200)
                     monthsStr = "Long term";
-                } else {
-                    monthsStr = formatMonths((int) Math.ceil(monthsNeeded));
-                }
+                else monthsStr = formatMonths((int) Math.ceil(monthsNeeded));
             }
 
             String percentLabel = def.percent.stripTrailingZeros().toPlainString() + "%";
@@ -213,68 +185,55 @@ public class FirePathView extends VerticalLayout {
 
             result.add(new FireStage(def.name, percentLabel, amountLabel, howMuchLeftStr, monthsStr, progress));
         }
-
         return result;
     }
 
-    /**
-     * Estimate months to reach target using compound growth with monthly deposits:
-     *
-     * future(t) = current*(1+r)^t + monthly * [((1+r)^t - 1) / r]
-     *
-     * Solve numerically for t (months). r is monthly return (e.g., 0.0025).
-     *
-     * If r == 0, fallback to linear: (target - current) / monthly
-     */
+    private static double getMonthlyReturn(long monthsBetween, BigDecimal combinedTotalDeposits, BigDecimal combinedCurrentBalance) {
+        double years = monthsBetween / 12.0;
+
+        // annualized return
+        double annualReturn;
+        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
+            annualReturn = 0.0;
+        } else {
+            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
+            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
+        }
+
+        return (annualReturn - INFLATION.doubleValue()) / 12.0;
+    }
+
     private double estimateMonthsToTarget(double current, double monthly, double monthlyReturn, double target) {
         if (current >= target) return 0.0;
         double left = target - current;
-
-        // if monthlyReturn is approximately zero, do linear estimate
         if (Math.abs(monthlyReturn) < 1e-12) {
             if (monthly <= 0.0) return Double.POSITIVE_INFINITY;
             return Math.max(0.0, left / monthly);
         }
-
-        // numerical search: binary search on t in [0, maxT]
         double low = 0.0;
-        double high = 1200.0; // 100 years in months - safety cap
+        double high = 1200.0;
         for (int iter = 0; iter < 80; iter++) {
             double mid = (low + high) / 2.0;
             double val = futureValue(current, monthly, monthlyReturn, mid);
-            if (val >= target) {
-                high = mid;
-            } else {
-                low = mid;
-            }
+            if (val >= target) high = mid;
+            else low = mid;
         }
-        double result = Math.ceil(high);
-        // check feasibility: if even at high we don't reach, return infinity
-        if (futureValue(current, monthly, monthlyReturn, high) < target - 0.5) {
-            return Double.POSITIVE_INFINITY;
-        }
-        return result;
+        if (futureValue(current, monthly, monthlyReturn, high) < target - 0.5) return Double.POSITIVE_INFINITY;
+        return high;
     }
 
     private double futureValue(double current, double monthly, double monthlyReturn, double months) {
-        // current * (1+r)^t + monthly * [((1+r)^t - 1) / r]
         double factor = Math.pow(1.0 + monthlyReturn, months);
-        return current * factor + (Math.abs(monthlyReturn) < 1e-12
-                ? monthly * months
-                : monthly * ((factor - 1.0) / monthlyReturn));
+        return current * factor + (Math.abs(monthlyReturn) < 1e-12 ? monthly * months : monthly * ((factor - 1.0) / monthlyReturn));
     }
 
     private String formatMonths(int months) {
         if (months <= 0) return "0 mos";
         int years = months / 12;
         int remMonths = months % 12;
-        if (years > 0 && remMonths > 0) {
-            return String.format("%d yr %d mos", years, remMonths);
-        } else if (years > 0) {
-            return String.format("%d yr", years);
-        } else {
-            return String.format("%d mos", remMonths);
-        }
+        if (years > 0 && remMonths > 0) return String.format("%d yr %d mos", years, remMonths);
+        else if (years > 0) return String.format("%d yr", years);
+        else return String.format("%d mos", remMonths);
     }
 
     private Component createProgressCard() {
@@ -287,11 +246,7 @@ public class FirePathView extends VerticalLayout {
         HorizontalLayout legend = new HorizontalLayout();
         legend.addClassName("card-legend");
         legend.setSpacing(true);
-
-        legend.add(
-                createLegendItem("Different returns (±2 pp)"),
-                createLegendItem("Different deposits (±10%)")
-        );
+        legend.add(createLegendItem("Different returns (±2 pp)"), createLegendItem("Different deposits (±10%)"));
 
         Div chartPlaceholder = new Div();
         chartPlaceholder.addClassName("chart-placeholder");
@@ -313,66 +268,23 @@ public class FirePathView extends VerticalLayout {
         metrics.setWidthFull();
         metrics.setSpacing(true);
 
-        // compute summary metrics for display
         BigDecimal combinedCurrentBalance = BigDecimal.ZERO;
-        BigDecimal combinedTotalDeposits = BigDecimal.ZERO;
-        int maxMonths = 0;
-
         for (Wallet wallet : wallets) {
             UUID wId = wallet.getId();
             List<BigDecimal> walletBalances = balances.getOrDefault(wId, Collections.emptyList());
-            List<BigDecimal> walletDeposits = sumOfDeposits.getOrDefault(wId, Collections.emptyList());
-
-            if (!walletBalances.isEmpty()) {
-                BigDecimal lastBalance = walletBalances.get(walletBalances.size() - 1);
-                BigDecimal convertedBalance = convert(lastBalance, CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN);
-                combinedCurrentBalance = combinedCurrentBalance.add(convertedBalance);
-                maxMonths = Math.max(maxMonths, walletBalances.size());
-            }
-
-            if (!walletDeposits.isEmpty()) {
-                BigDecimal lastDepositSum = walletDeposits.get(walletDeposits.size() - 1);
-                BigDecimal convertedDeposits = convert(lastDepositSum, CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN);
-                combinedTotalDeposits = combinedTotalDeposits.add(convertedDeposits);
-                maxMonths = Math.max(maxMonths, walletDeposits.size());
-            }
+            if (walletBalances.isEmpty()) continue;
+            combinedCurrentBalance = combinedCurrentBalance.add(convert(walletBalances.get(walletBalances.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
         }
-
-        BigDecimal avgMonthlyDeposit = BigDecimal.ZERO;
-        if (maxMonths > 0) {
-            avgMonthlyDeposit = combinedTotalDeposits.divide(BigDecimal.valueOf(maxMonths), 18, RoundingMode.HALF_UP);
-        }
-
-        double annualReturn;
-        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
-            annualReturn = 0.0;
-        } else {
-            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
-            double years = Math.max(1.0, ((double) maxMonths) / 12.0);
-            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
-        }
-
-        // estimate three variants for display: lower return (-2pp), baseline, higher return (+2pp)
-        BigDecimal lowerVariant = GLOBAL_TARGET.multiply(BigDecimal.valueOf((1.0 + (annualReturn - 0.02))))
-                .setScale(0, RoundingMode.HALF_UP);
-        BigDecimal baselineVariant = GLOBAL_TARGET.multiply(BigDecimal.valueOf((1.0 + annualReturn)))
-                .setScale(0, RoundingMode.HALF_UP);
-        BigDecimal higherVariant = GLOBAL_TARGET.multiply(BigDecimal.valueOf((1.0 + (annualReturn + 0.02))))
-                .setScale(0, RoundingMode.HALF_UP);
 
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
 
         metrics.add(
-                createMetric("Lower-return variant", nf.format(lowerVariant)),
-                createMetric("Plan (baseline)", nf.format(baselineVariant)),
-                createMetric("Higher-return variant", nf.format(higherVariant)),
-                createMetric("Current capital", nf.format(combinedCurrentBalance))
+                createMetric("Current capital", nf.format(combinedCurrentBalance)),
+                createMetric("Target", nf.format(GLOBAL_TARGET))
         );
 
         Div bottomInfo = new Div();
-        // compute short gap example for baseline over a 19-year horizon just as an illustrative number
-        // (not a promise — this is for UI summarization)
         bottomInfo.addClassName("bottom-info");
         bottomInfo.setText("Target: " + nf.format(GLOBAL_TARGET) + ".");
 
