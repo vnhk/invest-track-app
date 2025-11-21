@@ -2,6 +2,7 @@ package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.service.CurrencyConverter;
+import com.bervan.investtrack.view.charts.FireProjectionChart;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -47,85 +48,22 @@ public class FirePathView extends VerticalLayout {
         add(createMainContent());
     }
 
+    private static double getMonthlyReturn(long monthsBetween, BigDecimal combinedTotalDeposits, BigDecimal combinedCurrentBalance) {
+        double years = monthsBetween / 12.0;
+
+        // annualized return
+        double annualReturn;
+        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
+            annualReturn = 0.0;
+        } else {
+            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
+            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
+        }
+
+        return (annualReturn - INFLATION.doubleValue()) / 12.0;
+    }
+
     private Component createMainContent() {
-        VerticalLayout content = new VerticalLayout();
-        content.addClassName("fire-content");
-        content.setSizeFull();
-        content.setPadding(true);
-        content.setSpacing(false);
-
-        Div stagesCard = createStagesCard();
-
-        HorizontalLayout bottomRow = new HorizontalLayout();
-        bottomRow.addClassName("fire-bottom-row");
-        bottomRow.setWidthFull();
-
-        Component progressCard = createProgressCard();
-
-        bottomRow.add(progressCard);
-        bottomRow.setFlexGrow(1, progressCard);
-
-        content.add(stagesCard, bottomRow);
-        content.setFlexGrow(1, stagesCard);
-        return content;
-    }
-
-    private Div createStagesCard() {
-        Div card = new Div();
-        card.addClassName("fire-card");
-        card.setWidth("95%");
-
-        H3 title = new H3("FIRE Stages");
-        title.addClassName("card-title");
-
-        Grid<FireStage> grid = createStagesGrid();
-
-        Span note = new Span(
-                "* Values are projections using historical deposits and an estimated monthly return after inflation (inflation = 3%).");
-        note.addClassName("card-note");
-
-        card.add(title, grid, note);
-        return card;
-    }
-
-    private Grid<FireStage> createStagesGrid() {
-        Grid<FireStage> grid = new Grid<>(FireStage.class, false);
-        grid.addClassName("stages-grid");
-        grid.setWidthFull();
-        grid.setHeight("320px");
-
-        grid.addColumn(FireStage::getStageName).setHeader("Stage").setAutoWidth(true).setFlexGrow(2);
-        grid.addColumn(FireStage::getPercent).setHeader("% goal").setAutoWidth(true);
-        grid.addColumn(FireStage::getAmount).setHeader("Amount").setAutoWidth(true);
-        grid.addColumn(FireStage::getHowMuchLeft).setHeader("How much left").setAutoWidth(true);
-        grid.addColumn(FireStage::getHowManyMonths).setHeader("How many months?").setAutoWidth(true);
-
-        grid.addColumn(new ComponentRenderer<>(stage -> {
-            ProgressBar pb = new ProgressBar(0, 1, stage.getProgress());
-            pb.addClassName("fire-progress");
-            return pb;
-        })).setHeader("Progress").setFlexGrow(2);
-
-        grid.setItems(computeStages());
-        return grid;
-    }
-
-    private List<FireStage> computeStages() {
-        List<StageDef> stageDefs = Arrays.asList(
-                new StageDef("Initial Spark", BigDecimal.valueOf(1)),
-                new StageDef("First Milestone", BigDecimal.valueOf(2)),
-                new StageDef("Early Growth", BigDecimal.valueOf(5)),
-                new StageDef("Momentum Phase", BigDecimal.valueOf(10)),
-                new StageDef("Quarter Mark", BigDecimal.valueOf(25)),
-                new StageDef("Steady Path", BigDecimal.valueOf(35)),
-                new StageDef("Halfway There", BigDecimal.valueOf(50)),
-                new StageDef("Comfort Zone", BigDecimal.valueOf(60)),
-                new StageDef("Strong Position", BigDecimal.valueOf(70)),
-                new StageDef("Three-Quarters Mark", BigDecimal.valueOf(75)),
-                new StageDef("Lean FIRE", BigDecimal.valueOf(80)),
-                new StageDef("Full FIRE", BigDecimal.valueOf(100))
-        );
-
         // combined balance and total deposits
         BigDecimal combinedCurrentBalance = BigDecimal.ZERO;
         BigDecimal combinedTotalDeposits = BigDecimal.ZERO;
@@ -154,6 +92,85 @@ public class FirePathView extends VerticalLayout {
         long monthsBetween = ChronoUnit.MONTHS.between(firstDate.withDayOfMonth(1), lastDate.withDayOfMonth(1)) + 1;
         double avgMonthlyDeposit = monthsBetween > 0 ? combinedTotalDeposits.divide(BigDecimal.valueOf(monthsBetween), 18, RoundingMode.HALF_UP).doubleValue() : 0.0;
         double monthlyReturn = getMonthlyReturn(monthsBetween, combinedTotalDeposits, combinedCurrentBalance);
+
+        VerticalLayout content = new VerticalLayout();
+        content.addClassName("fire-content");
+        content.setSizeFull();
+        content.setPadding(true);
+        content.setSpacing(false);
+
+        Div stagesCard = createStagesCard(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn);
+
+        HorizontalLayout bottomRow = new HorizontalLayout();
+        bottomRow.addClassName("fire-bottom-row");
+        bottomRow.setWidthFull();
+
+        Component progressCard = createProgressCard(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn);
+
+        bottomRow.add(progressCard);
+        bottomRow.setFlexGrow(1, progressCard);
+
+        content.add(stagesCard, bottomRow);
+        content.setFlexGrow(1, stagesCard);
+        return content;
+    }
+
+    private Div createStagesCard(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn) {
+        Div card = new Div();
+        card.addClassName("fire-card");
+        card.setWidth("95%");
+        card.setHeightFull();
+
+        H3 title = new H3("FIRE Stages");
+        title.addClassName("card-title");
+
+        Grid<FireStage> grid = createStagesGrid(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn);
+
+        Span note = new Span(
+                "* Values are projections using historical deposits and an estimated monthly return after inflation (inflation = 3%).");
+        note.addClassName("card-note");
+
+        card.add(title, grid, note);
+        return card;
+    }
+
+    private Grid<FireStage> createStagesGrid(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn) {
+        Grid<FireStage> grid = new Grid<>(FireStage.class, false);
+        grid.addClassName("stages-grid");
+        grid.setWidthFull();
+        grid.setHeight("500px");
+
+        grid.addColumn(FireStage::getStageName).setHeader("Stage").setAutoWidth(true).setFlexGrow(2);
+        grid.addColumn(FireStage::getPercent).setHeader("% goal").setAutoWidth(true);
+        grid.addColumn(FireStage::getAmount).setHeader("Amount").setAutoWidth(true);
+        grid.addColumn(FireStage::getHowMuchLeft).setHeader("How much left").setAutoWidth(true);
+        grid.addColumn(FireStage::getHowManyMonths).setHeader("How many months?").setAutoWidth(true);
+
+        grid.addColumn(new ComponentRenderer<>(stage -> {
+            ProgressBar pb = new ProgressBar(0, 1, stage.getProgress());
+            pb.addClassName("fire-progress");
+            return pb;
+        })).setHeader("Progress").setFlexGrow(2);
+
+        grid.setItems(computeStages(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn));
+        return grid;
+    }
+
+    private List<FireStage> computeStages(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn) {
+        List<StageDef> stageDefs = Arrays.asList(
+                new StageDef("Initial Spark", BigDecimal.valueOf(1)),
+                new StageDef("First Milestone", BigDecimal.valueOf(2)),
+                new StageDef("Early Growth", BigDecimal.valueOf(5)),
+                new StageDef("Momentum Phase", BigDecimal.valueOf(10)),
+                new StageDef("Quarter Mark", BigDecimal.valueOf(25)),
+                new StageDef("Steady Path", BigDecimal.valueOf(35)),
+                new StageDef("Halfway There", BigDecimal.valueOf(50)),
+                new StageDef("Comfort Zone", BigDecimal.valueOf(60)),
+                new StageDef("Strong Position", BigDecimal.valueOf(70)),
+                new StageDef("Three-Quarters Mark", BigDecimal.valueOf(75)),
+                new StageDef("Lean FIRE", BigDecimal.valueOf(80)),
+                new StageDef("Full FIRE", BigDecimal.valueOf(100))
+        );
 
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
@@ -186,21 +203,6 @@ public class FirePathView extends VerticalLayout {
             result.add(new FireStage(def.name, percentLabel, amountLabel, howMuchLeftStr, monthsStr, progress));
         }
         return result;
-    }
-
-    private static double getMonthlyReturn(long monthsBetween, BigDecimal combinedTotalDeposits, BigDecimal combinedCurrentBalance) {
-        double years = monthsBetween / 12.0;
-
-        // annualized return
-        double annualReturn;
-        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
-            annualReturn = 0.0;
-        } else {
-            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
-            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
-        }
-
-        return (annualReturn - INFLATION.doubleValue()) / 12.0;
     }
 
     private double estimateMonthsToTarget(double current, double monthly, double monthlyReturn, double target) {
@@ -236,21 +238,12 @@ public class FirePathView extends VerticalLayout {
         else return String.format("%d mos", remMonths);
     }
 
-    private Component createProgressCard() {
+    private Component createProgressCard(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn) {
         Div card = new Div();
         card.addClassName("fire-card");
 
         H3 title = new H3("Goal progress and variance");
         title.addClassName("card-title");
-
-        HorizontalLayout legend = new HorizontalLayout();
-        legend.addClassName("card-legend");
-        legend.setSpacing(true);
-        legend.add(createLegendItem("Different returns (±2 pp)"), createLegendItem("Different deposits (±10%)"));
-
-        Div chartPlaceholder = new Div();
-        chartPlaceholder.addClassName("chart-placeholder");
-        chartPlaceholder.setText("Placeholder for chart (Vaadin Charts / other library)");
 
         Span sliderLabel = new Span("How many years do you invest?");
         sliderLabel.addClassName("section-label");
@@ -258,7 +251,7 @@ public class FirePathView extends VerticalLayout {
         NumberField yearsSlider = new NumberField();
         yearsSlider.setMin(0.0);
         yearsSlider.setMax(30.0);
-        yearsSlider.setValue(14.0);
+        yearsSlider.setValue(5.0);
         yearsSlider.setStep(1);
         yearsSlider.setWidthFull();
         yearsSlider.setStepButtonsVisible(true);
@@ -268,13 +261,8 @@ public class FirePathView extends VerticalLayout {
         metrics.setWidthFull();
         metrics.setSpacing(true);
 
-        BigDecimal combinedCurrentBalance = BigDecimal.ZERO;
-        for (Wallet wallet : wallets) {
-            UUID wId = wallet.getId();
-            List<BigDecimal> walletBalances = balances.getOrDefault(wId, Collections.emptyList());
-            if (walletBalances.isEmpty()) continue;
-            combinedCurrentBalance = combinedCurrentBalance.add(convert(walletBalances.get(walletBalances.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
-        }
+        ChartData result = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue().intValue());
+        FireProjectionChart chart = createFireChart(result.years(), result.baseline(), result.plus20(), result.minus20(), result.currentBalance());
 
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
@@ -288,23 +276,33 @@ public class FirePathView extends VerticalLayout {
         bottomInfo.addClassName("bottom-info");
         bottomInfo.setText("Target: " + nf.format(GLOBAL_TARGET) + ".");
 
-        card.add(title, legend, chartPlaceholder, sliderLabel, yearsSlider, metrics, bottomInfo);
+        yearsSlider.addValueChangeListener(yearsChanged -> {
+            synchronized (this) {
+                ChartData charData = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.getValue().intValue());
+                card.removeAll();
+                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), charData.currentBalance()), sliderLabel, yearsSlider, metrics, bottomInfo);
+            }
+        });
+
+        card.add(title, chart, sliderLabel, yearsSlider, metrics, bottomInfo);
         return card;
     }
 
-    private Component createLegendItem(String text) {
-        HorizontalLayout item = new HorizontalLayout();
-        item.setSpacing(true);
-        item.addClassName("legend-item");
+    private ChartData getChartData(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn, Integer yearsChanged) {
+        double currentBalance = combinedCurrentBalance.doubleValue();
+        List<Integer> years = new ArrayList<>();
+        List<Double> baseline = new ArrayList<>();
+        List<Double> plus20 = new ArrayList<>();
+        List<Double> minus20 = new ArrayList<>();
+        for (int y = 0; y <= yearsChanged; y++) {
+            years.add(y);
 
-        Div dot = new Div();
-        dot.addClassName("legend-dot");
-
-        Span label = new Span(text);
-        label.addClassName("legend-label");
-
-        item.add(dot, label);
-        return item;
+            baseline.add(futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, y * 12));
+            plus20.add(futureValue(currentBalance, avgMonthlyDeposit * 1.20, monthlyReturn, y * 12));
+            minus20.add(futureValue(currentBalance, avgMonthlyDeposit * 0.80, monthlyReturn, y * 12));
+        }
+        ChartData result = new ChartData(currentBalance, years, baseline, plus20, minus20);
+        return result;
     }
 
     private Component createMetric(String label, String value) {
@@ -323,6 +321,27 @@ public class FirePathView extends VerticalLayout {
 
     private BigDecimal convert(BigDecimal amount, CurrencyConverter.Currency fromCurrency, CurrencyConverter.Currency toCurrency) {
         return currencyConverter.convert(amount, fromCurrency, toCurrency);
+    }
+
+    private FireProjectionChart createFireChart(
+            List<Integer> years, List<Double> baseline, List<Double> plus20, List<Double> minus20, double currentBalance) {
+
+        FireProjectionChart chart = new FireProjectionChart(
+                years,
+                baseline,
+                plus20,
+                minus20,
+                currentBalance
+        );
+
+        chart.setWidth("100%");
+        chart.setHeight("400px");
+
+        return chart;
+    }
+
+    private record ChartData(double currentBalance, List<Integer> years, List<Double> baseline, List<Double> plus20,
+                             List<Double> minus20) {
     }
 
     private static class StageDef {
