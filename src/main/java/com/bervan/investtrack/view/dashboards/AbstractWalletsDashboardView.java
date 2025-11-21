@@ -251,15 +251,19 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         removeAll();
         add(new InvestTrackPageLayout(ROUTE_NAME, null));
         Tabs tabs = new Tabs();
+        Tab fire = new Tab("FIRE");
         Tab balance = new Tab("Balance");
         Tab earnings = new Tab("Earnings");
-        tabs.add(balance, earnings);
+        tabs.add(fire, balance, earnings);
         add(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector));
         add(tabs);
         add(content);
 
         tabs.addSelectedChangeListener(event -> {
             Tab selectedTab = event.getSelectedTab();
+            if (selectedTab.getLabel().equals("FIRE")) {
+                fireTab(wallets, dates, balances, deposits, sumOfDeposits);
+            }
             if (selectedTab.getLabel().equals("Balance")) {
                 balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
             } else if (selectedTab.getLabel().equals("Earnings")) {
@@ -267,8 +271,13 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             }
         });
 
-        tabs.setSelectedTab(balance);
+        tabs.setSelectedTab(fire);
         balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
+    }
+
+    private void fireTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
+        content.removeAll();
+        content.add(new FirePathView(currencyConverter, wallets, balances, sumOfDeposits, dates));
     }
 
     private void earningsTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
