@@ -127,7 +127,7 @@ public class FirePathView extends VerticalLayout {
         Grid<FireStage> grid = createStagesGrid(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn);
 
         Span note = new Span(
-                "* Values are projections using historical deposits and an estimated monthly return after inflation (inflation = 3%).");
+                "* Values are projections using historical deposits and an estimated monthly return after inflation (inflation = " + INFLATION.multiply(BigDecimal.valueOf(100L)).stripTrailingZeros().toPlainString() + "%).");
         note.addClassName("card-note");
 
         card.add(title, grid, note);
@@ -245,7 +245,7 @@ public class FirePathView extends VerticalLayout {
         H3 title = new H3("Goal progress and variance");
         title.addClassName("card-title");
 
-        Span sliderLabel = new Span("How many years do you invest?");
+        Span sliderLabel = new Span("How many years do you want to invest?");
         sliderLabel.addClassName("section-label");
 
         NumberField yearsSlider = new NumberField();
