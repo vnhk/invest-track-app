@@ -255,18 +255,24 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         Tab earnings = new Tab("Earnings");
         Tab fire = new Tab("FIRE");
         tabs.add(balance, earnings, fire);
-        add(new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector)));
         add(tabs);
+        VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector));
+        filtersLayout.setSpacing(true);
+        filtersLayout.setPadding(true);
+        add(filtersLayout);
         add(content);
 
         tabs.addSelectedChangeListener(event -> {
             Tab selectedTab = event.getSelectedTab();
 
             if (selectedTab.getLabel().equals("Balance")) {
+                filtersLayout.setVisible(true);
                 balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
             } else if (selectedTab.getLabel().equals("Earnings")) {
+                filtersLayout.setVisible(true);
                 earningsTab(wallets, dates, balances, deposits, sumOfDeposits);
             } else if (selectedTab.getLabel().equals("FIRE")) {
+                filtersLayout.setVisible(false);
                 fireTab(wallets, dates, balances, deposits, sumOfDeposits);
             }
         });
