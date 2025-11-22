@@ -267,9 +267,18 @@ public class FirePathView extends VerticalLayout {
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
 
+        double nextYearPrognosedCapital = futureValue(combinedCurrentBalance.doubleValue(), avgMonthlyDeposit, monthlyReturn, 12);
+        double nextYearPrognosedCapitalIf20PercentMore = futureValue(combinedCurrentBalance.doubleValue(), avgMonthlyDeposit * 1.2, monthlyReturn, 12);
+
+        BigDecimal monthlyReturnBd = BigDecimal.valueOf(monthlyReturn * 100)
+                .setScale(2, RoundingMode.HALF_UP);
+
         metrics.add(
                 createMetric("Current capital", nf.format(combinedCurrentBalance)),
-                createMetric("Target", nf.format(GLOBAL_TARGET))
+                createMetric("Prognosed next year capital", nf.format(nextYearPrognosedCapital)),
+                createMetric("Prognosed next year capital with 20% higher deposit", nf.format(nextYearPrognosedCapitalIf20PercentMore)),
+                createMetric("Average Monthly deposit", nf.format(avgMonthlyDeposit)),
+                createMetric("Monthly return", monthlyReturnBd + "%")
         );
 
         Div bottomInfo = new Div();

@@ -1,13 +1,24 @@
 package com.bervan.investtrack.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.EnumMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class CurrencyConverter {
 
     private final Map<Currency, BigDecimal> plnPerUnit = new EnumMap<>(Currency.class);
@@ -18,7 +29,7 @@ public class CurrencyConverter {
         this.scale = 4;
         this.roundingMode = RoundingMode.HALF_UP;
         plnPerUnit.put(Currency.PLN, BigDecimal.ONE);
-        plnPerUnit.put(Currency.EUR, new BigDecimal("4.30")); //load on startup
+        plnPerUnit.put(Currency.EUR, new BigDecimal("4.30"));
         plnPerUnit.put(Currency.USD, new BigDecimal("3.70"));
     }
 
@@ -26,6 +37,44 @@ public class CurrencyConverter {
         this.scale = scale;
         this.roundingMode = roundingMode;
         plnPerUnit.putAll(initialRates);
+    }
+
+    @PostConstruct
+    public void init() {
+        updateRates();
+    }
+
+    @Scheduled(cron = "0 0 3 * * *")
+    public void updateRates() {
+        try {
+            var client = HttpClient.newHttpClient();
+
+            // Request USD-based currency rates
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json"))
+                    .GET()
+                    .build();
+
+            // Execute request
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Parse JSON response
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.body());
+
+            // Extract PLN and EUR values relative to USD
+            // 1 USD = X PLN
+            BigDecimal usdToPln = root.get("usd").get("pln").decimalValue();
+            BigDecimal usdToEur = root.get("usd").get("eur").decimalValue();
+
+            setRate(Currency.PLN, BigDecimal.valueOf(1));
+            setRate(Currency.USD, usdToPln);
+            setRate(Currency.EUR, usdToPln.divide(usdToEur, MathContext.DECIMAL64));
+
+            log.info("Updated currency rates: {}", plnPerUnit.entrySet());
+        } catch (Exception e) {
+            log.error("Failed to update currency rates: {}", e.getMessage(), e);
+        }
     }
 
     /**
@@ -50,12 +99,6 @@ public class CurrencyConverter {
     public void setRate(Currency currency, BigDecimal plnPerUnitRate) {
         if (currency == null || plnPerUnitRate == null) throw new IllegalArgumentException("args must not be null");
         plnPerUnit.put(currency, plnPerUnitRate);
-    }
-
-    /** Bulk update of rates. */
-    public void updateRates(Map<Currency, BigDecimal> rates) {
-        if (rates == null) throw new IllegalArgumentException("rates must not be null");
-        plnPerUnit.putAll(rates);
     }
 
     public enum Currency {
