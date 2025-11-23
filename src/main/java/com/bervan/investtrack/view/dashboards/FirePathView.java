@@ -256,13 +256,23 @@ public class FirePathView extends VerticalLayout {
         yearsSlider.setWidthFull();
         yearsSlider.setStepButtonsVisible(true);
 
+        Span howMuchYouCanSaveInTotalLabel = new Span("How much to save in total (not only in investments)?");
+        howMuchYouCanSaveInTotalLabel.addClassName("section-label");
+        NumberField howMuchYouCanSaveInTotal = new NumberField();
+        howMuchYouCanSaveInTotal.setMin(avgMonthlyDeposit);
+        howMuchYouCanSaveInTotal.setMax(1000000.0);
+        howMuchYouCanSaveInTotal.setValue(avgMonthlyDeposit);
+        howMuchYouCanSaveInTotal.setStep(1000);
+        howMuchYouCanSaveInTotal.setWidthFull();
+        howMuchYouCanSaveInTotal.setStepButtonsVisible(true);
+
         HorizontalLayout metrics = new HorizontalLayout();
         metrics.addClassName("metrics-row");
         metrics.setWidthFull();
         metrics.setSpacing(true);
 
-        ChartData result = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue().intValue());
-        FireProjectionChart chart = createFireChart(result.years(), result.baseline(), result.plus20(), result.minus20(), result.onlyDeposits);
+        ChartData result = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue().intValue(), howMuchYouCanSaveInTotal.getValue());
+        FireProjectionChart chart = createFireChart(result.years(), result.baseline(), result.plus20(), result.minus20(), result.onlyDeposits, avgMonthlyDeposit, howMuchYouCanSaveInTotal.getValue());
 
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
@@ -285,32 +295,59 @@ public class FirePathView extends VerticalLayout {
         bottomInfo.addClassName("bottom-info");
         bottomInfo.setText("Target: " + nf.format(GLOBAL_TARGET) + ".");
 
-        yearsSlider.addValueChangeListener(yearsChanged -> {
-            synchronized (this) {
-                ChartData charData = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.getValue().intValue());
-                card.removeAll();
-                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), charData.onlyDeposits), sliderLabel, yearsSlider, metrics, bottomInfo);
-            }
+        howMuchYouCanSaveInTotal.addValueChangeListener(howMuchYouCanSaveInTotalChanged -> {
+            chartInputDataChanged(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue(), howMuchYouCanSaveInTotalChanged.getValue(),
+                    card, title, sliderLabel, yearsSlider, metrics, bottomInfo, howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal);
         });
 
-        card.add(title, chart, sliderLabel, yearsSlider, metrics, bottomInfo);
+        yearsSlider.addValueChangeListener(yearsChanged -> {
+            chartInputDataChanged(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.getValue(), howMuchYouCanSaveInTotal.getValue(), card, title, sliderLabel, yearsSlider, metrics, bottomInfo, howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal);
+        });
+
+        card.add(title, chart, new HorizontalLayout(
+                new VerticalLayout(sliderLabel, yearsSlider),
+                new VerticalLayout(howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal)
+        ), metrics, bottomInfo);
         return card;
     }
 
-    private ChartData getChartData(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn, Integer yearsChanged) {
+    private void chartInputDataChanged(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn, Double yearsChanged, Double howMuchYouSaveAMonth, Div card, H3 title, Span sliderLabel, NumberField yearsSlider, HorizontalLayout metrics, Div bottomInfo, Span howMuchYouCanSaveInTotalLabel, NumberField howMuchYouCanSaveInTotal) {
+        synchronized (this) {
+            ChartData charData = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.intValue(), howMuchYouSaveAMonth);
+            card.removeAll();
+            card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), charData.onlyDeposits, avgMonthlyDeposit, howMuchYouSaveAMonth),
+                    new HorizontalLayout(
+                            new VerticalLayout(sliderLabel, yearsSlider),
+                            new VerticalLayout(howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal)
+                    ), metrics, bottomInfo);
+        }
+    }
+
+    private ChartData getChartData(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn, Integer yearsChanged, Double howMuchYouSaveAMonth) {
         double currentBalance = combinedCurrentBalance.doubleValue();
         List<Integer> years = new ArrayList<>();
         List<Double> baseline = new ArrayList<>();
         List<Double> plus20 = new ArrayList<>();
         List<Double> minus20 = new ArrayList<>();
         List<Double> onlyDeposits = new ArrayList<>();
+        double monthly120 = avgMonthlyDeposit * 1.20;
+        double monthly120_otherSavings;
+        double monthly80 = avgMonthlyDeposit * 0.80;
+        double monthly80_otherSavings = howMuchYouSaveAMonth - monthly80;
+        double otherSavings = howMuchYouSaveAMonth - avgMonthlyDeposit;
+        if (monthly120 > howMuchYouSaveAMonth) {
+            monthly120 = howMuchYouSaveAMonth;
+            monthly120_otherSavings = 0;
+        } else {
+            monthly120_otherSavings = howMuchYouSaveAMonth - monthly120;
+        }
 
         for (int y = 0; y <= yearsChanged; y++) {
             years.add(y);
-            onlyDeposits.add(futureValue(currentBalance, avgMonthlyDeposit, 0, y * 12));
-            baseline.add(futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, y * 12));
-            plus20.add(futureValue(currentBalance, avgMonthlyDeposit * 1.20, monthlyReturn, y * 12));
-            minus20.add(futureValue(currentBalance, avgMonthlyDeposit * 0.80, monthlyReturn, y * 12));
+            onlyDeposits.add(futureValue(currentBalance, howMuchYouSaveAMonth, 0, y * 12));
+            baseline.add(otherSavings + futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, y * 12));
+            plus20.add(monthly120_otherSavings + futureValue(currentBalance, monthly120, monthlyReturn, y * 12));
+            minus20.add(monthly80_otherSavings + futureValue(currentBalance, monthly80, monthlyReturn, y * 12));
         }
 
         return new ChartData(currentBalance, years, baseline, plus20, minus20, onlyDeposits);
@@ -335,14 +372,17 @@ public class FirePathView extends VerticalLayout {
     }
 
     private FireProjectionChart createFireChart(
-            List<Integer> years, List<Double> baseline, List<Double> plus20, List<Double> minus20, List<Double> onlyDeposits) {
+            List<Integer> years, List<Double> baseline, List<Double> plus20, List<Double> minus20,
+            List<Double> onlyDeposits, double avgInvestmentForAMonth, double totalSavingForAMonth) {
 
         FireProjectionChart chart = new FireProjectionChart(
                 years,
                 baseline,
                 plus20,
                 minus20,
-                onlyDeposits
+                onlyDeposits,
+                avgInvestmentForAMonth,
+                totalSavingForAMonth
         );
 
         chart.setWidth("100%");

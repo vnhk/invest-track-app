@@ -134,7 +134,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
     });
 };
 
-window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, onlyDeposits) => {
+window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, onlyDeposits, avgInvestmentForAMonth, totalSavingForAMonth) => {
 
     let textColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--chart-text-color')
@@ -156,13 +156,28 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
 
     const ctx = canvas.getContext('2d');
 
+    avgInvestmentForAMonth = Math.round(avgInvestmentForAMonth);
+    totalSavingForAMonth = Math.round(totalSavingForAMonth);
+    let monthly80 = Math.round(avgInvestmentForAMonth * 0.8);
+    let monthly120 = Math.round(avgInvestmentForAMonth * 1.2);
+    let monthly120_otherSavings = 0;
+
+    if (monthly120 > totalSavingForAMonth) {
+        monthly120 = Math.round(totalSavingForAMonth);
+    } else {
+        monthly120_otherSavings = Math.round(totalSavingForAMonth - monthly120);
+    }
+
+    let currentlyNotInvested = Math.round(totalSavingForAMonth - avgInvestmentForAMonth);
+    let monthly80_notInvested = Math.round(totalSavingForAMonth - monthly80);
+
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: yearsLabels,
             datasets: [
                 {
-                    label: 'Baseline (current deposits)',
+                    label: 'Currently (' + avgInvestmentForAMonth + ' invested, ' + currentlyNotInvested + ' not invested)',
                     data: baseline,
                     borderColor: line1,
                     backgroundColor: line1,
@@ -170,7 +185,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: '+20% deposits',
+                    label: '+20% deposits (' + monthly120 + ' invested, ' + monthly120_otherSavings + ' not invested)',
                     data: plus20,
                     borderColor: line2,
                     backgroundColor: line2,
@@ -178,7 +193,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: '-20% deposits',
+                    label: '-20% deposits (' + monthly80 + ' invested, ' + monthly80_notInvested + ' not invested)',
                     data: minus20,
                     borderColor: line3,
                     backgroundColor: line3,
@@ -187,7 +202,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: 'Only deposits',
+                    label: 'Only deposits (' + totalSavingForAMonth + ' savings)',
                     data: onlyDeposits,
                     borderColor: 'red',
                     backgroundColor: 'red',

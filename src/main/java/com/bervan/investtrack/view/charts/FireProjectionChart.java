@@ -20,10 +20,12 @@ public class FireProjectionChart extends Component implements HasSize {
             List<Double> baseline,
             List<Double> plus20,
             List<Double> minus20,
-            List<Double> onlyDeposits
+            List<Double> onlyDeposits,
+            double avgInvestmentForAMonth,
+            double totalSavingForAMonth
     ) {
         setId("fireProjection_" + UUID.randomUUID());
-        renderChart(years, baseline, plus20, minus20, onlyDeposits);
+        renderChart(years, baseline, plus20, minus20, onlyDeposits, avgInvestmentForAMonth, totalSavingForAMonth);
     }
 
     private static JreJsonArray toArray(List<?> list) {
@@ -38,16 +40,21 @@ public class FireProjectionChart extends Component implements HasSize {
                              List<Double> baseline,
                              List<Double> plus20,
                              List<Double> minus20,
-                             List<Double> onlyDeposits) {
+                             List<Double> onlyDeposits,
+                             double avgInvestmentForAMonth,
+                             double totalSavingForAMonth
+    ) {
 
         UI.getCurrent().getPage().executeJs(
-                "window.renderFireProjectionChart($0, $1, $2, $3, $4, $5)",
+                "window.renderFireProjectionChart($0, $1, $2, $3, $4, $5, $6, $7)",
                 getElement(),
                 toArray(years),
                 toArray(baseline),
                 toArray(plus20),
                 toArray(minus20),
-                toArray(onlyDeposits)
+                toArray(onlyDeposits),
+                avgInvestmentForAMonth,
+                totalSavingForAMonth
         );
     }
 }
