@@ -323,31 +323,57 @@ public class FirePathView extends VerticalLayout {
         }
     }
 
-    private ChartData getChartData(BigDecimal combinedCurrentBalance, double avgMonthlyDeposit, double monthlyReturn, Integer yearsChanged, Double howMuchYouSaveAMonth) {
+    private ChartData getChartData(
+            BigDecimal combinedCurrentBalance,
+            double avgMonthlyDeposit,
+            double monthlyReturn,
+            Integer yearsChanged,
+            Double howMuchYouSaveAMonth
+    ) {
         double currentBalance = combinedCurrentBalance.doubleValue();
+
         List<Integer> years = new ArrayList<>();
         List<Double> baseline = new ArrayList<>();
         List<Double> plus20 = new ArrayList<>();
         List<Double> minus20 = new ArrayList<>();
         List<Double> onlyDeposits = new ArrayList<>();
-        double monthly120 = avgMonthlyDeposit * 1.20;
-        double monthly120_otherSavings;
+
+        // Calculate monthly strategies
         double monthly80 = avgMonthlyDeposit * 0.80;
-        double monthly80_otherSavings = howMuchYouSaveAMonth - monthly80;
-        double otherSavings = howMuchYouSaveAMonth - avgMonthlyDeposit;
+        double monthly120 = avgMonthlyDeposit * 1.20;
+
         if (monthly120 > howMuchYouSaveAMonth) {
             monthly120 = howMuchYouSaveAMonth;
-            monthly120_otherSavings = 0;
-        } else {
-            monthly120_otherSavings = howMuchYouSaveAMonth - monthly120;
         }
 
+        // Ensure strategies never violate total savings per month
+        monthly80 = Math.min(monthly80, howMuchYouSaveAMonth);
+        avgMonthlyDeposit = Math.min(avgMonthlyDeposit, howMuchYouSaveAMonth);
+
+        // Each scenario: invest X, save (howMuchYouSaveAMonth - X)
         for (int y = 0; y <= yearsChanged; y++) {
+            int months = y * 12;
             years.add(y);
-            onlyDeposits.add(futureValue(currentBalance, howMuchYouSaveAMonth, 0, y * 12));
-            baseline.add(otherSavings + futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, y * 12));
-            plus20.add(monthly120_otherSavings + futureValue(currentBalance, monthly120, monthlyReturn, y * 12));
-            minus20.add(monthly80_otherSavings + futureValue(currentBalance, monthly80, monthlyReturn, y * 12));
+
+            // Baseline (100% avgMonthlyDeposit)
+            double baselineInvest = futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, months);
+            double baselineSaved = futureValue(0, howMuchYouSaveAMonth - avgMonthlyDeposit, 0, months);
+            baseline.add(baselineInvest + baselineSaved);
+
+            // +20%
+            double plusInvest = futureValue(currentBalance, monthly120, monthlyReturn, months);
+            double plusSaved = futureValue(0, howMuchYouSaveAMonth - monthly120, 0, months);
+            plus20.add(plusInvest + plusSaved);
+
+            // -20%
+            double minusInvest = futureValue(currentBalance, monthly80, monthlyReturn, months);
+            double minusSaved = futureValue(0, howMuchYouSaveAMonth - monthly80, 0, months);
+            minus20.add(minusInvest + minusSaved);
+
+            // Only deposits (invest 0, save 100% of the monthly amount)
+            double onlyDep = futureValue(currentBalance, 0, monthlyReturn, 0) // current balance stays unchanged
+                    + futureValue(0, howMuchYouSaveAMonth, 0, months);
+            onlyDeposits.add(onlyDep);
         }
 
         return new ChartData(currentBalance, years, baseline, plus20, minus20, onlyDeposits);
