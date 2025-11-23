@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -129,19 +130,35 @@ public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
                     }
 
                     if (alertConfig.getPreviouslyNotifiedPrice() != null) {
-                        //not first notification
-                        Integer changeInPercentageToNotifyAgain = alertConfig.getAnotherNotificationEachPercentage();
-                        if (changeInPercentageToNotifyAgain != null) {
-                            BigDecimal changeInPercentage = actualPrice.subtract(alertConfig.getPreviouslyNotifiedPrice()).divide(alertConfig.getPreviouslyNotifiedPrice(), 2, BigDecimal.ROUND_HALF_UP);
-                            if (changeInPercentage.compareTo(BigDecimal.valueOf(changeInPercentageToNotifyAgain)) >= 0) {
-                                log.debug("Change in percentage is greater than {}. Sending notification again.", changeInPercentageToNotifyAgain);
-                                shouldAlert = true;
+                        Integer percentageStep = alertConfig.getAnotherNotificationEachPercentage();
+
+                        if (percentageStep != null) {
+                            BigDecimal changeInPercentage = actualPrice
+                                    .subtract(alertConfig.getPreviouslyNotifiedPrice())
+                                    .divide(alertConfig.getPreviouslyNotifiedPrice(), 4, RoundingMode.HALF_UP);
+
+                            BigDecimal threshold = BigDecimal.valueOf(percentageStep)
+                                    .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+                            boolean percentageTrigger = false;
+
+                            if (alertConfig.getOperator().equals(">=")) {
+                                // trigger only if change is positive and >= threshold
+                                percentageTrigger = changeInPercentage.compareTo(threshold) >= 0;
                             } else {
-                                log.debug("Change in percentage is less than {}. Skipping notification.", changeInPercentageToNotifyAgain);
+                                // trigger only if change is negative and <= -threshold
+                                percentageTrigger = changeInPercentage.compareTo(threshold.negate()) <= 0;
+                            }
+
+                            if (!percentageTrigger) {
+                                log.debug("Percentage change not enough: {} vs threshold {}", changeInPercentage, threshold);
                                 shouldAlert = false;
+                            } else {
+                                log.debug("Percentage change enough: {} vs threshold {}", changeInPercentage, threshold);
+                                shouldAlert = true;
                             }
                         } else {
-                            log.error("No change in percentage to notify again set. Skipping notification.");
+                            log.error("No percentage step configured. Skipping notification.");
                             shouldAlert = false;
                         }
                     }
