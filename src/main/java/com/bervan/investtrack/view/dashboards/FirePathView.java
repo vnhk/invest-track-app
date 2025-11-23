@@ -262,7 +262,7 @@ public class FirePathView extends VerticalLayout {
         metrics.setSpacing(true);
 
         ChartData result = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue().intValue());
-        FireProjectionChart chart = createFireChart(result.years(), result.baseline(), result.plus20(), result.minus20(), result.currentBalance());
+        FireProjectionChart chart = createFireChart(result.years(), result.baseline(), result.plus20(), result.minus20(), result.onlyDeposits);
 
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
         nf.setMaximumFractionDigits(0);
@@ -289,7 +289,7 @@ public class FirePathView extends VerticalLayout {
             synchronized (this) {
                 ChartData charData = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.getValue().intValue());
                 card.removeAll();
-                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), charData.currentBalance()), sliderLabel, yearsSlider, metrics, bottomInfo);
+                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), result.onlyDeposits), sliderLabel, yearsSlider, metrics, bottomInfo);
             }
         });
 
@@ -303,14 +303,17 @@ public class FirePathView extends VerticalLayout {
         List<Double> baseline = new ArrayList<>();
         List<Double> plus20 = new ArrayList<>();
         List<Double> minus20 = new ArrayList<>();
+        List<Double> onlyDeposits = new ArrayList<>();
+
         for (int y = 0; y <= yearsChanged; y++) {
             years.add(y);
-
+            onlyDeposits.add(futureValue(currentBalance, avgMonthlyDeposit, 0, y * 12));
             baseline.add(futureValue(currentBalance, avgMonthlyDeposit, monthlyReturn, y * 12));
             plus20.add(futureValue(currentBalance, avgMonthlyDeposit * 1.20, monthlyReturn, y * 12));
             minus20.add(futureValue(currentBalance, avgMonthlyDeposit * 0.80, monthlyReturn, y * 12));
         }
-        ChartData result = new ChartData(currentBalance, years, baseline, plus20, minus20);
+
+        ChartData result = new ChartData(currentBalance, years, baseline, plus20, minus20, onlyDeposits);
         return result;
     }
 
@@ -333,14 +336,14 @@ public class FirePathView extends VerticalLayout {
     }
 
     private FireProjectionChart createFireChart(
-            List<Integer> years, List<Double> baseline, List<Double> plus20, List<Double> minus20, double currentBalance) {
+            List<Integer> years, List<Double> baseline, List<Double> plus20, List<Double> minus20, List<Double> onlyDeposits) {
 
         FireProjectionChart chart = new FireProjectionChart(
                 years,
                 baseline,
                 plus20,
                 minus20,
-                currentBalance
+                onlyDeposits
         );
 
         chart.setWidth("100%");
@@ -350,7 +353,7 @@ public class FirePathView extends VerticalLayout {
     }
 
     private record ChartData(double currentBalance, List<Integer> years, List<Double> baseline, List<Double> plus20,
-                             List<Double> minus20) {
+                             List<Double> minus20, List<Double> onlyDeposits) {
     }
 
     private static class StageDef {

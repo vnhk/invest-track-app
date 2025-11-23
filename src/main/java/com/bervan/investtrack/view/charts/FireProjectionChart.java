@@ -7,8 +7,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.impl.JreJsonArray;
 import elemental.json.impl.JreJsonFactory;
-import elemental.json.impl.JreJsonNumber;
-import elemental.json.impl.JreJsonObject;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,10 +20,10 @@ public class FireProjectionChart extends Component implements HasSize {
             List<Double> baseline,
             List<Double> plus20,
             List<Double> minus20,
-            double currentBalance
+            List<Double> onlyDeposits
     ) {
         setId("fireProjection_" + UUID.randomUUID());
-        renderChart(years, baseline, plus20, minus20, currentBalance);
+        renderChart(years, baseline, plus20, minus20, onlyDeposits);
     }
 
     private static JreJsonArray toArray(List<?> list) {
@@ -40,7 +38,7 @@ public class FireProjectionChart extends Component implements HasSize {
                              List<Double> baseline,
                              List<Double> plus20,
                              List<Double> minus20,
-                             double currentBalance) {
+                             List<Double> onlyDeposits) {
 
         UI.getCurrent().getPage().executeJs(
                 "window.renderFireProjectionChart($0, $1, $2, $3, $4, $5)",
@@ -49,14 +47,7 @@ public class FireProjectionChart extends Component implements HasSize {
                 toArray(baseline),
                 toArray(plus20),
                 toArray(minus20),
-                createCurrentPoint(currentBalance)
+                toArray(onlyDeposits)
         );
-    }
-
-    private JreJsonObject createCurrentPoint(double currentBalance) {
-        JreJsonObject point = new JreJsonObject(new JreJsonFactory());
-        point.set("x", new JreJsonNumber(0));
-        point.set("y", new JreJsonNumber(currentBalance));
-        return point;
     }
 }

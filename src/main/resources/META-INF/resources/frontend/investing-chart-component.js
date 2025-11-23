@@ -134,7 +134,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
     });
 };
 
-window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, currentBalancePoint) => {
+window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, onlyDeposits) => {
 
     let textColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--chart-text-color')
@@ -184,6 +184,15 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     backgroundColor: line3,
                     borderWidth: 2,
                     borderDash: [5, 5],
+                    fill: false
+                },
+                {
+                    label: 'Only deposits',
+                    data: onlyDeposits,
+                    borderColor: 'red',
+                    backgroundColor: 'red',
+                    borderDash: [5, 5],
+                    borderWidth: 5,
                     fill: false
                 }
             ]
