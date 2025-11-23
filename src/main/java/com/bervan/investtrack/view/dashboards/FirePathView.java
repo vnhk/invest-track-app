@@ -289,7 +289,7 @@ public class FirePathView extends VerticalLayout {
             synchronized (this) {
                 ChartData charData = getChartData(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsChanged.getValue().intValue());
                 card.removeAll();
-                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), result.onlyDeposits), sliderLabel, yearsSlider, metrics, bottomInfo);
+                card.add(title, createFireChart(charData.years(), charData.baseline(), charData.plus20(), charData.minus20(), charData.onlyDeposits), sliderLabel, yearsSlider, metrics, bottomInfo);
             }
         });
 
@@ -313,8 +313,7 @@ public class FirePathView extends VerticalLayout {
             minus20.add(futureValue(currentBalance, avgMonthlyDeposit * 0.80, monthlyReturn, y * 12));
         }
 
-        ChartData result = new ChartData(currentBalance, years, baseline, plus20, minus20, onlyDeposits);
-        return result;
+        return new ChartData(currentBalance, years, baseline, plus20, minus20, onlyDeposits);
     }
 
     private Component createMetric(String label, String value) {
