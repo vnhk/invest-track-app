@@ -261,7 +261,7 @@ public class FirePathView extends VerticalLayout {
         NumberField howMuchYouCanSaveInTotal = new NumberField();
         howMuchYouCanSaveInTotal.setMin(avgMonthlyDeposit);
         howMuchYouCanSaveInTotal.setMax(1000000.0);
-        howMuchYouCanSaveInTotal.setValue(avgMonthlyDeposit);
+        howMuchYouCanSaveInTotal.setValue(Math.ceil(avgMonthlyDeposit));
         howMuchYouCanSaveInTotal.setStep(1000);
         howMuchYouCanSaveInTotal.setWidthFull();
         howMuchYouCanSaveInTotal.setStepButtonsVisible(true);
