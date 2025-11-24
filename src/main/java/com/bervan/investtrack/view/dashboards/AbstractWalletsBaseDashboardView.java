@@ -2,7 +2,6 @@ package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.model.Wallet;
-import com.bervan.investtrack.model.WalletSnapshot;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
@@ -14,7 +13,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
@@ -159,5 +159,43 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
         tile.setHeightFull();
 
         return tile;
+    }
+
+    protected Map<String, List<String>> filterDatesByRange(Map<String, List<String>> aggregatedDates, String fromDate, String toDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        LocalDate from = LocalDate.parse(fromDate);
+        LocalDate to = LocalDate.parse(toDate);
+
+        Map<String, List<String>> filteredDates = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : aggregatedDates.entrySet()) {
+            List<String> filteredList = entry.getValue().stream()
+                    .filter(dateStr -> {
+                        LocalDate date = LocalDate.parse(dateStr, formatter);
+                        return !date.isBefore(from) && !date.isAfter(to);
+                    })
+                    .toList();
+            filteredDates.put(entry.getKey(), filteredList);
+        }
+        return filteredDates;
+    }
+
+    protected Map<String, List<BigDecimal>> filterBigDecimalsByIndexes(Map<String, List<BigDecimal>> originalMap, Map<String, List<String>> filteredDates, Map<String, List<String>> originalDates) {
+        Map<String, List<BigDecimal>> filteredMap = new HashMap<>();
+
+        for (String key : originalMap.keySet()) {
+            List<String> originalDateList = originalDates.get(key);
+            List<String> filteredDateList = filteredDates.getOrDefault(key, List.of());
+            List<BigDecimal> originalDecimalList = originalMap.get(key);
+
+            // Map each index that is kept
+            List<BigDecimal> filteredDecimalList = new ArrayList<>();
+            for (int i = 0; i < originalDateList.size(); i++) {
+                if (filteredDateList.contains(originalDateList.get(i))) {
+                    filteredDecimalList.add(originalDecimalList.get(i));
+                }
+            }
+            filteredMap.put(key, filteredDecimalList);
+        }
+        return filteredMap;
     }
 }

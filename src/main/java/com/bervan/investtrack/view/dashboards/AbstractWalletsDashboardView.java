@@ -1,6 +1,7 @@
 package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.common.component.BervanComboBox;
+import com.bervan.common.component.BervanDatePicker;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Wallet;
@@ -30,6 +31,8 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final BervanComboBox<String> aggregationPeriodSelector = createAggregationPeriodSelector();
     private final BervanComboBox<String> aggregationSelector = createAggregationSelector();
     private final BervanComboBox<String> currencySelector = createCurrencySelector();
+    private final BervanDatePicker fromDateFilter = createDateFilter();
+    private final BervanDatePicker toDateFilter = createDateFilter();
     private final Map<UUID, List<String>> dates = new HashMap<>();
     private final Map<UUID, List<BigDecimal>> balances = new HashMap<>();
     private final Map<UUID, List<BigDecimal>> deposits = new HashMap<>();
@@ -50,6 +53,15 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
 
             List<Wallet> sortedWallets = wallets.stream().sorted(Comparator.comparing(Wallet::getReturnRate).reversed()).toList();
 
+            Optional<WalletSnapshot> minDateOpt = wallets.stream().flatMap(wallet -> wallet.getSnapshots().stream())
+                    .min(Comparator.comparing(WalletSnapshot::getSnapshotDate));
+
+            Optional<WalletSnapshot> maxDateOpt = wallets.stream().flatMap(wallet -> wallet.getSnapshots().stream())
+                    .max(Comparator.comparing(WalletSnapshot::getSnapshotDate));
+
+            minDateOpt.ifPresent(walletSnapshot -> fromDateFilter.setValue(walletSnapshot.getSnapshotDate()));
+            maxDateOpt.ifPresent(walletSnapshot -> toDateFilter.setValue(walletSnapshot.getSnapshotDate()));
+
             aggregationSelector.addValueChangeListener(event -> {
                 refreshDashboards(sortedWallets);
             });
@@ -67,7 +79,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     }
 
     private void refreshDashboards(List<Wallet> sortedWallets) {
-        sortedWallets = prepareData(sortedWallets);
+        sortedWallets = filterAndPrepareCopy(sortedWallets);
         allWalletsCalculations(sortedWallets);
         oneWalletCalculations(sortedWallets);
 
@@ -86,7 +98,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         }
     }
 
-    private List<Wallet> prepareData(List<Wallet> sortedWallets) {
+    private List<Wallet> filterAndPrepareCopy(List<Wallet> sortedWallets) {
         return sortedWallets.stream()
                 .map(original -> {
                     Wallet copy = new Wallet();
@@ -256,7 +268,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         Tab fire = new Tab("FIRE");
         tabs.add(balance, earnings, fire);
         add(tabs);
-        VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector));
+        VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
         filtersLayout.setSpacing(true);
         filtersLayout.setPadding(true);
         add(filtersLayout);
@@ -288,12 +300,12 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
 
     private void earningsTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         content.removeAll();
-        content.add(new WalletsEarningsView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector));
+        content.add(new WalletsEarningsView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter));
     }
 
     private void balanceTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         content.removeAll();
-        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector));
+        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter));
     }
 
     private BervanComboBox<String> createAggregationPeriodSelector() {
@@ -318,5 +330,11 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         monthsDropdown.setValue("PLN");
         monthsDropdown.setWidth("300px");
         return monthsDropdown;
+    }
+
+    private BervanDatePicker createDateFilter() {
+        BervanDatePicker bervanDatePicker = new BervanDatePicker();
+        bervanDatePicker.setWidth("300px");
+        return bervanDatePicker;
     }
 }
