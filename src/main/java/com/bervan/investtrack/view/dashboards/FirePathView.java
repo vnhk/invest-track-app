@@ -49,18 +49,21 @@ public class FirePathView extends VerticalLayout {
     }
 
     private static double getMonthlyReturn(long monthsBetween, BigDecimal combinedTotalDeposits, BigDecimal combinedCurrentBalance) {
-        double years = monthsBetween / 12.0;
-
-        // annualized return
-        double annualReturn;
-        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0) {
-            annualReturn = 0.0;
-        } else {
-            double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
-            annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
+        if (combinedTotalDeposits.compareTo(BigDecimal.ZERO) <= 0 || combinedCurrentBalance.compareTo(BigDecimal.ZERO) <= 0 || monthsBetween <= 0) {
+            return 0.0;
         }
 
-        return (annualReturn - INFLATION.doubleValue()) / 12.0;
+        double years = monthsBetween / 12.0;
+
+        // Compound Annual Growth Rate (CAGR)
+        double totalMultiplier = combinedCurrentBalance.divide(combinedTotalDeposits, 18, RoundingMode.HALF_UP).doubleValue();
+        double annualReturn = Math.pow(totalMultiplier, 1.0 / years) - 1.0;
+
+        // Adjust for inflation to get real annual return
+        double realAnnualReturn = (1 + annualReturn) / (1 + INFLATION.doubleValue()) - 1;
+
+        // Convert real annual return to monthly return
+        return Math.pow(1 + realAnnualReturn, 1.0 / 12.0) - 1;
     }
 
     private Component createMainContent() {
