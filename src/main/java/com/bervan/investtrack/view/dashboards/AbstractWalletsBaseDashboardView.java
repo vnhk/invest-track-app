@@ -24,29 +24,6 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
         setSizeFull();
     }
 
-    //can be used to calculate yearly return for a given wallet
-    public static BigDecimal calculateYearlyReturn(Wallet wallet, int year) {
-        List<WalletSnapshot> snapshots = wallet.getSnapshots()
-                .stream()
-                .filter(s -> s.getSnapshotDate().getYear() == year)
-                .sorted(Comparator.comparing(WalletSnapshot::getSnapshotDate))
-                .toList();
-
-        if (snapshots.isEmpty()) return BigDecimal.ZERO;
-
-        WalletSnapshot start = snapshots.get(0);
-        WalletSnapshot end = snapshots.get(snapshots.size() - 1);
-
-        BigDecimal netDeposits = snapshots.stream()
-                .map(s -> s.getMonthlyDeposit().subtract(s.getMonthlyWithdrawal()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return end.getPortfolioValue()
-                .subtract(start.getPortfolioValue().add(netDeposits))
-                .divide(start.getPortfolioValue().add(netDeposits), 18, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
-
     protected Div createCard(String title, Object value, VaadinIcon iconType) {
         Icon icon = iconType.create();
         icon.setSize("30px");
