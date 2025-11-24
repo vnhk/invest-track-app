@@ -1,6 +1,8 @@
 package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.common.view.AbstractPageView;
+import com.bervan.investtrack.model.Wallet;
+import com.bervan.investtrack.model.WalletSnapshot;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
@@ -12,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Slf4j
@@ -19,6 +22,29 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
 
     public AbstractWalletsBaseDashboardView() {
         setSizeFull();
+    }
+
+    //can be used to calculate yearly return for a given wallet
+    public static BigDecimal calculateYearlyReturn(Wallet wallet, int year) {
+        List<WalletSnapshot> snapshots = wallet.getSnapshots()
+                .stream()
+                .filter(s -> s.getSnapshotDate().getYear() == year)
+                .sorted(Comparator.comparing(WalletSnapshot::getSnapshotDate))
+                .toList();
+
+        if (snapshots.isEmpty()) return BigDecimal.ZERO;
+
+        WalletSnapshot start = snapshots.get(0);
+        WalletSnapshot end = snapshots.get(snapshots.size() - 1);
+
+        BigDecimal netDeposits = snapshots.stream()
+                .map(s -> s.getMonthlyDeposit().subtract(s.getMonthlyWithdrawal()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return end.getPortfolioValue()
+                .subtract(start.getPortfolioValue().add(netDeposits))
+                .divide(start.getPortfolioValue().add(netDeposits), 18, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
     }
 
     protected Div createCard(String title, Object value, VaadinIcon iconType) {
