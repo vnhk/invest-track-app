@@ -113,11 +113,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.vaadin</groupId>-->
-<!--            &lt;!&ndash; Replace artifactId with vaadin-core to use only free components &ndash;&gt;-->
-<!--            <artifactId>vaadin</artifactId>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>com.vaadin</groupId>-->
+        <!--            &lt;!&ndash; Replace artifactId with vaadin-core to use only free components &ndash;&gt;-->
+        <!--            <artifactId>vaadin</artifactId>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
@@ -144,6 +144,11 @@
                     <artifactId>hamcrest-core</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.bervan</groupId>
+            <artifactId>file-storage-app</artifactId>
+            <version>latest</version>
         </dependency>
     </dependencies>
 
