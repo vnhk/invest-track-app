@@ -33,9 +33,12 @@ public class StockPriceReportService {
     public static Integer minAmountOfTransactionsBestToInvest = 50;
     public static Integer minAmountOfTransactionsGoodToInvest = 25;
     public static Integer minAmountOfTransactionsRiskyToInvest = 5;
-    public static BigDecimal maxPercentageChangeBestToInvest = BigDecimal.valueOf(5);
+    public static BigDecimal maxPercentageChangeBestToInvest = BigDecimal.valueOf(10);
+    public static BigDecimal minPercentageChangeBestToInvest = BigDecimal.valueOf(1);
     public static BigDecimal maxPercentageChangeGoodToInvest = BigDecimal.valueOf(15);
+    public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(1);
     public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(50);
+    public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(5);
     private final BaseExcelExport baseExcelExport;
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
@@ -276,6 +279,7 @@ public class StockPriceReportService {
                 .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() >= minAmountOfTransactionsBestToInvest)
                 .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeBestToInvest) <= 0)
+                .filter(e -> e.getChangePercent().compareTo(minPercentageChangeBestToInvest) >= 0)
                 .toList();
     }
 
@@ -284,6 +288,7 @@ public class StockPriceReportService {
                 .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsGoodToInvest)
                 .filter(e -> e.getTransactions() >= minAmountOfTransactionsRiskyToInvest)
+                .filter(e -> e.getChangePercent().compareTo(minPercentageChangeRiskyToInvest) >= 0)
                 .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeRiskyToInvest) <= 0)
                 .toList();
     }
@@ -304,8 +309,8 @@ public class StockPriceReportService {
         return todayMorningData.stream()
                 .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsBestToInvest)
-//                .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest) //good are all on plus not risky and not best
-//                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeGoodToInvest) <= 0)
+                .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest)
+                .filter(e -> e.getChangePercent().compareTo(minPercentageChangeGoodToInvest) >= 0)
                 .filter(e -> !bestSymbols.contains(e.getSymbol()))
                 .filter(e -> !riskySymbols.contains(e.getSymbol()))
                 .toList();
