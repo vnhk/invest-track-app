@@ -142,43 +142,50 @@ public class StockPriceReportService {
         boolean today1030loaded = false;
         if (fileDiskStorageService.isTmpFile(today1030)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1030);
-            Workbook workbook = baseExcelImport.load(tmpFile.toFile());
+            try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
 
-            List<StockPriceData> data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
+                List<StockPriceData> data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
-            Map<String, StockPriceData> morningBySymbol = data.stream()
-                    .filter(d -> d.getSymbol() != null)
-                    .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
+                Map<String, StockPriceData> morningBySymbol = data.stream()
+                        .filter(d -> d.getSymbol() != null)
+                        .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
-            List<StockPriceData> risky = getRiskyToInvest(data); // we'll change signature
-            List<StockPriceData> best = getBestToInvest(data);
-            List<StockPriceData> good = getGoodToInvest(data, best, risky);
+                List<StockPriceData> risky = getRiskyToInvest(data); // we'll change signature
+                List<StockPriceData> best = getBestToInvest(data);
+                List<StockPriceData> good = getGoodToInvest(data, best, risky);
 
-            reportData.setBestToInvest(best);
-            reportData.setGoodToInvest(good);
-            reportData.setRiskyToInvest(risky);
+                reportData.setBestToInvest(best);
+                reportData.setGoodToInvest(good);
+                reportData.setRiskyToInvest(risky);
 
-            reportData.setMorningMap(morningBySymbol);
+                reportData.setMorningMap(morningBySymbol);
+
+                today1030loaded = true;
+            } catch (IOException e) {
+                log.error("Error loading excel file: " + tmpFile.toAbsolutePath(), e);
+            }
         }
 
         if (today1030loaded && fileDiskStorageService.isTmpFile(today1530)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1530);
-            Workbook workbook = baseExcelImport.load(tmpFile.toFile());
-            List<StockPriceData> today1530data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
+            try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
+                List<StockPriceData> today1530data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
-            reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
-            reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
-            reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
-            reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
-            reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
-            reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
+                reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
+                reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
+                reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
+                reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
+                reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
+                reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
 
-            reportData.setGoodInvestmentProbabilityBasedOnBestToday(calculateProbability(reportData.getGoodInvestmentsBasedOnBestRecommendation(), reportData.getBadInvestmentsBasedOnBestRecommendation()));
-            reportData.setGoodInvestmentProbabilityBasedOnGoodToday(calculateProbability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(), reportData.getBadInvestmentsBasedOnGoodRecommendation()));
-            reportData.setGoodInvestmentProbabilityBasedOnRiskyToday(calculateProbability(reportData.getGoodInvestmentsBasedOnRiskyRecommendation(), reportData.getBadInvestmentsBasedOnRiskyRecommendation()));
-            reportData.setGoodInvestmentTotalProbabilityBasedOnToday(calculateTotalProbability(reportData));
+                reportData.setGoodInvestmentProbabilityBasedOnBestToday(calculateProbability(reportData.getGoodInvestmentsBasedOnBestRecommendation(), reportData.getBadInvestmentsBasedOnBestRecommendation()));
+                reportData.setGoodInvestmentProbabilityBasedOnGoodToday(calculateProbability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(), reportData.getBadInvestmentsBasedOnGoodRecommendation()));
+                reportData.setGoodInvestmentProbabilityBasedOnRiskyToday(calculateProbability(reportData.getGoodInvestmentsBasedOnRiskyRecommendation(), reportData.getBadInvestmentsBasedOnRiskyRecommendation()));
+                reportData.setGoodInvestmentTotalProbabilityBasedOnToday(calculateTotalProbability(reportData));
+            } catch (IOException e) {
+                log.error("Error loading excel file: " + tmpFile.toAbsolutePath(), e);
+            }
         }
-
 
         return reportData;
     }
@@ -194,23 +201,21 @@ public class StockPriceReportService {
     }
 
     private BigDecimal calculateTotalProbability(ReportData reportData) {
-        BigDecimal sumOfGoodInvestments = BigDecimal.ZERO;
-        sumOfGoodInvestments = sumOfGoodInvestments
-                .add(nonNullScale(reportData.getGoodInvestmentProbabilityBasedOnBestToday()))
-                .add(nonNullScale(reportData.getGoodInvestmentProbabilityBasedOnGoodToday()))
-                .add(nonNullScale(reportData.getGoodInvestmentProbabilityBasedOnRiskyToday()));
+        int goodCount = safeSize(reportData.getGoodInvestmentsBasedOnBestRecommendation())
+                + safeSize(reportData.getGoodInvestmentsBasedOnGoodRecommendation())
+                + safeSize(reportData.getGoodInvestmentsBasedOnRiskyRecommendation());
 
-        BigDecimal sumOfBadInvestments = BigDecimal.valueOf(
-                safeSize(reportData.getBadInvestmentsBasedOnBestRecommendation())
-                        + safeSize(reportData.getBadInvestmentsBasedOnGoodRecommendation())
-                        + safeSize(reportData.getBadInvestmentsBasedOnRiskyRecommendation())
-        );
+        int badCount = safeSize(reportData.getBadInvestmentsBasedOnBestRecommendation())
+                + safeSize(reportData.getBadInvestmentsBasedOnGoodRecommendation())
+                + safeSize(reportData.getBadInvestmentsBasedOnRiskyRecommendation());
 
-        BigDecimal denominator = sumOfBadInvestments.add(sumOfGoodInvestments);
-        if (BigDecimal.ZERO.compareTo(denominator) == 0) {
+        int total = goodCount + badCount;
+        if (total == 0) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-        return sumOfGoodInvestments.divide(denominator, 2, RoundingMode.HALF_UP);
+
+        return BigDecimal.valueOf(goodCount)
+                .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
     }
 
     private BigDecimal nonNullScale(BigDecimal v) {
@@ -286,7 +291,7 @@ public class StockPriceReportService {
                 .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsBestToInvest)
                 .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest)
-                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeBestToInvest) <= 0)
+                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeGoodToInvest) <= 0)
                 .filter(e -> !bestSymbols.contains(e.getSymbol()))
                 .filter(e -> !riskySymbols.contains(e.getSymbol()))
                 .toList();
