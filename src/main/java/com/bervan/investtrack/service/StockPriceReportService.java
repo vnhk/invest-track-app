@@ -49,16 +49,24 @@ public class StockPriceReportService {
 
 
     @Scheduled(cron = "0 30 10 * * MON-FRI")
-    public void loadStockPricesMorning() throws IOException {
+    public void loadStockPricesMorning() {
         log.info("loadStockPricesMorning started");
-        loadStockPrices("10_30");
+        try {
+            loadStockPrices("10_30");
+        } catch (Exception e) {
+            log.error("Error loading morning stock prices", e);
+        }
         log.info("loadStockPricesMorning finished");
     }
 
     @Scheduled(cron = "0 30 15 * * MON-FRI")
-    public void loadStockPricesBeforeClose() throws IOException {
+    public void loadStockPricesBeforeClose() {
         log.info("loadStockPricesBeforeClose started");
-        loadStockPrices("15_30");
+        try {
+            loadStockPrices("15_30");
+        } catch (Exception e) {
+            log.error("Error loading evening stock prices", e);
+        }
         log.info("loadStockPricesBeforeClose finished");
     }
 

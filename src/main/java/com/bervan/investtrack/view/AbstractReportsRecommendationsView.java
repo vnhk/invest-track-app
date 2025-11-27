@@ -37,18 +37,10 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         }
 
         BervanButton triggerMorning = new BervanButton("Trigger Morning", buttonClickEvent -> {
-            try {
-                stockPriceReportService.loadStockPricesMorning();
-            } catch (Exception e) {
-                showErrorNotification("Error loading stock prices: " + e.getMessage());
-            }
+            stockPriceReportService.loadStockPricesMorning();
         });
         BervanButton triggerEvening = new BervanButton("Trigger Evening", buttonClickEvent -> {
-            try {
-                stockPriceReportService.loadStockPricesBeforeClose();
-            } catch (Exception e) {
-                showErrorNotification("Error loading stock prices: " + e.getMessage());
-            }
+            stockPriceReportService.loadStockPricesBeforeClose();
         });
         add(new HorizontalLayout(triggerMorning, triggerEvening));
         add(tabs);
