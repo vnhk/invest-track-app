@@ -185,7 +185,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnBestToday();
             content.add(new H3("Probability of making good investment today: "
-                    + probability.setScale(2, BigDecimal.ROUND_HALF_UP) + "%"));
+                    + probability + "%"));
         }
     }
 }
