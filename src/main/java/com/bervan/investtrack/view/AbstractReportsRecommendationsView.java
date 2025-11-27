@@ -55,6 +55,25 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         showBestToInvest(reportData);
     }
 
+    private TextField getSearch(ListDataProvider<StockPriceData> dataProvider) {
+        TextField search = new TextField();
+        search.setPlaceholder("Search...");
+        search.setClearButtonVisible(true);
+
+        // Filter logic
+        search.addValueChangeListener(e -> {
+            String filterText = e.getValue().trim().toLowerCase();
+            dataProvider.clearFilters();
+
+            if (!filterText.isEmpty()) {
+                dataProvider.addFilter(item ->
+                        item.getSymbol().toLowerCase().contains(filterText)
+                );
+            }
+        });
+        return search;
+    }
+
     private Tabs getTabs(ReportData reportData) {
         Tabs tabs = new Tabs();
         Tab bestToInvestToday = new Tab("Best to invest today");
@@ -117,21 +136,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         ListDataProvider<StockPriceData> dataProvider = new ListDataProvider<>(data);
         grid.setDataProvider(dataProvider);
 
-        TextField search = new TextField();
-        search.setPlaceholder("Search...");
-        search.setClearButtonVisible(true);
-
-        // Filter logic
-        search.addValueChangeListener(e -> {
-            String filterText = e.getValue().trim().toLowerCase();
-            dataProvider.clearFilters();
-
-            if (!filterText.isEmpty()) {
-                dataProvider.addFilter(item ->
-                        item.getSymbol().toLowerCase().contains(filterText)
-                );
-            }
-        });
+        TextField search = getSearch(dataProvider);
 
         return new VerticalLayout(search, grid);
     }
