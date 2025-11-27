@@ -51,7 +51,7 @@ public class StockPriceReportService {
     }
 
 
-    @Scheduled(cron = "0 30 10 * * MON-FRI")
+    @Scheduled(cron = "0 30 10 * * MON-FRI", zone = "Europe/Warsaw")
     public void loadStockPricesMorning() {
         log.info("loadStockPricesMorning started");
         try {
@@ -62,11 +62,11 @@ public class StockPriceReportService {
         log.info("loadStockPricesMorning finished");
     }
 
-    @Scheduled(cron = "0 30 15 * * MON-FRI")
+    @Scheduled(cron = "0 30 17 * * MON-FRI", zone = "Europe/Warsaw")
     public void loadStockPricesBeforeClose() {
         log.info("loadStockPricesBeforeClose started");
         try {
-            loadStockPrices("15_30");
+            loadStockPrices("17_30");
         } catch (Exception e) {
             log.error("Error loading evening stock prices", e);
         }
@@ -147,14 +147,14 @@ public class StockPriceReportService {
         LocalDate yesterday = now.minusDays(1);
         String today1030 = "STOCKS_PL_" + now.getDayOfMonth() + "_"
                 + now.getMonthValue() + "_" + "10_30" + ".xlsx";
-        String today1530 = "STOCKS_PL_" + now.getDayOfMonth() + "_"
-                + now.getMonthValue() + "_" + "15_30" + ".xlsx";
+        String today1730 = "STOCKS_PL_" + now.getDayOfMonth() + "_"
+                + now.getMonthValue() + "_" + "17_30" + ".xlsx";
 
         String yesterday1030 = "STOCKS_PL_" + yesterday.getDayOfMonth() + "_"
                 + yesterday.getMonthValue() + "_" + "10_30" + ".xlsx";
-        String yesterday1530 = "STOCKS_PL_" + yesterday.getDayOfMonth() + "_"
-                + yesterday.getMonthValue() + "_" + "15_30" + ".xlsx";
-        //check how many + stocks increased at 15_30 yesterday and show %
+        String yesterday1730 = "STOCKS_PL_" + yesterday.getDayOfMonth() + "_"
+                + yesterday.getMonthValue() + "_" + "17_30" + ".xlsx";
+        //check how many + stocks increased at 17_30 yesterday and show %
 
         boolean today1030loaded = false;
         if (fileDiskStorageService.isTmpFile(today1030)) {
@@ -183,17 +183,17 @@ public class StockPriceReportService {
             }
         }
 
-        if (today1030loaded && fileDiskStorageService.isTmpFile(today1530)) {
-            Path tmpFile = fileDiskStorageService.getTmpFile(today1530);
+        if (today1030loaded && fileDiskStorageService.isTmpFile(today1730)) {
+            Path tmpFile = fileDiskStorageService.getTmpFile(today1730);
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
-                List<StockPriceData> today1530data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
+                List<StockPriceData> today1730data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
-                reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
-                reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
-                reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
-                reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1530data));
-                reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1530data));
-                reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1530data));
+                reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1730data));
+                reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1730data));
+                reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1730data));
+                reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1730data));
+                reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1730data));
+                reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1730data));
 
                 reportData.setGoodInvestmentProbabilityBasedOnBestToday(calculateProbability(reportData.getGoodInvestmentsBasedOnBestRecommendation(), reportData.getBadInvestmentsBasedOnBestRecommendation()));
                 reportData.setGoodInvestmentProbabilityBasedOnGoodToday(calculateProbability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(), reportData.getBadInvestmentsBasedOnGoodRecommendation()));
@@ -243,9 +243,9 @@ public class StockPriceReportService {
         return (l == null) ? 0 : l.size();
     }
 
-    private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1530) {
+    private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
         // English: create map for fast lookup of afternoon data by symbol
-        Map<String, StockPriceData> afternoonMap = todays1530.stream()
+        Map<String, StockPriceData> afternoonMap = todays1730.stream()
                 .filter(d -> d.getSymbol() != null)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
@@ -259,8 +259,8 @@ public class StockPriceReportService {
         return good;
     }
 
-    private List<StockPriceData> getBadInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1530) {
-        Map<String, StockPriceData> afternoonMap = todays1530.stream()
+    private List<StockPriceData> getBadInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
+        Map<String, StockPriceData> afternoonMap = todays1730.stream()
                 .filter(d -> d.getSymbol() != null)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
