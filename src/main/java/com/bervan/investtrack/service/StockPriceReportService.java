@@ -1,6 +1,5 @@
 package com.bervan.investtrack.service;
 
-import com.bervan.core.model.BervanLogger;
 import com.bervan.filestorage.model.BervanMockMultiPartFile;
 import com.bervan.filestorage.service.FileDiskStorageService;
 import com.bervan.ieentities.BaseExcelExport;
@@ -44,10 +43,10 @@ public class StockPriceReportService {
     private final FileDiskStorageService fileDiskStorageService;
     private final String URL = "https://www.bankier.pl/gielda/notowania/akcje";
 
-    protected StockPriceReportService(BervanLogger logger, FileDiskStorageService fileDiskStorageService) {
+    protected StockPriceReportService(FileDiskStorageService fileDiskStorageService) {
         this.fileDiskStorageService = fileDiskStorageService;
         baseExcelExport = new BaseExcelExport();
-        baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class), logger);
+        baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
     }
 
 

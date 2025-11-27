@@ -4,7 +4,6 @@ import com.bervan.common.component.BervanButton;
 import com.bervan.common.component.BervanButtonStyle;
 import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.view.AbstractPageView;
-import com.bervan.core.model.BervanLogger;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Constants;
 import com.bervan.investtrack.model.Wallet;
@@ -41,7 +40,6 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private final WalletService service;
 
     private final WalletSnapshotService snapshotService;
-    private final BervanLogger bervanLogger;
 
     private Wallet wallet;
 
@@ -62,10 +60,9 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private WalletSnapshotListView snapshotsView;
     private final BervanViewConfig bervanViewConfig;
 
-    public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanLogger bervanLogger, BervanViewConfig bervanViewConfig) {
+    public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanViewConfig bervanViewConfig) {
         super();
         this.service = service;
-        this.bervanLogger = bervanLogger;
         this.snapshotService = snapshotService;
         this.bervanViewConfig = bervanViewConfig;
     }
@@ -119,7 +116,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     }
 
     private void createSnapshotForm() {
-        snapshotsView = new WalletSnapshotListView(snapshotService, bervanLogger, wallet, bervanViewConfig);
+        snapshotsView = new WalletSnapshotListView(snapshotService, wallet, bervanViewConfig);
         snapshotsView.renderCommonComponents();
     }
 
