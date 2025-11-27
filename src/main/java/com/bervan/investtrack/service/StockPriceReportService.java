@@ -150,7 +150,7 @@ public class StockPriceReportService {
                         .filter(d -> d.getSymbol() != null)
                         .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
-                List<StockPriceData> risky = getRiskyToInvest(data); // we'll change signature
+                List<StockPriceData> risky = getRiskyToInvest(data);
                 List<StockPriceData> best = getBestToInvest(data);
                 List<StockPriceData> good = getGoodToInvest(data, best, risky);
 
@@ -290,8 +290,8 @@ public class StockPriceReportService {
         return todayMorningData.stream()
                 .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsBestToInvest)
-                .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest)
-                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeGoodToInvest) <= 0)
+//                .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest) //good are all on plus not risky and not best
+//                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeGoodToInvest) <= 0)
                 .filter(e -> !bestSymbols.contains(e.getSymbol()))
                 .filter(e -> !riskySymbols.contains(e.getSymbol()))
                 .toList();
