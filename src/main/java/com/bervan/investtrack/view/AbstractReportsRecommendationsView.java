@@ -39,7 +39,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
         if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
             add(new H3("Total probability of making good investment today: "
-                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday().setScale(2, BigDecimal.ROUND_HALF_UP) + "%"));
+                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday() + "%"));
         }
 
         BervanButton triggerMorning = new BervanButton("Trigger Morning", buttonClickEvent -> {
@@ -101,7 +101,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnGoodToday();
             content.add(new H3("Probability of making good investment today: "
-                    + probability.setScale(2, BigDecimal.ROUND_HALF_UP) + "%"));
+                    + probability + "%"));
         }
     }
 
@@ -159,7 +159,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnRiskyToday();
             content.add(new H3("Probability of making good investment today: "
-                    + probability.setScale(2, BigDecimal.ROUND_HALF_UP) + "%"));
+                    + probability + "%"));
         }
     }
 
