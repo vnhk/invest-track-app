@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class AbstractReportsRecommendationsView extends AbstractPageView {
@@ -109,18 +111,28 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         content.add(new H3("Good to invest today:"));
         content.add(goodGrid);
 
-        if (!reportData.getGoodInvestmentsBasedOnGoodRecommendation().isEmpty()) {
-            VerticalLayout goodAfternoonGrid = getGrid(reportData.getGoodInvestmentsBasedOnGoodRecommendation());
-            content.add(new H3("Good investments you could make today based on recommendations:"));
-            content.add(goodAfternoonGrid);
+        Map<String, BigDecimal> morningMap = toMorningMap(reportData.getGoodToInvest());
 
-            VerticalLayout badAfternoonGrid = getGrid(reportData.getBadInvestmentsBasedOnGoodRecommendation());
+        if (!reportData.getGoodInvestmentsBasedOnGoodRecommendation().isEmpty()) {
+
+            content.add(new H3("Good investments you could make today based on recommendations:"));
+            content.add(
+                    getGridWithMorningDiff(
+                            reportData.getGoodInvestmentsBasedOnGoodRecommendation(),
+                            morningMap
+                    )
+            );
+
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
-            content.add(badAfternoonGrid);
+            content.add(
+                    getGridWithMorningDiff(
+                            reportData.getBadInvestmentsBasedOnGoodRecommendation(),
+                            morningMap
+                    )
+            );
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnGoodToday();
-            content.add(new H3("Probability of making good investment today: "
-                    + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability + "%"));
         }
     }
 
@@ -152,19 +164,28 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         VerticalLayout goodGrid = getGrid(reportData.getRiskyToInvest());
         content.add(new H3("Risky to invest today:"));
         content.add(goodGrid);
+        Map<String, BigDecimal> morningMap = toMorningMap(reportData.getRiskyToInvest());
 
         if (!reportData.getGoodInvestmentsBasedOnRiskyRecommendation().isEmpty()) {
-            VerticalLayout goodAfternoonGrid = getGrid(reportData.getGoodInvestmentsBasedOnRiskyRecommendation());
-            content.add(new H3("Good investments you could make today based on recommendations:"));
-            content.add(goodAfternoonGrid);
 
-            VerticalLayout badAfternoonGrid = getGrid(reportData.getBadInvestmentsBasedOnRiskyRecommendation());
+            content.add(new H3("Good investments you could make today based on recommendations:"));
+            content.add(
+                    getGridWithMorningDiff(
+                            reportData.getGoodInvestmentsBasedOnRiskyRecommendation(),
+                            morningMap
+                    )
+            );
+
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
-            content.add(badAfternoonGrid);
+            content.add(
+                    getGridWithMorningDiff(
+                            reportData.getBadInvestmentsBasedOnRiskyRecommendation(),
+                            morningMap
+                    )
+            );
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnRiskyToday();
-            content.add(new H3("Probability of making good investment today: "
-                    + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability + "%"));
         }
     }
 
@@ -179,18 +200,52 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         content.add(new H3("Best to invest today:"));
         content.add(goodGrid);
 
-        if (!reportData.getGoodInvestmentsBasedOnBestRecommendation().isEmpty()) {
-            VerticalLayout goodAfternoonGrid = getGrid(reportData.getGoodInvestmentsBasedOnBestRecommendation());
-            content.add(new H3("Good investments you could make today based on recommendations:"));
-            content.add(goodAfternoonGrid);
+        Map<String, BigDecimal> morningMap = toMorningMap(reportData.getBestToInvest());
 
-            VerticalLayout badAfternoonGrid = getGrid(reportData.getBadInvestmentsBasedOnBestRecommendation());
+        if (!reportData.getGoodInvestmentsBasedOnBestRecommendation().isEmpty()) {
+            content.add(new H3("Good investments you could make today based on recommendations:"));
+            content.add(getGridWithMorningDiff(reportData.getGoodInvestmentsBasedOnBestRecommendation(), morningMap));
+
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
-            content.add(badAfternoonGrid);
+            content.add(getGridWithMorningDiff(reportData.getBadInvestmentsBasedOnBestRecommendation(), morningMap));
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnBestToday();
-            content.add(new H3("Probability of making good investment today: "
-                    + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability + "%"));
         }
+    }
+
+    private Map<String, BigDecimal> toMorningMap(List<StockPriceData> morningData) {
+        return morningData.stream()
+                .collect(Collectors.toMap(
+                        StockPriceData::getSymbol,
+                        StockPriceData::getChangePercent
+                ));
+    }
+
+    private VerticalLayout getGridWithMorningDiff(List<StockPriceData> data,
+                                                  Map<String, BigDecimal> morningMap) {
+
+        Grid<StockPriceData> grid = new Grid<>(StockPriceData.class);
+        grid.setColumns("symbol", "changePercent", "transactions");
+
+        grid.addColumn(item -> {
+            BigDecimal morning = morningMap.get(item.getSymbol());
+            if (morning == null) return "-";
+
+            return item.getChangePercent()
+                    .subtract(morning)
+                    .toString();
+        }).setHeader("Diff vs Morning (%)");
+
+        Grid.Column<StockPriceData> changeCol = grid.getColumnByKey("changePercent");
+        grid.sort(Collections.singletonList(
+                new GridSortOrder<>(changeCol, SortDirection.DESCENDING)
+        ));
+
+        ListDataProvider<StockPriceData> dataProvider = new ListDataProvider<>(data);
+        grid.setDataProvider(dataProvider);
+
+        TextField search = getSearch(dataProvider);
+        return new VerticalLayout(search, grid);
     }
 }
