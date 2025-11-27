@@ -50,12 +50,16 @@ public class StockPriceReportService {
 
     @Scheduled(cron = "0 30 10 * * MON-FRI")
     public void loadStockPricesMorning() throws IOException {
+        log.info("loadStockPricesMorning started");
         loadStockPrices("10_30");
+        log.info("loadStockPricesMorning finished");
     }
 
     @Scheduled(cron = "0 30 15 * * MON-FRI")
     public void loadStockPricesBeforeClose() throws IOException {
+        log.info("loadStockPricesBeforeClose started");
         loadStockPrices("15_30");
+        log.info("loadStockPricesBeforeClose finished");
     }
 
     private void loadStockPrices(String x) throws IOException {
@@ -93,9 +97,10 @@ public class StockPriceReportService {
             results.add(item);
         }
 
+        log.info("Loaded " + results.size() + " stock prices");
+
         String filename = "STOCKS_PL_" + now.getDayOfMonth() + "_"
                 + now.getMonthValue() + "_" + x + ".xlsx";
-
 
         try (Workbook workbook = baseExcelExport.exportExcel(results, null)) {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -104,6 +109,7 @@ public class StockPriceReportService {
             fileDiskStorageService.storeTmp(new BervanMockMultiPartFile(filename, filename, Files.probeContentType(Path.of(filename)),
                     new ByteArrayInputStream(byteArray)), filename);
 
+            log.info("Saved stock data excel file: " + filename);
         }
     }
 

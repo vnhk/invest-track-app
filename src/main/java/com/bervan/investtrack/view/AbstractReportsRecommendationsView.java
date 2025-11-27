@@ -1,5 +1,6 @@
 package com.bervan.investtrack.view;
 
+import com.bervan.common.component.BervanButton;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceData;
@@ -7,6 +8,7 @@ import com.bervan.investtrack.service.ReportData;
 import com.bervan.investtrack.service.StockPriceReportService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -34,6 +36,21 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
                     + reportData.getGoodInvestmentTotalProbabilityBasedOnToday().setScale(2, BigDecimal.ROUND_HALF_UP) + "%"));
         }
 
+        BervanButton triggerMorning = new BervanButton("Trigger Morning", buttonClickEvent -> {
+            try {
+                stockPriceReportService.loadStockPricesMorning();
+            } catch (Exception e) {
+                showErrorNotification("Error loading stock prices: " + e.getMessage());
+            }
+        });
+        BervanButton triggerEvening = new BervanButton("Trigger Evening", buttonClickEvent -> {
+            try {
+                stockPriceReportService.loadStockPricesBeforeClose();
+            } catch (Exception e) {
+                showErrorNotification("Error loading stock prices: " + e.getMessage());
+            }
+        });
+        add(new HorizontalLayout(triggerMorning, triggerEvening));
         add(tabs);
         add(content);
 
