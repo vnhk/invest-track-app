@@ -71,18 +71,18 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         }
 
 
-        Grid<StockPriceData> goodGrid = new Grid<>(StockPriceData.class);
+        Grid<StockPriceData> goodGrid = getGrid();
         goodGrid.setItems(reportData.getGoodToInvest());
         content.add(new H3("Good to invest today:"));
         content.add(goodGrid);
 
         if (!reportData.getGoodInvestmentsBasedOnGoodRecommendation().isEmpty()) {
-            Grid<StockPriceData> goodAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> goodAfternoonGrid = getGrid();
             goodAfternoonGrid.setItems(reportData.getGoodInvestmentsBasedOnGoodRecommendation());
             content.add(new H3("Good investments you could make today based on recommendations:"));
             content.add(goodAfternoonGrid);
 
-            Grid<StockPriceData> badAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> badAfternoonGrid = getGrid();
             goodGrid.setItems(reportData.getBadInvestmentsBasedOnGoodRecommendation());
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
             content.add(badAfternoonGrid);
@@ -93,6 +93,12 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         }
     }
 
+    private Grid<StockPriceData> getGrid() {
+        Grid<StockPriceData> stockPriceDataGrid = new Grid<>(StockPriceData.class);
+        stockPriceDataGrid.setColumns("symbol", "price", "changePercent", "transactions");
+        return stockPriceDataGrid;
+    }
+
     private void showRiskyToInvest(ReportData reportData) {
         content.removeAll();
 
@@ -101,18 +107,18 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
             return;
         }
 
-        Grid<StockPriceData> goodGrid = new Grid<>(StockPriceData.class);
+        Grid<StockPriceData> goodGrid = getGrid();
         goodGrid.setItems(reportData.getRiskyToInvest());
         content.add(new H3("Risky to invest today:"));
         content.add(goodGrid);
 
         if (!reportData.getGoodInvestmentsBasedOnRiskyRecommendation().isEmpty()) {
-            Grid<StockPriceData> goodAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> goodAfternoonGrid = getGrid();
             goodAfternoonGrid.setItems(reportData.getGoodInvestmentsBasedOnRiskyRecommendation());
             content.add(new H3("Good investments you could make today based on recommendations:"));
             content.add(goodAfternoonGrid);
 
-            Grid<StockPriceData> badAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> badAfternoonGrid = getGrid();
             goodGrid.setItems(reportData.getBadInvestmentsBasedOnRiskyRecommendation());
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
             content.add(badAfternoonGrid);
@@ -130,18 +136,18 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
             return;
         }
 
-        Grid<StockPriceData> goodGrid = new Grid<>(StockPriceData.class);
+        Grid<StockPriceData> goodGrid = getGrid();
         content.add(new H3("Best to invest today:"));
         goodGrid.setItems(reportData.getBestToInvest());
         content.add(goodGrid);
 
         if (!reportData.getGoodInvestmentsBasedOnBestRecommendation().isEmpty()) {
-            Grid<StockPriceData> goodAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> goodAfternoonGrid = getGrid();
             goodAfternoonGrid.setItems(reportData.getGoodInvestmentsBasedOnBestRecommendation());
             content.add(new H3("Good investments you could make today based on recommendations:"));
             content.add(goodAfternoonGrid);
 
-            Grid<StockPriceData> badAfternoonGrid = new Grid<>(StockPriceData.class);
+            Grid<StockPriceData> badAfternoonGrid = getGrid();
             goodGrid.setItems(reportData.getBadInvestmentsBasedOnBestRecommendation());
             content.add(new H3("Bad investments you could make today.... based on recommendations:"));
             content.add(badAfternoonGrid);
