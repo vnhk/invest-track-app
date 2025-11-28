@@ -139,21 +139,20 @@ public class StockPriceReportService {
         return Integer.valueOf(text.replace(" ", "").trim());
     }
 
-    public ReportData loadReportData() {
+    public ReportData loadReportData(LocalDate day) {
         ReportData reportData = new ReportData();
 
-        LocalDate now = LocalDate.now();
-        LocalDate yesterday = now.minusDays(1);
-        String today1030 = "STOCKS_PL_" + now.getDayOfMonth() + "_"
-                + now.getMonthValue() + "_" + "10_30" + ".xlsx";
-        String today1730 = "STOCKS_PL_" + now.getDayOfMonth() + "_"
-                + now.getMonthValue() + "_" + "17_30" + ".xlsx";
+        LocalDate dayBefore = day.minusDays(1);
+        String today1030 = "STOCKS_PL_" + day.getDayOfMonth() + "_"
+                + day.getMonthValue() + "_" + "10_30" + ".xlsx";
+        String today1730 = "STOCKS_PL_" + day.getDayOfMonth() + "_"
+                + day.getMonthValue() + "_" + "17_30" + ".xlsx";
 
-        String yesterday1030 = "STOCKS_PL_" + yesterday.getDayOfMonth() + "_"
-                + yesterday.getMonthValue() + "_" + "10_30" + ".xlsx";
-        String yesterday1730 = "STOCKS_PL_" + yesterday.getDayOfMonth() + "_"
-                + yesterday.getMonthValue() + "_" + "17_30" + ".xlsx";
-        //check how many + stocks increased at 17_30 yesterday and show %
+        String yesterday1030 = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
+                + dayBefore.getMonthValue() + "_" + "10_30" + ".xlsx";
+        String yesterday1730 = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
+                + dayBefore.getMonthValue() + "_" + "17_30" + ".xlsx";
+        //check how many + stocks increased at 17_30 dayBefore and show %
 
         boolean today1030loaded = false;
         if (fileDiskStorageService.isTmpFile(today1030)) {

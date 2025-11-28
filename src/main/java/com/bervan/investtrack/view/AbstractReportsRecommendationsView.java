@@ -1,6 +1,7 @@
 package com.bervan.investtrack.view;
 
 import com.bervan.common.component.BervanButton;
+import com.bervan.common.component.BervanDatePicker;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceData;
@@ -19,6 +20,7 @@ import com.vaadin.flow.data.provider.SortDirection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,30 +32,38 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
     private final StockPriceReportService stockPriceReportService;
     private final VerticalLayout content = new VerticalLayout();
+    private final VerticalLayout tabsContent = new VerticalLayout();
 
-    protected AbstractReportsRecommendationsView(StockPriceReportService stockPriceReportService, StockPriceReportService stockPriceReportService1) {
-        this.stockPriceReportService = stockPriceReportService1;
+    protected AbstractReportsRecommendationsView(StockPriceReportService stockPriceReportService) {
         add(new InvestTrackPageLayout(ROUTE_NAME, null));
-
-        ReportData reportData = stockPriceReportService.loadReportData();
-
-        Tabs tabs = getTabs(reportData);
-
-        if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
-            add(new H3("Total probability of making good investment today: "
-                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday() + "%"));
-        }
-
+        this.stockPriceReportService = stockPriceReportService;
         BervanButton triggerMorning = new BervanButton("Trigger Morning", buttonClickEvent -> {
             stockPriceReportService.loadStockPricesMorning();
         });
         BervanButton triggerEvening = new BervanButton("Trigger Evening", buttonClickEvent -> {
             stockPriceReportService.loadStockPricesBeforeClose();
         });
-        add(new HorizontalLayout(triggerMorning, triggerEvening));
-        add(tabs);
+        BervanDatePicker datePicker = new BervanDatePicker();
+        datePicker.setValue(LocalDate.now());
+        datePicker.addValueChangeListener(e -> {
+            buildView(stockPriceReportService, e.getValue());
+        });
+        add(new HorizontalLayout(triggerMorning, triggerEvening, datePicker));
+        add(tabsContent);
         add(content);
 
+        buildView(stockPriceReportService, LocalDate.now());
+    }
+
+    private void buildView(StockPriceReportService stockPriceReportService, LocalDate value) {
+        tabsContent.removeAll();
+        ReportData reportData = stockPriceReportService.loadReportData(value);
+        Tabs tabs = getTabs(reportData);
+        if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
+            tabs.add(new H3("Total probability of making good investment today: "
+                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday() + "%"));
+        }
+        tabsContent.add(tabs);
         showBestToInvest(reportData);
     }
 
