@@ -157,6 +157,7 @@ public class StockPriceReportService {
         boolean today1030loaded = false;
         if (fileDiskStorageService.isTmpFile(today1030)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1030);
+            log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
 
                 List<StockPriceData> data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
@@ -183,6 +184,7 @@ public class StockPriceReportService {
 
         if (today1030loaded && fileDiskStorageService.isTmpFile(today1730)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1730);
+            log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
                 List<StockPriceData> today1730data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
