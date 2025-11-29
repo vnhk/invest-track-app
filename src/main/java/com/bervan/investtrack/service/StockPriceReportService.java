@@ -249,7 +249,7 @@ public class StockPriceReportService {
     private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
         Map<String, StockPriceData> afternoonMap = todays1730.stream()
                 .filter(d -> d.getSymbol() != null)
-                .filter(d -> d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(d -> d.getChangePercent().compareTo(BigDecimal.ZERO) >= 0)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
         List<StockPriceData> good = new ArrayList<>();
@@ -270,7 +270,7 @@ public class StockPriceReportService {
         List<StockPriceData> bad = new ArrayList<>();
         for (StockPriceData rec : recommendationData) {
             StockPriceData aft = afternoonMap.get(rec.getSymbol());
-            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(rec.getChangePercent()) <= 0) {
+            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(rec.getChangePercent()) < 0) {
                 bad.add(aft);
             }
         }
@@ -314,6 +314,7 @@ public class StockPriceReportService {
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsBestToInvest)
                 .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest)
                 .filter(e -> e.getChangePercent().compareTo(minPercentageChangeGoodToInvest) >= 0)
+                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeGoodToInvest) <= 0)
                 .filter(e -> !bestSymbols.contains(e.getSymbol()))
                 .filter(e -> !riskySymbols.contains(e.getSymbol()))
                 .toList();

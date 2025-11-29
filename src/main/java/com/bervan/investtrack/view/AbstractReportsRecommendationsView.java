@@ -61,7 +61,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         Tabs tabs = getTabs(reportData);
         if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
             tabsContent.add(new H3("Total probability of making good investment today: "
-                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday() + "%"));
+                    + reportData.getGoodInvestmentTotalProbabilityBasedOnToday().multiply(BigDecimal.valueOf(100)) + "%"));
         }
         tabsContent.add(tabs);
         showBestToInvest(reportData);
@@ -142,7 +142,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
             );
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnGoodToday();
-            content.add(new H3("Probability of making good investment today: " + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability.multiply(BigDecimal.valueOf(100)) + "%"));
         }
     }
 
@@ -195,7 +195,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
             );
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnRiskyToday();
-            content.add(new H3("Probability of making good investment today: " + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability.multiply(BigDecimal.valueOf(100)) + "%"));
         }
     }
 
@@ -220,7 +220,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
             content.add(getGridWithMorningDiff(reportData.getBadInvestmentsBasedOnBestRecommendation(), morningMap));
 
             BigDecimal probability = reportData.getGoodInvestmentProbabilityBasedOnBestToday();
-            content.add(new H3("Probability of making good investment today: " + probability + "%"));
+            content.add(new H3("Probability of making good investment today: " + probability.multiply(BigDecimal.valueOf(100)) + "%"));
         }
     }
 
