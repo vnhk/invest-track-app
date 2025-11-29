@@ -60,7 +60,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         ReportData reportData = stockPriceReportService.loadReportData(value);
         Tabs tabs = getTabs(reportData);
         if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
-            tabs.add(new H3("Total probability of making good investment today: "
+            tabsContent.add(new H3("Total probability of making good investment today: "
                     + reportData.getGoodInvestmentTotalProbabilityBasedOnToday() + "%"));
         }
         tabsContent.add(tabs);
