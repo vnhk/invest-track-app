@@ -219,10 +219,13 @@ public class StockPriceReportService {
         int goodCount = safeSize(reportData.getGoodInvestmentsBasedOnBestRecommendation())
                 + safeSize(reportData.getGoodInvestmentsBasedOnGoodRecommendation())
                 + safeSize(reportData.getGoodInvestmentsBasedOnRiskyRecommendation());
+        log.info("calculateTotalProbability: Good count: " + goodCount);
 
         int badCount = safeSize(reportData.getBadInvestmentsBasedOnBestRecommendation())
                 + safeSize(reportData.getBadInvestmentsBasedOnGoodRecommendation())
                 + safeSize(reportData.getBadInvestmentsBasedOnRiskyRecommendation());
+
+        log.info("calculateTotalProbability: Bad count: " + badCount);
 
         int total = goodCount + badCount;
         if (total == 0) {
@@ -242,15 +245,15 @@ public class StockPriceReportService {
     }
 
     private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
-        // English: create map for fast lookup of afternoon data by symbol
         Map<String, StockPriceData> afternoonMap = todays1730.stream()
                 .filter(d -> d.getSymbol() != null)
+                .filter(d -> d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
         List<StockPriceData> good = new ArrayList<>();
         for (StockPriceData rec : recommendationData) {
             StockPriceData aft = afternoonMap.get(rec.getSymbol());
-            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(BigDecimal.ZERO) > 0) {
+            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(rec.getChangePercent()) > 0) {
                 good.add(aft);
             }
         }
@@ -265,7 +268,7 @@ public class StockPriceReportService {
         List<StockPriceData> bad = new ArrayList<>();
         for (StockPriceData rec : recommendationData) {
             StockPriceData aft = afternoonMap.get(rec.getSymbol());
-            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(BigDecimal.ZERO) <= 0) {
+            if (aft != null && aft.getChangePercent() != null && aft.getChangePercent().compareTo(rec.getChangePercent()) <= 0) {
                 bad.add(aft);
             }
         }
