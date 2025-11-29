@@ -1,16 +1,16 @@
 package com.bervan.investtrack.service;
 
+import com.bervan.common.service.PlaywrightService;
 import com.bervan.filestorage.model.BervanMockMultiPartFile;
 import com.bervan.filestorage.service.FileDiskStorageService;
 import com.bervan.ieentities.BaseExcelExport;
 import com.bervan.ieentities.BaseExcelImport;
 import com.bervan.investtrack.model.StockPriceData;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -40,10 +40,12 @@ public class StockPriceReportService {
     public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(5);
     private final BaseExcelExport baseExcelExport;
     private final BaseExcelImport baseExcelImport;
+    private final PlaywrightService playwrightService;
     private final FileDiskStorageService fileDiskStorageService;
     private final String URL = "https://www.bankier.pl/gielda/notowania/akcje";
 
-    protected StockPriceReportService(FileDiskStorageService fileDiskStorageService) {
+    protected StockPriceReportService(PlaywrightService playwrightService, FileDiskStorageService fileDiskStorageService) {
+        this.playwrightService = playwrightService;
         this.fileDiskStorageService = fileDiskStorageService;
         baseExcelExport = new BaseExcelExport();
         baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
@@ -72,71 +74,82 @@ public class StockPriceReportService {
         log.info("loadStockPricesBeforeClose finished");
     }
 
-    private void loadStockPrices(String x) throws IOException {
-        Document doc = Jsoup.connect(URL).get();
-
-        Element table = doc.select("table.sortTable").first();
-        Elements rows = table.select("tbody tr");
-
-        List<StockPriceData> results = new ArrayList<>();
+    private void loadStockPrices(String x) {
         LocalDate now = LocalDate.now();
 
-        long i = 0;
-        for (Element row : rows) {
-            Elements cols = row.select("td");
+        try (Playwright playwright = Playwright.create()) {
+            Page page = playwrightService.getPage(playwright, true);
+            page.navigate(URL);
 
-            StockPriceData item = new StockPriceData();
-            try {
-                item.setId(i++);
-                item.setSymbol(getString(cols.select(".colWalor")));
-                item.setPrice(getBigDecimal(cols.select(".colKurs")));
-                item.setChange(getBigDecimal(cols.select(".colZmiana")));
-                item.setChangePercent(getBigDecimal(cols.select(".colZmianaProcentowa")));
-                item.setTransactions(getInteger(cols.select(".colLiczbaTransakcji")));
-                item.setDate(getString(cols.select(".colAktualizacja")));
-                String dateToCheck = now.getDayOfMonth() + "." + now.getMonthValue();
-                String date = item.getDate();
-                if (!date.contains(dateToCheck)) {
-                    continue;
+            List<Locator> rows = page.locator("table.sortTable tbody tr").all();
+
+            List<StockPriceData> results = new ArrayList<>();
+            long i = 0;
+
+            for (Locator row : rows) {
+                try {
+                    StockPriceData item = new StockPriceData();
+                    item.setId(i++);
+
+                    // Extract values from the row
+                    item.setSymbol(row.locator(".colWalor").innerText().trim());
+                    item.setPrice(getBigDecimal(row.locator(".colKurs").innerText().trim()));
+                    item.setChange(getBigDecimal(row.locator(".colZmiana").innerText().trim()));
+                    item.setChangePercent(getBigDecimal(row.locator(".colZmianaProcentowa").innerText().trim()));
+                    item.setTransactions(getInteger(row.locator(".colLiczbaTransakcji").innerText().trim()));
+                    item.setDate(row.locator(".colAktualizacja").innerText().trim());
+
+                    // Filter by today
+                    String dateToCheck = now.getDayOfMonth() + "." + now.getMonthValue();
+                    if (!item.getDate().contains(dateToCheck)) {
+                        continue;
+                    }
+
+                    results.add(item);
+
+                } catch (Exception e) {
+                    log.debug("Error loading stock price data", e);
                 }
-
-            } catch (Exception e) {
-                continue;
             }
 
-            results.add(item);
-        }
+            log.info("Loaded " + results.size() + " stock prices");
 
-        log.info("Loaded " + results.size() + " stock prices");
+            String filename = "STOCKS_PL_" + now.getDayOfMonth() + "_"
+                    + now.getMonthValue() + "_" + x + ".xlsx";
 
-        String filename = "STOCKS_PL_" + now.getDayOfMonth() + "_"
-                + now.getMonthValue() + "_" + x + ".xlsx";
+            try (Workbook workbook = baseExcelExport.exportExcel(results, null)) {
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                workbook.write(outputStream);
+                byte[] byteArray = outputStream.toByteArray();
 
-        try (Workbook workbook = baseExcelExport.exportExcel(results, null)) {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            workbook.write(outputStream);
-            byte[] byteArray = outputStream.toByteArray();
-            fileDiskStorageService.storeTmp(new BervanMockMultiPartFile(filename, filename, Files.probeContentType(Path.of(filename)),
-                    new ByteArrayInputStream(byteArray)), filename);
+                fileDiskStorageService.storeTmp(
+                        new BervanMockMultiPartFile(
+                                filename,
+                                filename,
+                                Files.probeContentType(Path.of(filename)),
+                                new ByteArrayInputStream(byteArray)
+                        ),
+                        filename
+                );
 
-            log.info("Saved stock data excel file: " + filename);
+                log.info("Saved stock data excel file: " + filename);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to load stock prices", e);
         }
     }
 
-    private String getString(Elements select) {
-        return select.get(0).text();
-    }
 
-    private BigDecimal getBigDecimal(Elements select) {
-        String text = select.get(0).text();
+    private BigDecimal getBigDecimal(String text) {
         return BigDecimal.valueOf(Double.parseDouble(text.replace(",", ".")
+                .replace(" ", "")
                 .replace("%", "")
                 .replace(" ", "")));
     }
 
-    private Integer getInteger(Elements select) {
-        String text = select.get(0).text();
-        return Integer.valueOf(text.replace(" ", "").trim());
+    private Integer getInteger(String text) {
+        return Integer.valueOf(text.replace(" ", "").replace(" ", "").trim());
     }
 
     public ReportData loadReportData(LocalDate day) {

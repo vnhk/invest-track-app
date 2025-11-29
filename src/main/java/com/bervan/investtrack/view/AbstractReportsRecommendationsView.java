@@ -1,5 +1,7 @@
 package com.bervan.investtrack.view;
 
+import com.bervan.asynctask.AsyncTask;
+import com.bervan.asynctask.AsyncTaskService;
 import com.bervan.common.component.BervanButton;
 import com.bervan.common.component.BervanDatePicker;
 import com.bervan.common.view.AbstractPageView;
@@ -18,6 +20,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,18 +35,18 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
     public static final String ROUTE_NAME = "/invest-track-app/recommendations";
 
     private final StockPriceReportService stockPriceReportService;
+    private final AsyncTaskService asyncTaskService;
     private final VerticalLayout content = new VerticalLayout();
     private final VerticalLayout tabsContent = new VerticalLayout();
 
-    protected AbstractReportsRecommendationsView(StockPriceReportService stockPriceReportService) {
-        add(new InvestTrackPageLayout(ROUTE_NAME, null));
+    protected AbstractReportsRecommendationsView(StockPriceReportService stockPriceReportService, AsyncTaskService asyncTaskService) {
         this.stockPriceReportService = stockPriceReportService;
-        BervanButton triggerMorning = new BervanButton("Trigger Morning", buttonClickEvent -> {
-            stockPriceReportService.loadStockPricesMorning();
-        });
-        BervanButton triggerEvening = new BervanButton("Trigger Evening", buttonClickEvent -> {
-            stockPriceReportService.loadStockPricesBeforeClose();
-        });
+        this.asyncTaskService = asyncTaskService;
+        add(new InvestTrackPageLayout(ROUTE_NAME, null));
+
+        BervanButton triggerMorning = getTriggerMorning(stockPriceReportService, asyncTaskService);
+        BervanButton triggerEvening = getTriggerEvening(stockPriceReportService, asyncTaskService);
+
         BervanDatePicker datePicker = new BervanDatePicker();
         datePicker.setValue(LocalDate.now());
         datePicker.addValueChangeListener(e -> {
@@ -53,6 +57,52 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         add(content);
 
         buildView(stockPriceReportService, LocalDate.now());
+    }
+
+    private BervanButton getTriggerMorning(StockPriceReportService stockPriceReportService, AsyncTaskService asyncTaskService) {
+        return new BervanButton("Trigger Morning", buttonClickEvent -> {
+            try {
+                SecurityContext context = SecurityContextHolder.getContext();
+
+                AsyncTask newAsyncTask = asyncTaskService.createAndStoreAsyncTask();
+                showPrimaryNotification("Morning report is being generated. Please wait.");
+                new Thread(() -> {
+                    SecurityContextHolder.setContext(context);
+                    AsyncTask asyncTask = asyncTaskService.setInProgress(newAsyncTask, "Excel file is being generated.");
+                    try {
+                        stockPriceReportService.loadStockPricesMorning();
+                        asyncTaskService.setFinished(asyncTask, "Morning recommendation report generated successfully.");
+                    } catch (Exception e) {
+                        asyncTaskService.setFailed(asyncTask, e.getMessage());
+                    }
+                }).start();
+            } catch (Exception e) {
+                showErrorNotification(e.getMessage());
+            }
+        });
+    }
+
+    private BervanButton getTriggerEvening(StockPriceReportService stockPriceReportService, AsyncTaskService asyncTaskService) {
+        return new BervanButton("Trigger Evening", buttonClickEvent -> {
+            try {
+                SecurityContext context = SecurityContextHolder.getContext();
+
+                AsyncTask newAsyncTask = asyncTaskService.createAndStoreAsyncTask();
+                showPrimaryNotification("Evening report is being generated. Please wait.");
+                new Thread(() -> {
+                    SecurityContextHolder.setContext(context);
+                    AsyncTask asyncTask = asyncTaskService.setInProgress(newAsyncTask, "Excel file is being generated.");
+                    try {
+                        stockPriceReportService.loadStockPricesBeforeClose();
+                        asyncTaskService.setFinished(asyncTask, "Evening recommendation report generated successfully.");
+                    } catch (Exception e) {
+                        asyncTaskService.setFailed(asyncTask, e.getMessage());
+                    }
+                }).start();
+            } catch (Exception e) {
+                showErrorNotification(e.getMessage());
+            }
+        });
     }
 
     private void buildView(StockPriceReportService stockPriceReportService, LocalDate value) {
