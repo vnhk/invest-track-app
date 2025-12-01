@@ -1,7 +1,7 @@
 package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.common.view.AbstractPageView;
-import com.bervan.investtrack.model.Wallet;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
@@ -10,15 +10,14 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Slf4j
 public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView {
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     public AbstractWalletsBaseDashboardView() {
         setSizeFull();

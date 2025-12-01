@@ -8,12 +8,12 @@ import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.WalletService;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
@@ -23,10 +23,10 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
-@Slf4j
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/wallets-dashboard/";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
     private final VerticalLayout content = new VerticalLayout();
     private final BervanComboBox<String> aggregationPeriodSelector = createAggregationPeriodSelector();
     private final BervanComboBox<String> aggregationSelector = createAggregationSelector();

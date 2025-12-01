@@ -1,6 +1,6 @@
 package com.bervan.investtrack.service.scrap;
 
-import lombok.extern.slf4j.Slf4j;
+import com.bervan.logging.JsonLogger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,11 +10,10 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
-@Slf4j
 public class GPWScrapStockPriceService implements ScrapStockPriceService {
-
     public static final String GPW = "GPW";
     public static final String BASE = "https://www.gpw.pl";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     @Override
     public Optional<BigDecimal> getStockPrice(String symbol) {

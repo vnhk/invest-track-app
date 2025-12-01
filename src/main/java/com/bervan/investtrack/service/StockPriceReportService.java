@@ -6,10 +6,10 @@ import com.bervan.filestorage.service.FileDiskStorageService;
 import com.bervan.ieentities.BaseExcelExport;
 import com.bervan.ieentities.BaseExcelImport;
 import com.bervan.investtrack.model.StockPriceData;
+import com.bervan.logging.JsonLogger;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 public class StockPriceReportService {
     public static Integer minAmountOfTransactionsBestToInvest = 50;
     public static Integer minAmountOfTransactionsGoodToInvest = 25;
@@ -38,6 +37,7 @@ public class StockPriceReportService {
     public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(1);
     public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(50);
     public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(5);
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
     private final BaseExcelExport baseExcelExport;
     private final BaseExcelImport baseExcelImport;
     private final PlaywrightService playwrightService;

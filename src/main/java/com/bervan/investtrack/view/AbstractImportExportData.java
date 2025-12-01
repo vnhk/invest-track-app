@@ -5,13 +5,13 @@ import com.bervan.common.service.BaseService;
 import com.bervan.common.view.AbstractDataIEView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.WalletSnapshot;
-import lombok.extern.slf4j.Slf4j;
+import com.bervan.logging.JsonLogger;
 
 import java.util.UUID;
 
-@Slf4j
 public abstract class AbstractImportExportData extends AbstractDataIEView<UUID, WalletSnapshot> {
     public static final String ROUTE_NAME = "/invest-track-app/import-export-data";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     public AbstractImportExportData(BaseService<UUID, WalletSnapshot> dataService, BervanViewConfig bervanViewConfig) {
         super(dataService, new InvestTrackPageLayout(ROUTE_NAME, null), bervanViewConfig, WalletSnapshot.class);

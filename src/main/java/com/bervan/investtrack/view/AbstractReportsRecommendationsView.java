@@ -9,6 +9,7 @@ import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceData;
 import com.bervan.investtrack.service.ReportData;
 import com.bervan.investtrack.service.StockPriceReportService;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.H3;
@@ -19,7 +20,6 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
 public abstract class AbstractReportsRecommendationsView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/recommendations";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     private final StockPriceReportService stockPriceReportService;
     private final AsyncTaskService asyncTaskService;

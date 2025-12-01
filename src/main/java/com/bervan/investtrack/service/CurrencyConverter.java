@@ -1,9 +1,9 @@
 package com.bervan.investtrack.service;
 
+import com.bervan.logging.JsonLogger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +18,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class CurrencyConverter {
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     private final Map<Currency, BigDecimal> plnPerUnit = new EnumMap<>(Currency.class);
     private final int scale;

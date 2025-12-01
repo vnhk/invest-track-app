@@ -9,6 +9,7 @@ import com.bervan.investtrack.model.Constants;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.WalletSnapshotService;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -27,26 +28,23 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Slf4j
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletView extends AbstractPageView implements HasUrlParameter<String> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets/";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     private final WalletService service;
 
     private final WalletSnapshotService snapshotService;
-
+    private final BervanViewConfig bervanViewConfig;
     private Wallet wallet;
-
     // UI Components
     private Tabs tabSheet;
     private VerticalLayout contentArea;
-
     // Wallet form components
     private TextField nameField;
     private TextArea descriptionField;
@@ -55,10 +53,8 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private BervanButton saveWalletBtn;
     private BervanButton editWalletBtn;
     private Binder<Wallet> walletBinder = new Binder<>(Wallet.class);
-
     private boolean editMode = false;
     private WalletSnapshotListView snapshotsView;
-    private final BervanViewConfig bervanViewConfig;
 
     public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanViewConfig bervanViewConfig) {
         super();
