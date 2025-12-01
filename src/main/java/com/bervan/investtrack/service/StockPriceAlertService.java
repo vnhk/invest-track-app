@@ -1,5 +1,6 @@
 package com.bervan.investtrack.service;
 
+import com.bervan.logging.JsonLogger;
 import com.bervan.common.search.SearchRequest;
 import com.bervan.common.search.SearchService;
 import com.bervan.common.search.model.SearchOperation;
@@ -19,8 +20,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-@Slf4j
 public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
     private final EmailService emailService;
     private final List<ScrapStockPriceService> scrapStockPriceServices;
 

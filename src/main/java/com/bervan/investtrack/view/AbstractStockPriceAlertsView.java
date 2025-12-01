@@ -8,16 +8,16 @@ import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.service.StockPriceAlertService;
 import com.bervan.investtrack.service.StockPriceConfigFieldBuilder;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.dependency.CssImport;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j
 @CssImport("./invest-track.css")
 public abstract class AbstractStockPriceAlertsView extends AbstractBervanTableView<UUID, StockPriceAlert> {
     public static final String ROUTE_NAME = "/invest-track-app/price-alerts";
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
 
     public AbstractStockPriceAlertsView(BaseService<UUID, StockPriceAlert> service, BervanViewConfig bervanViewConfig) {
         super(new InvestTrackPageLayout(ROUTE_NAME, null), service, bervanViewConfig, StockPriceAlert.class);

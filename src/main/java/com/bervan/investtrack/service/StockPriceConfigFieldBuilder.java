@@ -9,18 +9,18 @@ import com.bervan.common.config.ClassViewAutoConfigColumn;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.model.VaadinStockPriceAlertConfigColumn;
+import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Slf4j
 public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     private static StockPriceConfigFieldBuilder INSTANCE;
+    private final JsonLogger log = JsonLogger.getLogger(getClass());
     private final BervanViewConfig bervanViewConfig;
     private CommonComponentHelper<UUID, StockPriceAlertConfig> componentHelper = new CommonComponentHelper<>(StockPriceAlertConfig.class);
 
