@@ -77,6 +77,12 @@ public class StockPriceReportService {
     private void loadStockPrices(String x) {
         LocalDate now = LocalDate.now();
 
+        String dayOfMonth = String.valueOf(now.getDayOfMonth());
+        String month = String.valueOf(now.getMonthValue());
+        if (dayOfMonth.length() == 1) dayOfMonth = "0" + dayOfMonth;
+        if (month.length() == 1) month = "0" + month;
+        String dateToCheck = dayOfMonth + "." + month;
+
         try (Playwright playwright = Playwright.create()) {
             Page page = playwrightService.getPage(playwright, true);
             page.navigate(URL);
@@ -100,7 +106,7 @@ public class StockPriceReportService {
                     item.setDate(row.locator(".colAktualizacja").innerText().trim());
 
                     // Filter by today
-                    String dateToCheck = now.getDayOfMonth() + "." + now.getMonthValue();
+
                     if (!item.getDate().contains(dateToCheck)) {
                         continue;
                     }
