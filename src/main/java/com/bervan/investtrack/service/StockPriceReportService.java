@@ -173,7 +173,7 @@ public class StockPriceReportService {
                 + dayBefore.getMonthValue() + "_" + "17_30" + ".xlsx";
         //check how many + stocks increased at 17_30 dayBefore and show %
 
-        boolean today1030loaded = false;
+        boolean today0930loaded = false;
         if (fileDiskStorageService.isTmpFile(today1030)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1030);
             log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
@@ -195,13 +195,13 @@ public class StockPriceReportService {
 
                 reportData.setMorningMap(morningBySymbol);
 
-                today1030loaded = true;
+                today0930loaded = true;
             } catch (IOException e) {
                 log.error("Error loading excel file: " + tmpFile.toAbsolutePath(), e);
             }
         }
 
-        if (today1030loaded && fileDiskStorageService.isTmpFile(today1730)) {
+        if (today0930loaded && fileDiskStorageService.isTmpFile(today1730)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(today1730);
             log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
