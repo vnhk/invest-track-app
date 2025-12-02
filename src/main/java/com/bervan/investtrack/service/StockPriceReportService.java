@@ -6,6 +6,7 @@ import com.bervan.filestorage.service.FileDiskStorageService;
 import com.bervan.ieentities.BaseExcelExport;
 import com.bervan.ieentities.BaseExcelImport;
 import com.bervan.investtrack.model.StockPriceData;
+import com.bervan.logging.BaseProcessContext;
 import com.bervan.logging.JsonLogger;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -43,6 +44,8 @@ public class StockPriceReportService {
     private final PlaywrightService playwrightService;
     private final FileDiskStorageService fileDiskStorageService;
     private final String URL = "https://www.bankier.pl/gielda/notowania/akcje";
+    private final BaseProcessContext loadStockPricesContext = BaseProcessContext.builder()
+            .processName("loadStockPrices").build();
 
     protected StockPriceReportService(PlaywrightService playwrightService, FileDiskStorageService fileDiskStorageService) {
         this.playwrightService = playwrightService;
@@ -54,24 +57,24 @@ public class StockPriceReportService {
 
     @Scheduled(cron = "0 30 9 * * MON-FRI", zone = "Europe/Warsaw")
     public void loadStockPricesMorning() {
-        log.info("loadStockPricesMorning started");
+        log.info(loadStockPricesContext.map(), "loadStockPricesMorning started");
         try {
             loadStockPrices("Morning");
         } catch (Exception e) {
-            log.error("Error loading morning stock prices", e);
+            log.error(loadStockPricesContext.map(), "Error loading morning stock prices", e);
         }
-        log.info("loadStockPricesMorning finished");
+        log.info(loadStockPricesContext.map(), "loadStockPricesMorning finished");
     }
 
     @Scheduled(cron = "0 30 17 * * MON-FRI", zone = "Europe/Warsaw")
-    public void loadStockPricesBeforeClose() {
-        log.info("loadStockPricesBeforeClose started");
+    public void loadStockPricesEvening() {
+        log.info(loadStockPricesContext.map(), "loadStockPricesEvening started");
         try {
             loadStockPrices("Evening");
         } catch (Exception e) {
-            log.error("Error loading evening stock prices", e);
+            log.error(loadStockPricesContext.map(), "Error loading evening stock prices", e);
         }
-        log.info("loadStockPricesBeforeClose finished");
+        log.info(loadStockPricesContext.map(), "loadStockPricesEvening finished");
     }
 
     private void loadStockPrices(String x) {
@@ -114,11 +117,11 @@ public class StockPriceReportService {
                     results.add(item);
 
                 } catch (Exception e) {
-                    log.debug("Error loading stock price data", e);
+                    log.debug(loadStockPricesContext.map(), "Error loading stock price data", e);
                 }
             }
 
-            log.info("Loaded " + results.size() + " stock prices");
+            log.info(loadStockPricesContext.map(), "Loaded " + results.size() + " stock prices");
 
             String filename = "STOCKS_PL_" + now.getDayOfMonth() + "_"
                     + now.getMonthValue() + "_" + x + ".xlsx";
@@ -138,11 +141,11 @@ public class StockPriceReportService {
                         filename
                 );
 
-                log.info("Saved stock data excel file: " + filename);
+                log.info(loadStockPricesContext.map(), "Saved stock data excel file: " + filename);
             }
 
         } catch (Exception e) {
-            log.error("Failed to load stock prices", e);
+            log.error(loadStockPricesContext.map(), "Failed to load stock prices", e);
         }
     }
 
@@ -158,7 +161,7 @@ public class StockPriceReportService {
         return Integer.valueOf(text.replace(" ", "").replace(" ", "").trim());
     }
 
-    public ReportData loadReportData(LocalDate day) {
+    public ReportData loadReportData(LocalDate day, BaseProcessContext recommendationContext) {
         ReportData reportData = new ReportData();
 
         LocalDate dayBefore = day.minusDays(1);
@@ -169,14 +172,14 @@ public class StockPriceReportService {
 
         String yesterdayMorning = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
                 + dayBefore.getMonthValue() + "_" + "Morning" + ".xlsx";
-        String yesterdayEvening= "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
+        String yesterdayEvening = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
                 + dayBefore.getMonthValue() + "_" + "Evening" + ".xlsx";
         //check how many + stocks increased at Evening dayBefore and show %
 
-        boolean today0930loaded = false;
+        boolean todayMorningloaded = false;
         if (fileDiskStorageService.isTmpFile(todayMorning)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(todayMorning);
-            log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
+            log.debug(recommendationContext.map(), "Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
 
                 List<StockPriceData> data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
@@ -195,15 +198,15 @@ public class StockPriceReportService {
 
                 reportData.setMorningMap(morningBySymbol);
 
-                today0930loaded = true;
+                todayMorningloaded = true;
             } catch (IOException e) {
-                log.error("Error loading excel file: " + tmpFile.toAbsolutePath(), e);
+                log.error(recommendationContext.map(), "Error loading excel file: " + tmpFile.toAbsolutePath(), e);
             }
         }
 
-        if (today0930loaded && fileDiskStorageService.isTmpFile(todayEvening)) {
+        if (todayMorningloaded && fileDiskStorageService.isTmpFile(todayEvening)) {
             Path tmpFile = fileDiskStorageService.getTmpFile(todayEvening);
-            log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
+            log.debug(recommendationContext.map(), "Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
                 List<StockPriceData> today1730data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
@@ -217,9 +220,9 @@ public class StockPriceReportService {
                 reportData.setGoodInvestmentProbabilityBasedOnBestToday(calculateProbability(reportData.getGoodInvestmentsBasedOnBestRecommendation(), reportData.getBadInvestmentsBasedOnBestRecommendation()));
                 reportData.setGoodInvestmentProbabilityBasedOnGoodToday(calculateProbability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(), reportData.getBadInvestmentsBasedOnGoodRecommendation()));
                 reportData.setGoodInvestmentProbabilityBasedOnRiskyToday(calculateProbability(reportData.getGoodInvestmentsBasedOnRiskyRecommendation(), reportData.getBadInvestmentsBasedOnRiskyRecommendation()));
-                reportData.setGoodInvestmentTotalProbabilityBasedOnToday(calculateTotalProbability(reportData));
+                reportData.setGoodInvestmentTotalProbabilityBasedOnToday(calculateTotalProbability(reportData, recommendationContext));
             } catch (IOException e) {
-                log.error("Error loading excel file: " + tmpFile.toAbsolutePath(), e);
+                log.error(recommendationContext.map(), "Error loading excel file: " + tmpFile.toAbsolutePath(), e);
             }
         }
 
@@ -236,17 +239,17 @@ public class StockPriceReportService {
         return BigDecimal.valueOf(good).divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal calculateTotalProbability(ReportData reportData) {
+    private BigDecimal calculateTotalProbability(ReportData reportData, BaseProcessContext recommendationContext) {
         int goodCount = safeSize(reportData.getGoodInvestmentsBasedOnBestRecommendation())
                 + safeSize(reportData.getGoodInvestmentsBasedOnGoodRecommendation())
                 + safeSize(reportData.getGoodInvestmentsBasedOnRiskyRecommendation());
-        log.info("calculateTotalProbability: Good count: " + goodCount);
+        log.info(recommendationContext.map(), "calculateTotalProbability: Good count: " + goodCount);
 
         int badCount = safeSize(reportData.getBadInvestmentsBasedOnBestRecommendation())
                 + safeSize(reportData.getBadInvestmentsBasedOnGoodRecommendation())
                 + safeSize(reportData.getBadInvestmentsBasedOnRiskyRecommendation());
 
-        log.info("calculateTotalProbability: Bad count: " + badCount);
+        log.info(recommendationContext.map(), "calculateTotalProbability: Bad count: " + badCount);
 
         int total = goodCount + badCount;
         if (total == 0) {

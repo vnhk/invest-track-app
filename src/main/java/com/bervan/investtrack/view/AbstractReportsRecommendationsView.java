@@ -9,6 +9,7 @@ import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceData;
 import com.bervan.investtrack.service.ReportData;
 import com.bervan.investtrack.service.StockPriceReportService;
+import com.bervan.logging.BaseProcessContext;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
@@ -38,6 +39,9 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
     private final AsyncTaskService asyncTaskService;
     private final VerticalLayout content = new VerticalLayout();
     private final VerticalLayout tabsContent = new VerticalLayout();
+    private final BaseProcessContext recommendationContext = BaseProcessContext.builder()
+            .route(ROUTE_NAME)
+            .processName("loadRecommendations").build();
 
     protected AbstractReportsRecommendationsView(StockPriceReportService stockPriceReportService, AsyncTaskService asyncTaskService) {
         this.stockPriceReportService = stockPriceReportService;
@@ -77,6 +81,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
                     }
                 }).start();
             } catch (Exception e) {
+                log.error("Error generating morning report", e);
                 showErrorNotification(e.getMessage());
             }
         });
@@ -93,13 +98,14 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
                     SecurityContextHolder.setContext(context);
                     AsyncTask asyncTask = asyncTaskService.setInProgress(newAsyncTask, "Excel file is being generated.");
                     try {
-                        stockPriceReportService.loadStockPricesBeforeClose();
+                        stockPriceReportService.loadStockPricesEvening();
                         asyncTaskService.setFinished(asyncTask, "Evening recommendation report generated successfully.");
                     } catch (Exception e) {
                         asyncTaskService.setFailed(asyncTask, e.getMessage());
                     }
                 }).start();
             } catch (Exception e) {
+                log.error("Error generating evening report", e);
                 showErrorNotification(e.getMessage());
             }
         });
@@ -107,7 +113,7 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
 
     private void buildView(StockPriceReportService stockPriceReportService, LocalDate value) {
         tabsContent.removeAll();
-        ReportData reportData = stockPriceReportService.loadReportData(value);
+        ReportData reportData = stockPriceReportService.loadReportData(value, recommendationContext);
         Tabs tabs = getTabs(reportData);
         if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
             tabsContent.add(new H3("Total probability of making good investment today: "
