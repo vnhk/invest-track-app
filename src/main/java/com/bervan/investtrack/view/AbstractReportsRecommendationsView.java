@@ -4,6 +4,7 @@ import com.bervan.asynctask.AsyncTask;
 import com.bervan.asynctask.AsyncTaskService;
 import com.bervan.common.component.BervanButton;
 import com.bervan.common.component.BervanDatePicker;
+import com.bervan.common.component.BervanDynamicDropdownController;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.StockPriceData;
@@ -51,16 +52,25 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         BervanButton triggerMorning = getTriggerMorning(stockPriceReportService, asyncTaskService);
         BervanButton triggerEvening = getTriggerEvening(stockPriceReportService, asyncTaskService);
 
+        List<String> strategyNames = stockPriceReportService.getStrategyNames();
+        BervanDynamicDropdownController strategyDropdown =
+                new BervanDynamicDropdownController("strategyDropdown",
+                        null, strategyNames, strategyNames.get(0), false);
+        strategyDropdown.setWidth("300px");
+
         BervanDatePicker datePicker = new BervanDatePicker();
         datePicker.setValue(LocalDate.now());
         datePicker.addValueChangeListener(e -> {
-            buildView(stockPriceReportService, e.getValue());
+            buildView(stockPriceReportService, e.getValue(), strategyDropdown.getValue());
         });
-        add(new HorizontalLayout(triggerMorning, triggerEvening, datePicker));
+        strategyDropdown.addValueChangeListener(e -> {
+            buildView(stockPriceReportService, datePicker.getValue(), e.getValue());
+        });
+        add(new HorizontalLayout(triggerMorning, triggerEvening, strategyDropdown, datePicker));
         add(tabsContent);
         add(content);
 
-        buildView(stockPriceReportService, LocalDate.now());
+        buildView(stockPriceReportService, LocalDate.now(), strategyDropdown.getValue());
     }
 
     private BervanButton getTriggerMorning(StockPriceReportService stockPriceReportService, AsyncTaskService asyncTaskService) {
@@ -111,9 +121,9 @@ public abstract class AbstractReportsRecommendationsView extends AbstractPageVie
         });
     }
 
-    private void buildView(StockPriceReportService stockPriceReportService, LocalDate value) {
+    private void buildView(StockPriceReportService stockPriceReportService, LocalDate date, String strategyName) {
         tabsContent.removeAll();
-        ReportData reportData = stockPriceReportService.loadReportData(value, recommendationContext);
+        ReportData reportData = stockPriceReportService.loadReportData(date, recommendationContext, strategyName);
         Tabs tabs = getTabs(reportData);
         if (reportData.getGoodInvestmentTotalProbabilityBasedOnToday() != null) {
             tabsContent.add(new H3("Total probability of making good investment today: "
