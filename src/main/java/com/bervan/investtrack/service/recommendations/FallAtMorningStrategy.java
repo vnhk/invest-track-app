@@ -23,12 +23,12 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
     public static Integer minAmountOfTransactionsBestToInvest = 50;
     public static Integer minAmountOfTransactionsGoodToInvest = 25;
     public static Integer minAmountOfTransactionsRiskyToInvest = 5;
-    public static BigDecimal maxPercentageChangeBestToInvest = BigDecimal.valueOf(10);
-    public static BigDecimal minPercentageChangeBestToInvest = BigDecimal.valueOf(1);
-    public static BigDecimal maxPercentageChangeGoodToInvest = BigDecimal.valueOf(15);
-    public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(1);
-    public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(50);
-    public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(5);
+    public static BigDecimal maxPercentageChangeBestToInvest = BigDecimal.valueOf(-0.01);
+    public static BigDecimal minPercentageChangeBestToInvest = BigDecimal.valueOf(-0.30);
+    public static BigDecimal maxPercentageChangeGoodToInvest = BigDecimal.valueOf(-0.31);
+    public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(-0.70);
+    public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(-0.71);
+    public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(-1.50);
     private final JsonLogger log = JsonLogger.getLogger(FallAtMorningStrategy.class);
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
@@ -178,16 +178,18 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
 
     private List<StockPriceData> getBestToInvest(List<StockPriceData> todayMorningData) {
         return todayMorningData.stream()
-                .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(e -> e.getChangePercent() != null)
+                .filter(e -> e.getChangePercent().compareTo(BigDecimal.ZERO) < 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() >= minAmountOfTransactionsBestToInvest)
-                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeBestToInvest) <= 0)
                 .filter(e -> e.getChangePercent().compareTo(minPercentageChangeBestToInvest) >= 0)
+                .filter(e -> e.getChangePercent().compareTo(maxPercentageChangeBestToInvest) <= 0)
                 .toList();
     }
 
     private List<StockPriceData> getRiskyToInvest(List<StockPriceData> todayMorningData) {
         return todayMorningData.stream()
-                .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(e -> e.getChangePercent() != null)
+                .filter(e -> e.getChangePercent().compareTo(BigDecimal.ZERO) < 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsGoodToInvest)
                 .filter(e -> e.getTransactions() >= minAmountOfTransactionsRiskyToInvest)
                 .filter(e -> e.getChangePercent().compareTo(minPercentageChangeRiskyToInvest) >= 0)
@@ -195,9 +197,11 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
                 .toList();
     }
 
-    private List<StockPriceData> getGoodToInvest(List<StockPriceData> todayMorningData,
-                                                 List<StockPriceData> best,
-                                                 List<StockPriceData> risky) {
+    private List<StockPriceData> getGoodToInvest(
+            List<StockPriceData> todayMorningData,
+            List<StockPriceData> best,
+            List<StockPriceData> risky) {
+
         Set<String> bestSymbols = best.stream()
                 .map(StockPriceData::getSymbol)
                 .filter(Objects::nonNull)
@@ -209,7 +213,8 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
                 .collect(Collectors.toSet());
 
         return todayMorningData.stream()
-                .filter(e -> e.getChangePercent() != null && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(e -> e.getChangePercent() != null)
+                .filter(e -> e.getChangePercent().compareTo(BigDecimal.ZERO) < 0)
                 .filter(e -> e.getTransactions() != null && e.getTransactions() < minAmountOfTransactionsBestToInvest)
                 .filter(e -> e.getTransactions() >= minAmountOfTransactionsGoodToInvest)
                 .filter(e -> e.getChangePercent().compareTo(minPercentageChangeGoodToInvest) >= 0)
