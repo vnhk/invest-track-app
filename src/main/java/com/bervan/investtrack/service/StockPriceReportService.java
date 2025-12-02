@@ -56,7 +56,7 @@ public class StockPriceReportService {
     public void loadStockPricesMorning() {
         log.info("loadStockPricesMorning started");
         try {
-            loadStockPrices("09_30");
+            loadStockPrices("Morning");
         } catch (Exception e) {
             log.error("Error loading morning stock prices", e);
         }
@@ -67,7 +67,7 @@ public class StockPriceReportService {
     public void loadStockPricesBeforeClose() {
         log.info("loadStockPricesBeforeClose started");
         try {
-            loadStockPrices("17_30");
+            loadStockPrices("Evening");
         } catch (Exception e) {
             log.error("Error loading evening stock prices", e);
         }
@@ -162,20 +162,20 @@ public class StockPriceReportService {
         ReportData reportData = new ReportData();
 
         LocalDate dayBefore = day.minusDays(1);
-        String today1030 = "STOCKS_PL_" + day.getDayOfMonth() + "_"
-                + day.getMonthValue() + "_" + "09_30" + ".xlsx";
-        String today1730 = "STOCKS_PL_" + day.getDayOfMonth() + "_"
-                + day.getMonthValue() + "_" + "17_30" + ".xlsx";
+        String todayMorning = "STOCKS_PL_" + day.getDayOfMonth() + "_"
+                + day.getMonthValue() + "_" + "Morning" + ".xlsx";
+        String todayEvening = "STOCKS_PL_" + day.getDayOfMonth() + "_"
+                + day.getMonthValue() + "_" + "Evening" + ".xlsx";
 
-        String yesterday1030 = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
-                + dayBefore.getMonthValue() + "_" + "09_30" + ".xlsx";
-        String yesterday1730 = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
-                + dayBefore.getMonthValue() + "_" + "17_30" + ".xlsx";
-        //check how many + stocks increased at 17_30 dayBefore and show %
+        String yesterdayMorning = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
+                + dayBefore.getMonthValue() + "_" + "Morning" + ".xlsx";
+        String yesterdayEvening= "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
+                + dayBefore.getMonthValue() + "_" + "Evening" + ".xlsx";
+        //check how many + stocks increased at Evening dayBefore and show %
 
         boolean today0930loaded = false;
-        if (fileDiskStorageService.isTmpFile(today1030)) {
-            Path tmpFile = fileDiskStorageService.getTmpFile(today1030);
+        if (fileDiskStorageService.isTmpFile(todayMorning)) {
+            Path tmpFile = fileDiskStorageService.getTmpFile(todayMorning);
             log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
 
@@ -201,8 +201,8 @@ public class StockPriceReportService {
             }
         }
 
-        if (today0930loaded && fileDiskStorageService.isTmpFile(today1730)) {
-            Path tmpFile = fileDiskStorageService.getTmpFile(today1730);
+        if (today0930loaded && fileDiskStorageService.isTmpFile(todayEvening)) {
+            Path tmpFile = fileDiskStorageService.getTmpFile(todayEvening);
             log.debug("Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
                 List<StockPriceData> today1730data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
