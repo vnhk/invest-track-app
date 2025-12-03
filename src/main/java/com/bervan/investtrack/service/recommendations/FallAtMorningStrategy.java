@@ -85,14 +85,14 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
             Path tmpFile = fileDiskStorageService.getTmpFile(todayEvening);
             log.debug(recommendationContext.map(), "Loading excel file: " + tmpFile.toAbsolutePath());
             try (Workbook workbook = baseExcelImport.load(tmpFile.toFile())) {
-                List<StockPriceData> today1730data = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
+                List<StockPriceData> todayEveningData = (List<StockPriceData>) baseExcelImport.importExcel(workbook);
 
-                reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1730data));
-                reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1730data));
-                reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1730data));
-                reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), today1730data));
-                reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), today1730data));
-                reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), today1730data));
+                reportData.setGoodInvestmentsBasedOnBestRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getBestToInvest(), todayEveningData));
+                reportData.setGoodInvestmentsBasedOnGoodRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getGoodToInvest(), todayEveningData));
+                reportData.setGoodInvestmentsBasedOnRiskyRecommendation(getGoodInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), todayEveningData));
+                reportData.setBadInvestmentsBasedOnBestRecommendation(getBadInvestmentsBasedRecommendation(reportData.getBestToInvest(), todayEveningData));
+                reportData.setBadInvestmentsBasedOnGoodRecommendation(getBadInvestmentsBasedRecommendation(reportData.getGoodToInvest(), todayEveningData));
+                reportData.setBadInvestmentsBasedOnRiskyRecommendation(getBadInvestmentsBasedRecommendation(reportData.getRiskyToInvest(), todayEveningData));
 
                 reportData.setGoodInvestmentProbabilityBasedOnBestToday(calculateProbability(reportData.getGoodInvestmentsBasedOnBestRecommendation(), reportData.getBadInvestmentsBasedOnBestRecommendation()));
                 reportData.setGoodInvestmentProbabilityBasedOnGoodToday(calculateProbability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(), reportData.getBadInvestmentsBasedOnGoodRecommendation()));
@@ -145,8 +145,8 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
         return (l == null) ? 0 : l.size();
     }
 
-    private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
-        Map<String, StockPriceData> afternoonMap = todays1730.stream()
+    private List<StockPriceData> getGoodInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todayEveningData) {
+        Map<String, StockPriceData> afternoonMap = todayEveningData.stream()
                 .filter(d -> d.getSymbol() != null)
                 .filter(d -> d.getChangePercent().compareTo(BigDecimal.ZERO) >= 0)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
@@ -161,8 +161,8 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
         return good;
     }
 
-    private List<StockPriceData> getBadInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todays1730) {
-        Map<String, StockPriceData> afternoonMap = todays1730.stream()
+    private List<StockPriceData> getBadInvestmentsBasedRecommendation(List<StockPriceData> recommendationData, List<StockPriceData> todayEveningData) {
+        Map<String, StockPriceData> afternoonMap = todayEveningData.stream()
                 .filter(d -> d.getSymbol() != null)
                 .collect(Collectors.toMap(StockPriceData::getSymbol, Function.identity(), (a, b) -> a));
 
