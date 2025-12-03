@@ -1,5 +1,6 @@
 package com.bervan.investtrack.service;
 
+import com.bervan.asynctask.AsyncTaskService;
 import com.bervan.common.service.PlaywrightService;
 import com.bervan.filestorage.model.BervanMockMultiPartFile;
 import com.bervan.filestorage.service.FileDiskStorageService;
@@ -31,15 +32,19 @@ public class StockPriceReportService {
     private final BaseExcelExport baseExcelExport;
     private final PlaywrightService playwrightService;
     private final FileDiskStorageService fileDiskStorageService;
+    private final AsyncTaskService asyncTaskService;
     private final String URL = "https://www.bankier.pl/gielda/notowania/akcje";
     private final BaseProcessContext loadStockPricesContext = BaseProcessContext.builder()
             .processName("loadStockPrices").build();
     private final Map<String, RecommendationStrategy> strategies;
 
-    protected StockPriceReportService(PlaywrightService playwrightService, FileDiskStorageService fileDiskStorageService,
+    protected StockPriceReportService(PlaywrightService playwrightService,
+                                      FileDiskStorageService fileDiskStorageService,
+                                      AsyncTaskService asyncTaskService,
                                       Map<String, RecommendationStrategy> strategies) {
         this.playwrightService = playwrightService;
         this.fileDiskStorageService = fileDiskStorageService;
+        this.asyncTaskService = asyncTaskService;
         this.strategies = strategies;
         baseExcelExport = new BaseExcelExport();
     }
@@ -80,6 +85,8 @@ public class StockPriceReportService {
         if (month.length() == 1) month = "0" + month;
         String dateToCheck = dayOfMonth + "." + month;
 
+        log.debug(loadStockPricesContext.map(), "Loading stock prices for date: " + dateToCheck);
+
         try (Playwright playwright = Playwright.create()) {
             Page page = playwrightService.getPage(playwright, true);
             page.navigate(URL);
@@ -116,6 +123,10 @@ public class StockPriceReportService {
             }
 
             log.info(loadStockPricesContext.map(), "Loaded " + results.size() + " stock prices");
+
+            if (results.size() < 200) {
+                log.warn(loadStockPricesContext.map(), "Not enough stock prices loaded!");
+            }
 
             String filename = "STOCKS_PL_" + now.getDayOfMonth() + "_"
                     + now.getMonthValue() + "_" + x + ".xlsx";
