@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Service
 public class StockPriceAlertConfigService extends BaseService<UUID, StockPriceAlertConfig> {
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     protected StockPriceAlertConfigService(StockPriceAlertConfigRepository repository, SearchService searchService) {
         super(repository, searchService);

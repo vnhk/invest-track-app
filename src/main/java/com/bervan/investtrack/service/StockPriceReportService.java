@@ -28,7 +28,7 @@ import java.util.Map;
 
 @Service
 public class StockPriceReportService {
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelExport baseExcelExport;
     private final PlaywrightService playwrightService;
     private final FileDiskStorageService fileDiskStorageService;

@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Service
 public class CurrencyConverter {
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     private final Map<Currency, BigDecimal> plnPerUnit = new EnumMap<>(Currency.class);
     private final int scale;

@@ -13,7 +13,7 @@ import java.util.Optional;
 public class GPWScrapStockPriceService implements ScrapStockPriceService {
     public static final String GPW = "GPW";
     public static final String BASE = "https://www.gpw.pl";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     @Override
     public Optional<BigDecimal> getStockPrice(String symbol) {

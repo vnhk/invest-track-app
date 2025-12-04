@@ -21,7 +21,7 @@ import java.util.*;
 
 @Service
 public class StockPriceAlertService extends BaseService<UUID, StockPriceAlert> {
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final EmailService emailService;
     private final List<ScrapStockPriceService> scrapStockPriceServices;
 

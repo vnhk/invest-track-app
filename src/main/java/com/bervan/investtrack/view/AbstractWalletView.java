@@ -35,7 +35,7 @@ import java.util.UUID;
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletView extends AbstractPageView implements HasUrlParameter<String> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets/";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     private final WalletService service;
 

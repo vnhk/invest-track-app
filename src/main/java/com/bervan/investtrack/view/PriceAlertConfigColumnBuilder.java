@@ -19,7 +19,7 @@ import java.lang.reflect.Field;
 
 public class PriceAlertConfigColumnBuilder implements ColumnForGridBuilder {
     private static final PriceAlertConfigColumnBuilder INSTANCE = new PriceAlertConfigColumnBuilder();
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     private PriceAlertConfigColumnBuilder() {
 

@@ -26,7 +26,7 @@ import java.util.*;
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/wallets-dashboard/";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final VerticalLayout content = new VerticalLayout();
     private final BervanComboBox<String> aggregationPeriodSelector = createAggregationPeriodSelector();
     private final BervanComboBox<String> aggregationSelector = createAggregationSelector();

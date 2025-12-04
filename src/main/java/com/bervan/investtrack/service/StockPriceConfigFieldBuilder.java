@@ -20,7 +20,7 @@ import java.util.UUID;
 
 public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     private static StockPriceConfigFieldBuilder INSTANCE;
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BervanViewConfig bervanViewConfig;
     private CommonComponentHelper<UUID, StockPriceAlertConfig> componentHelper = new CommonComponentHelper<>(StockPriceAlertConfig.class);
 

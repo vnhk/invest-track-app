@@ -29,7 +29,7 @@ public class GrowthAtMorningStrategy implements RecommendationStrategy {
     public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(1);
     public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(50);
     public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(5);
-    private final JsonLogger log = JsonLogger.getLogger(GrowthAtMorningStrategy.class);
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 

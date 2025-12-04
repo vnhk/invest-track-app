@@ -18,7 +18,7 @@ import java.util.UUID;
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletsView extends AbstractBervanTableView<UUID, Wallet> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     public AbstractWalletsView(WalletService service, BervanViewConfig bervanViewConfig) {
         super(new InvestTrackPageLayout(ROUTE_NAME, null), service, bervanViewConfig, Wallet.class);

@@ -17,7 +17,7 @@ import java.util.UUID;
 @CssImport("./invest-track.css")
 public abstract class AbstractStockPriceAlertsView extends AbstractBervanTableView<UUID, StockPriceAlert> {
     public static final String ROUTE_NAME = "/invest-track-app/price-alerts";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     public AbstractStockPriceAlertsView(BaseService<UUID, StockPriceAlert> service, BervanViewConfig bervanViewConfig) {
         super(new InvestTrackPageLayout(ROUTE_NAME, null), service, bervanViewConfig, StockPriceAlert.class);

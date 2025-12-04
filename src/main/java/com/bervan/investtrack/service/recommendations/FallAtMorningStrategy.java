@@ -29,7 +29,7 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
     public static BigDecimal minPercentageChangeGoodToInvest = BigDecimal.valueOf(-0.70);
     public static BigDecimal maxPercentageChangeRiskyToInvest = BigDecimal.valueOf(-0.71);
     public static BigDecimal minPercentageChangeRiskyToInvest = BigDecimal.valueOf(-1.50);
-    private final JsonLogger log = JsonLogger.getLogger(FallAtMorningStrategy.class);
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 

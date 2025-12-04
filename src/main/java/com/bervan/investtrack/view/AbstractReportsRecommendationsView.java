@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractReportsRecommendationsView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/recommendations";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     private final StockPriceReportService stockPriceReportService;
     private final AsyncTaskService asyncTaskService;

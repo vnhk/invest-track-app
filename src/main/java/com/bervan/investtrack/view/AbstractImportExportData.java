@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public abstract class AbstractImportExportData extends AbstractDataIEView<UUID, WalletSnapshot> {
     public static final String ROUTE_NAME = "/invest-track-app/import-export-data";
-    private final JsonLogger log = JsonLogger.getLogger(getClass());
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     public AbstractImportExportData(BaseService<UUID, WalletSnapshot> dataService, BervanViewConfig bervanViewConfig) {
         super(dataService, new InvestTrackPageLayout(ROUTE_NAME, null), bervanViewConfig, WalletSnapshot.class);
