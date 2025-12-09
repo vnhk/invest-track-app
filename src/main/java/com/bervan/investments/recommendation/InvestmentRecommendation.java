@@ -36,9 +36,11 @@ public class InvestmentRecommendation extends BervanBaseEntity<UUID> implements 
 
     private String symbol;
 
-    private String recommendationType;
+    private String strategy;
 
-    private BigDecimal resultChange;
+    private String recommendationType; //risky/good/best
+
+    private String recommendationResult; //Good/Bad
 
     @Override
     public Boolean isDeleted() {

@@ -41,11 +41,13 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
     public ReportData loadReportData(LocalDate day, BaseProcessContext recommendationContext) {
         ReportData reportData = new ReportData();
 
-        LocalDate dayBefore = day.minusDays(1);
         String todayMorning = "STOCKS_PL_" + day.getDayOfMonth() + "_"
                 + day.getMonthValue() + "_" + "Morning" + ".xlsx";
         String todayEvening = "STOCKS_PL_" + day.getDayOfMonth() + "_"
                 + day.getMonthValue() + "_" + "Evening" + ".xlsx";
+
+
+        LocalDate dayBefore = day.minusDays(7);
 
         String yesterdayMorning = "STOCKS_PL_" + dayBefore.getDayOfMonth() + "_"
                 + dayBefore.getMonthValue() + "_" + "Morning" + ".xlsx";
