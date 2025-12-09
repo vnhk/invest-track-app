@@ -12,8 +12,8 @@ import com.bervan.logging.BaseProcessContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -87,7 +87,7 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
         recommendation.setRecommendationType(recType);
         recommendation.setRecommendationResult(result);
         recommendation.getOwners().add(commonUser);
-        recommendation.setDate(new SimpleDateFormat("dd-MM-yyyy").format(date));
+        recommendation.setDate(date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
         return recommendation;
     }
 
