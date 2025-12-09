@@ -32,7 +32,7 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
         commonUser = userRepository.findByUsername("COMMON_USER").get();
     }
 
-    @Scheduled(cron = "0 45 23 * * *", zone = "Europe/Warsaw")
+    @Scheduled(cron = "0 0 23 * * *", zone = "Europe/Warsaw")
     public void saveRecommendations() {
         ArrayList<String> strategiesNames = new ArrayList<>(strategies.keySet());
         LocalDate date = LocalDate.now();
@@ -86,7 +86,7 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
         recommendation.setChangeInPercentEvening(stockPriceData.getChangePercent());
         recommendation.setRecommendationType(recType);
         recommendation.setRecommendationResult(result);
-        recommendation.getOwners().add(commonUser);
+        recommendation.addOwner(commonUser);
         recommendation.setDate(date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
         return recommendation;
     }
