@@ -83,7 +83,7 @@ public class StockPriceReportService {
         String month = String.valueOf(now.getMonthValue());
         if (dayOfMonth.length() == 1) dayOfMonth = "0" + dayOfMonth;
         if (month.length() == 1) month = "0" + month;
-        String dateToCheck = dayOfMonth + "." + month;
+        String dateToCheck = month + "-" + dayOfMonth;
 
         log.debug(loadStockPricesContext.map(), "Loading stock prices for date: " + dateToCheck);
 
@@ -91,26 +91,31 @@ public class StockPriceReportService {
             Page page = playwrightService.getPage(playwright, true);
             page.navigate(URL);
 
-            List<Locator> rows = page.locator("table.sortTable tbody tr").all();
+            List<Locator> rows = page.locator("tbody tr").all();
 
             List<StockPriceData> results = new ArrayList<>();
             long i = 0;
 
             for (Locator row : rows) {
                 try {
+                    List<Locator> cols = row.locator("td").all();
+
                     StockPriceData item = new StockPriceData();
                     item.setId(i++);
 
-                    // Extract values from the row
-                    item.setSymbol(row.locator(".colWalor").innerText().trim());
-                    item.setPrice(getBigDecimal(row.locator(".colKurs").innerText().trim()));
-                    item.setChange(getBigDecimal(row.locator(".colZmiana").innerText().trim()));
-                    item.setChangePercent(getBigDecimal(row.locator(".colZmianaProcentowa").innerText().trim()));
-                    item.setTransactions(getInteger(row.locator(".colLiczbaTransakcji").innerText().trim()));
-                    item.setDate(row.locator(".colAktualizacja").innerText().trim());
+                    item.setSymbol(cols.get(0).locator("a").innerText().trim());
+
+                    item.setPrice(getBigDecimal(cols.get(1).innerText().trim()));
+
+                    item.setChangePercent(getBigDecimal(cols.get(2).innerText().trim()));
+
+                    item.setChange(getBigDecimal(cols.get(3).innerText().trim()));
+
+                    item.setTransactions(getInteger(cols.get(4).innerText().trim()));
+
+                    item.setDate(cols.get(9).innerText().trim());
 
                     // Filter by today
-
                     if (!item.getDate().contains(dateToCheck)) {
                         continue;
                     }
