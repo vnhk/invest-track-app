@@ -32,7 +32,7 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
         commonUser = userRepository.findByUsername("COMMON_USER").get();
     }
 
-    @Scheduled(cron = "0 0 23 * * *", zone = "Europe/Warsaw")
+    @Scheduled(cron = "0 0 20 * * *", zone = "Europe/Warsaw")
     public void saveRecommendations() {
         ArrayList<String> strategiesNames = new ArrayList<>(strategies.keySet());
         LocalDate date = LocalDate.now();
