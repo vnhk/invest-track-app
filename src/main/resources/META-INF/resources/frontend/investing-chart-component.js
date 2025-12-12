@@ -232,3 +232,78 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
         }
     });
 };
+
+window.renderStrategyBGRHistoryChart = (canvas, dates, bestRecPercent, goodRecPercent, riskyRecPercent) => {
+
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim();
+
+    let line1 = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line1-color')
+        .trim();
+
+    let line2 = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line2-color')
+        .trim();
+
+    let line3 = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line3-color')
+        ?.trim() || '#888';
+
+    if (canvas === null) return;
+
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Best recommendations',
+                    data: bestRecPercent,
+                    borderColor: line1,
+                    backgroundColor: line1,
+                    borderWidth: 2,
+                    fill: false
+                },
+                {
+                    label: 'Good recommendations',
+                    data: goodRecPercent,
+                    borderColor: line2,
+                    backgroundColor: line2,
+                    borderWidth: 2,
+                    fill: false
+                },
+                {
+                    label: 'Risky recommendations',
+                    data: riskyRecPercent,
+                    borderColor: line3,
+                    backgroundColor: line3,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {color: textColor}
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {color: textColor},
+                    grid: {color: textColor}
+                },
+                y: {
+                    ticks: {color: textColor},
+                    grid: {color: textColor}
+                }
+            }
+        }
+    });
+};

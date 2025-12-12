@@ -3,11 +3,13 @@ package com.bervan.investtrack.view.dashboards;
 import com.bervan.common.component.BervanComboBox;
 import com.bervan.common.component.BervanDatePicker;
 import com.bervan.common.view.AbstractPageView;
+import com.bervan.investments.recommendation.InvestmentRecommendationService;
 import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.WalletService;
+import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -31,8 +33,8 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final BervanComboBox<String> aggregationPeriodSelector = createAggregationPeriodSelector();
     private final BervanComboBox<String> aggregationSelector = createAggregationSelector();
     private final BervanComboBox<String> currencySelector = createCurrencySelector();
-    private final BervanDatePicker fromDateFilter = createDateFilter();
-    private final BervanDatePicker toDateFilter = createDateFilter();
+    private final BervanDatePicker fromDateFilter = createDateFilter("From");
+    private final BervanDatePicker toDateFilter = createDateFilter("To");
     private final Map<UUID, List<String>> dates = new HashMap<>();
     private final Map<UUID, List<BigDecimal>> balances = new HashMap<>();
     private final Map<UUID, List<BigDecimal>> deposits = new HashMap<>();
@@ -42,9 +44,15 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final List<BigDecimal> aggregatedDepositsForOneWallet = new ArrayList<>();
     private final List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
     private final CurrencyConverter currencyConverter;
+    private final Map<String, RecommendationStrategy> strategies;
+    private final InvestmentRecommendationService recommendationService;
 
-    public AbstractWalletsDashboardView(CurrencyConverter currencyConverter, WalletService service) {
+    public AbstractWalletsDashboardView(CurrencyConverter currencyConverter,
+                                        WalletService service, Map<String, RecommendationStrategy> strategies,
+                                        InvestmentRecommendationService recommendationService) {
         this.currencyConverter = currencyConverter;
+        this.strategies = strategies;
+        this.recommendationService = recommendationService;
         try {
             Set<Wallet> wallets = service.load(Pageable.ofSize(16));
             if (wallets.size() > 16) {
@@ -266,7 +274,8 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         Tab balance = new Tab("Balance");
         Tab earnings = new Tab("Earnings");
         Tab fire = new Tab("FIRE");
-        tabs.add(balance, earnings, fire);
+        Tab strategies = new Tab("Strategies");
+        tabs.add(balance, earnings, fire, strategies);
         add(tabs);
         VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
         filtersLayout.setSpacing(true);
@@ -286,6 +295,9 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             } else if (selectedTab.getLabel().equals("FIRE")) {
                 filtersLayout.setVisible(false);
                 fireTab(wallets, dates, balances, deposits, sumOfDeposits);
+            } else if (selectedTab.getLabel().equals("Strategies")) {
+                filtersLayout.setVisible(false);
+                strategiesTab();
             }
         });
 
@@ -296,6 +308,11 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private void fireTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         content.removeAll();
         content.add(new FirePathView(currencyConverter, wallets, balances, sumOfDeposits, dates));
+    }
+
+    private void strategiesTab() {
+        content.removeAll();
+        content.add(new StrategiesDashboardView(strategies, recommendationService));
     }
 
     private void earningsTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
@@ -332,8 +349,8 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         return monthsDropdown;
     }
 
-    private BervanDatePicker createDateFilter() {
-        BervanDatePicker bervanDatePicker = new BervanDatePicker();
+    private BervanDatePicker createDateFilter(String label) {
+        BervanDatePicker bervanDatePicker = new BervanDatePicker(label, null);
         bervanDatePicker.setWidth("300px");
         return bervanDatePicker;
     }
