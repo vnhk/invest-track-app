@@ -1,20 +1,30 @@
 columns:
-  - field: changeInPercentEvening
-    displayName: "Change (Aft)"
-    internalName: changeInPercentEvening
-    inSaveForm: false
-    inEditForm: false
-    inTable: false
+  - field: symbol
+    displayName: "Symbol"
+    internalName: symbol
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
     required: false
-    min: 1
-    max: 10
+    min: 2
+    max: 20
 
   - field: changeInPercentMorning
     displayName: "Change (Bef)"
     internalName: changeInPercentMorning
-    inSaveForm: false
-    inEditForm: false
-    inTable: false
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+    min: 1
+    max: 10
+
+  - field: changeInPercentEvening
+    displayName: "Change (Aft)"
+    internalName: changeInPercentEvening
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
     required: false
     min: 1
     max: 10
@@ -22,27 +32,17 @@ columns:
   - field: date
     displayName: "Date"
     internalName: date
-    inSaveForm: false
-    inEditForm: false
+    inSaveForm: true
+    inEditForm: true
     inTable: true
     required: false
     min: 5
     max: 30
 
-  - field: symbol
-    displayName: "Symbol"
-    internalName: symbol
-    inSaveForm: false
-    inEditForm: true
-    inTable: true
-    required: false
-    min: 2
-    max: 20
-
   - field: recommendationType
     displayName: "Type"
     internalName: recommendationType
-    inSaveForm: false
+    inSaveForm: true
     inEditForm: true
     inTable: true
     required: false
@@ -52,8 +52,8 @@ columns:
   - field: resultChange
     displayName: "Change (Res)"
     internalName: resultChange
-    inSaveForm: false
-    inEditForm: false
+    inSaveForm: true
+    inEditForm: true
     inTable: true
     required: false
     min: 1

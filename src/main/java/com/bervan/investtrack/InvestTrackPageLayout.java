@@ -1,6 +1,7 @@
 package com.bervan.investtrack;
 
 import com.bervan.common.MenuNavigationComponent;
+import com.bervan.investments.recommendation.AbstractInvestmentRecommendationView;
 import com.bervan.investtrack.view.*;
 import com.bervan.investtrack.view.dashboards.AbstractWalletsDashboardView;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -17,6 +18,7 @@ public class InvestTrackPageLayout extends MenuNavigationComponent {
         if (walletName != null && !walletName.isEmpty()) {
             addButtonIfVisible(menuButtonsRow, AbstractWalletView.ROUTE_NAME, walletName, VaadinIcon.INFO_CIRCLE.create());
         }
+        addButtonIfVisible(menuButtonsRow, AbstractInvestmentRecommendationView.ROUTE_NAME, "Recommendation History", VaadinIcon.LIST_OL.create());
         addButtonIfVisible(menuButtonsRow, AbstractImportExportData.ROUTE_NAME, "Data IE", VaadinIcon.DATABASE.create());
         add(menuButtonsRow);
     }
