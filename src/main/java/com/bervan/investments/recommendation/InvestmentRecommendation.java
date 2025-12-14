@@ -1,46 +1,41 @@
 package com.bervan.investments.recommendation;
 
-import com.bervan.common.model.BervanOwnedBaseEntity;
-import com.bervan.common.model.PersistableTableOwnedData;
-import java.util.*;
-import java.time.LocalDateTime;
-import jakarta.persistence.*;
+import com.bervan.common.model.BervanBaseEntity;
+import com.bervan.common.model.PersistableTableData;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 // Low-Code START
 @Entity
 @Getter
 @Setter
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public class InvestmentRecommendation extends BervanOwnedBaseEntity<UUID> implements PersistableTableOwnedData<UUID> {
+public class InvestmentRecommendation extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
+
+    @Id
+    private UUID id;
+    private Boolean deleted = false;
+    private LocalDateTime modificationDate;
+    private BigDecimal changeInPercentEvening;
+    private BigDecimal changeInPercentMorning;
+    private String date;
+    private String symbol;
+    private String strategy;
+    private String recommendationType; //risky/good/best
+    private String recommendationResult; //Good/Bad
 
     // Default constructor
     public InvestmentRecommendation() {
         // constructor body
     }
-
-    @Id
-    private UUID id;
-
-    private Boolean deleted = false;
-
-    private LocalDateTime modificationDate;
-
-    private BigDecimal changeInPercentEvening;
-
-    private BigDecimal changeInPercentMorning;
-
-    private String date;
-
-    private String symbol;
-
-    private String strategy;
-
-    private String recommendationType; //risky/good/best
-
-    private String recommendationResult; //Good/Bad
 
     @Override
     public Boolean isDeleted() {

@@ -2,8 +2,6 @@ package com.bervan.investments.recommendation;
 
 import com.bervan.common.search.SearchService;
 import com.bervan.common.service.BaseService;
-import com.bervan.common.user.User;
-import com.bervan.common.user.UserRepository;
 import com.bervan.history.model.BaseRepository;
 import com.bervan.investtrack.model.StockPriceData;
 import com.bervan.investtrack.service.ReportData;
@@ -22,14 +20,10 @@ import java.util.UUID;
 @Service
 public class InvestmentRecommendationService extends BaseService<UUID, InvestmentRecommendation> {
     private final Map<String, RecommendationStrategy> strategies;
-    private final UserRepository userRepository;
-    private final User commonUser;
 
-    public InvestmentRecommendationService(BaseRepository<InvestmentRecommendation, UUID> repository, SearchService searchService, Map<String, RecommendationStrategy> strategies, UserRepository userRepository) {
+    public InvestmentRecommendationService(BaseRepository<InvestmentRecommendation, UUID> repository, SearchService searchService, Map<String, RecommendationStrategy> strategies) {
         super(repository, searchService);
         this.strategies = strategies;
-        this.userRepository = userRepository;
-        commonUser = userRepository.findByUsername("COMMON_USER").get();
     }
 
     @Scheduled(cron = "0 0 20 * * MON-FRI", zone = "Europe/Warsaw")
@@ -86,7 +80,6 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
         recommendation.setChangeInPercentEvening(stockPriceData.getChangePercent());
         recommendation.setRecommendationType(recType);
         recommendation.setRecommendationResult(result);
-        recommendation.addOwner(commonUser);
         recommendation.setDate(date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
         return recommendation;
     }
