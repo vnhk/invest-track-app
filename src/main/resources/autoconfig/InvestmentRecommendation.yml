@@ -5,7 +5,7 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
+    required: true
     min: 2
     max: 20
 
@@ -15,7 +15,7 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
+    required: true
     min: 1
     max: 10
 
@@ -25,17 +25,27 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
+    required: true
+    min: 1
+    max: 10
+
+  - field: resultChange
+    displayName: "Change (Res)"
+    internalName: resultChange
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
     min: 1
     max: 10
 
   - field: date
-    displayName: "Date"
+    displayName: "Date (dd-MM-yyyy)"
     internalName: date
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
+    required: true
     min: 5
     max: 30
 
@@ -45,17 +55,15 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
-    min: 3
-    max: 10
+    required: true
+    strValues: [ "Risky", "Good", "Best" ]
 
-  - field: resultChange
-    displayName: "Change (Res)"
-    internalName: resultChange
+  - field: recommendationResult
+    displayName: "Result"
+    internalName: recommendationResult
     inSaveForm: true
     inEditForm: true
     inTable: true
-    required: false
-    min: 1
-    max: 10
+    required: true
+    strValues: [ "Good", "Bad" ]
 
