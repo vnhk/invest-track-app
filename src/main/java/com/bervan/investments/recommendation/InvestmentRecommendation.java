@@ -1,7 +1,7 @@
 package com.bervan.investments.recommendation;
 
-import com.bervan.common.model.BervanBaseEntity;
-import com.bervan.common.model.PersistableTableData;
+import com.bervan.common.model.BervanOwnedBaseEntity;
+import com.bervan.common.model.PersistableTableOwnedData;
 import java.util.*;
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public class InvestmentRecommendation extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
+public class InvestmentRecommendation extends BervanOwnedBaseEntity<UUID> implements PersistableTableOwnedData<UUID> {
 
     // Default constructor
     public InvestmentRecommendation() {

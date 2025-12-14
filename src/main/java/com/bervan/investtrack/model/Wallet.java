@@ -1,7 +1,7 @@
 package com.bervan.investtrack.model;
 
-import com.bervan.common.model.BervanBaseEntity;
-import com.bervan.common.model.PersistableTableData;
+import com.bervan.common.model.BervanOwnedBaseEntity;
+import com.bervan.common.model.PersistableTableOwnedData;
 import com.bervan.core.model.BaseModel;
 import com.bervan.ieentities.ExcelIEEntity;
 import jakarta.persistence.*;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Where(clause = "deleted = false or deleted is null")
-public class Wallet extends BervanBaseEntity<UUID> implements PersistableTableData<UUID>, ExcelIEEntity<UUID>, BaseModel<UUID> {
+public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTableOwnedData<UUID>, ExcelIEEntity<UUID>, BaseModel<UUID> {
     @Id
     private UUID id;
 
