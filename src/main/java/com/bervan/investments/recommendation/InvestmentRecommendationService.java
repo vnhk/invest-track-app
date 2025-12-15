@@ -7,6 +7,7 @@ import com.bervan.investtrack.model.StockPriceData;
 import com.bervan.investtrack.service.ReportData;
 import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
 import com.bervan.logging.BaseProcessContext;
+import com.bervan.logging.JsonLogger;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 // Low-Code START
 @Service
 public class InvestmentRecommendationService extends BaseService<UUID, InvestmentRecommendation> {
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "recommendations");
     private final Map<String, RecommendationStrategy> strategies;
 
     public InvestmentRecommendationService(BaseRepository<InvestmentRecommendation, UUID> repository, SearchService searchService, Map<String, RecommendationStrategy> strategies) {
@@ -28,6 +30,8 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
 
     @Scheduled(cron = "0 0 20 * * MON-FRI", zone = "Europe/Warsaw")
     public void saveRecommendations() {
+        log.info("Saving recommendations");
+        int saved = 0;
         ArrayList<String> strategiesNames = new ArrayList<>(strategies.keySet());
         LocalDate date = LocalDate.now();
         for (String strategiesName : strategiesNames) {
@@ -36,38 +40,45 @@ public class InvestmentRecommendationService extends BaseService<UUID, Investmen
                 StockPriceData morningRecommendation = reportData.getRiskyToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Risky", date, "Good");
                 save(recommendation);
+                saved++;
             }
 
             for (StockPriceData stockPriceData : reportData.getBadInvestmentsBasedOnRiskyRecommendation()) {
                 StockPriceData morningRecommendation = reportData.getRiskyToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Risky", date, "Bad");
                 save(recommendation);
+                saved++;
             }
 
             for (StockPriceData stockPriceData : reportData.getGoodInvestmentsBasedOnGoodRecommendation()) {
                 StockPriceData morningRecommendation = reportData.getGoodToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Good", date, "Good");
                 save(recommendation);
+                saved++;
             }
 
             for (StockPriceData stockPriceData : reportData.getBadInvestmentsBasedOnGoodRecommendation()) {
                 StockPriceData morningRecommendation = reportData.getGoodToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Good", date, "Bad");
                 save(recommendation);
+                saved++;
             }
 
             for (StockPriceData stockPriceData : reportData.getGoodInvestmentsBasedOnBestRecommendation()) {
                 StockPriceData morningRecommendation = reportData.getBestToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Best", date, "Good");
                 save(recommendation);
+                saved++;
             }
 
             for (StockPriceData stockPriceData : reportData.getBadInvestmentsBasedOnBestRecommendation()) {
                 StockPriceData morningRecommendation = reportData.getBestToInvest().stream().filter(e -> e.getSymbol().equals(stockPriceData.getSymbol())).findFirst().get();
                 InvestmentRecommendation recommendation = getInvestmentRecommendation(stockPriceData, strategiesName, morningRecommendation, "Best", date, "Bad");
                 save(recommendation);
+                saved++;
             }
         }
+        log.info("Saved {} recommendations", saved);
     }
 
     private InvestmentRecommendation getInvestmentRecommendation(StockPriceData stockPriceData, String strategiesName,
