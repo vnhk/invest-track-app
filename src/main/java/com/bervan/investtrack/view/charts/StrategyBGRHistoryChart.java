@@ -33,7 +33,7 @@ public class StrategyBGRHistoryChart extends Component implements HasSize {
     private void renderChart(List<String> dates, List<String> bestRecPercent, List<String> goodRecPercent, List<String> riskyRecPercent) {
 
         UI.getCurrent().getPage().executeJs(
-                "window.renderStrategyBGRHistoryChart($0, $1, $2, $3, $4, $5, $6, $7)",
+                "window.renderStrategyBGRHistoryChart($0, $1, $2, $3, $4)",
                 getElement(),
                 toArray(dates),
                 toArray(bestRecPercent),

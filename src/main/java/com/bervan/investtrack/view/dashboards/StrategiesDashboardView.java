@@ -32,7 +32,6 @@ public class StrategiesDashboardView extends VerticalLayout {
 
         for (String strategy : strategies.keySet()) {
             SearchRequest request = new SearchRequest();
-            request.setAddOwnerCriterion(false);
             request.addCriterion("STRATEGY", InvestmentRecommendation.class, "strategy", SearchOperation.EQUALS_OPERATION, strategy);
             List<InvestmentRecommendation> recommendations = recommendationService.load(request, Pageable.ofSize(TEN_YEARS), "id", SortDirection.ASC);
             data.put(strategy, recommendations);

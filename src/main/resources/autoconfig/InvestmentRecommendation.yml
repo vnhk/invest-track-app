@@ -9,6 +9,17 @@ columns:
     min: 2
     max: 20
 
+  - field: strategy
+    displayName: "Strategy"
+    internalName: strategy
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    dynamicStrValues: true
+    min: 2
+    max: 100
+
   - field: changeInPercentMorning
     displayName: "Change (Bef)"
     internalName: changeInPercentMorning
