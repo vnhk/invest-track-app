@@ -35,7 +35,11 @@ public class StrategiesDashboardView extends VerticalLayout {
             SearchRequest request = new SearchRequest();
             request.addCriterion("STRATEGY", InvestmentRecommendation.class, "strategy", SearchOperation.EQUALS_OPERATION, strategy);
             List<InvestmentRecommendation> recommendations = recommendationService.load(request, Pageable.ofSize(TEN_YEARS), "id", SortDirection.ASC);
-            data.put(strategy, recommendations);
+            if (recommendations.isEmpty()) {
+                log.warn("No recommendations found for strategy: " + strategy);
+            } else {
+                data.put(strategy, recommendations);
+            }
         }
 
         add(createMainContent(data));
@@ -75,7 +79,7 @@ public class StrategiesDashboardView extends VerticalLayout {
             chartLayout.setPadding(false);
             chartLayout.setSpacing(false);
 
-            chartLayout.add(new com.vaadin.flow.component.html.Span("Average success probability: " + overallProbability));
+            chartLayout.add(new com.vaadin.flow.component.html.Span(strategy + ": " + overallProbability));
             chart.setWidth("50%");
             chart.setHeight("400px");
             chartLayout.add(chart);
@@ -111,15 +115,15 @@ public class StrategiesDashboardView extends VerticalLayout {
     private List<StrategyBGRHistoryChart> getStrategyBGRHistoryCharts(Map<String, List<InvestmentRecommendation>> data) {
         List<StrategyBGRHistoryChart> historyBGRCharts = new ArrayList<>();
 
-        List<String> dates = new ArrayList<>();
-        List<String> bestRecPercent = new ArrayList<>();
-        List<String> goodRecPercent = new ArrayList<>();
-        List<String> riskyRecPercent = new ArrayList<>();
-
         for (String strategy : data.keySet()) {
+            List<String> dates = new ArrayList<>();
+            List<String> bestRecPercent = new ArrayList<>();
+            List<String> goodRecPercent = new ArrayList<>();
+            List<String> riskyRecPercent = new ArrayList<>();
 
+            List<InvestmentRecommendation> strategyRecommendations = data.get(strategy);
             Map<String, List<InvestmentRecommendation>> groupedByDate =
-                    data.get(strategy).stream().collect(Collectors.groupingBy(InvestmentRecommendation::getDate));
+                    strategyRecommendations.stream().collect(Collectors.groupingBy(InvestmentRecommendation::getDate));
 
             for (String date : groupedByDate.keySet()) {
                 dates.add(date);
