@@ -17,15 +17,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Service("Random Strategy")
-public class RandomStrategy implements RecommendationStrategy {
+@Service("High Volume Momentum Strategy")
+public class HighVolumeMomentumStrategy implements RecommendationStrategy {
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
-    private final Random random = new Random();
 
-    public RandomStrategy(FileDiskStorageService fileDiskStorageService) {
+    public HighVolumeMomentumStrategy(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }
@@ -48,29 +47,22 @@ public class RandomStrategy implements RecommendationStrategy {
             List<StockPriceData> morningData =
                     (List<StockPriceData>) baseExcelImport.importExcel(wb);
 
-            // Prefer stocks with at least 10 transactions (soft filter)
-            List<StockPriceData> filtered = morningData.stream()
+            // Momentum filter: rising + volume
+            List<StockPriceData> candidates = morningData.stream()
+                    .filter(d -> d.getSymbol() != null)
+                    .filter(d -> d.getChangePercent() != null
+                            && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                     .filter(d -> d.getTransactions() != null && d.getTransactions() >= 10)
+                    .sorted(Comparator.comparing(StockPriceData::getTransactions).reversed())
+                    .limit(10)
                     .toList();
 
-            // Fallback to all if too few after filtering
-            List<StockPriceData> baseList =
-                    filtered.size() >= 10 ? filtered : morningData;
+            int bestSize = Math.min(3, candidates.size());
+            int goodSize = Math.min(4, Math.max(0, candidates.size() - bestSize));
 
-            List<StockPriceData> shuffled = new ArrayList<>(baseList);
-            Collections.shuffle(shuffled, random);
-
-            // Max 10 recommendations total
-            int limit = Math.min(10, shuffled.size());
-            List<StockPriceData> selected = shuffled.subList(0, limit);
-
-            // Fixed proportions: Best / Good / Risky
-            int bestSize = Math.min(3, selected.size());
-            int goodSize = Math.min(4, Math.max(0, selected.size() - bestSize));
-
-            List<StockPriceData> best = selected.subList(0, bestSize);
-            List<StockPriceData> good = selected.subList(bestSize, bestSize + goodSize);
-            List<StockPriceData> risky = selected.subList(bestSize + goodSize, selected.size());
+            List<StockPriceData> best = candidates.subList(0, bestSize);
+            List<StockPriceData> good = candidates.subList(bestSize, bestSize + goodSize);
+            List<StockPriceData> risky = candidates.subList(bestSize + goodSize, candidates.size());
 
             reportData.setBestToInvest(best);
             reportData.setGoodToInvest(good);
@@ -86,7 +78,7 @@ public class RandomStrategy implements RecommendationStrategy {
             );
 
         } catch (Exception e) {
-            log.error(ctx.map(), "RandomStrategy morning load error", e);
+            log.error(ctx.map(), "HighVolumeMomentumStrategy morning error", e);
             return reportData;
         }
 
@@ -136,7 +128,7 @@ public class RandomStrategy implements RecommendationStrategy {
                             concatBad(reportData)));
 
         } catch (Exception e) {
-            log.error(ctx.map(), "RandomStrategy evening load error", e);
+            log.error(ctx.map(), "HighVolumeMomentumStrategy evening error", e);
         }
 
         return reportData;
