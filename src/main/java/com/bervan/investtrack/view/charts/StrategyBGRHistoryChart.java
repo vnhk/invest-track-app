@@ -14,10 +14,12 @@ import java.util.UUID;
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
 public class StrategyBGRHistoryChart extends Component implements HasSize {
+    private String strategyName;
 
     //best//good//risky
     public StrategyBGRHistoryChart(
-            List<String> dates, List<String> bestRecPercent, List<String> goodRecPercent, List<String> riskyRecPercent) {
+            String strategy, List<String> dates, List<String> bestRecPercent, List<String> goodRecPercent, List<String> riskyRecPercent) {
+        this.strategyName = strategy;
         setId("StrategyBGRHistoryChart_" + UUID.randomUUID());
         renderChart(dates, bestRecPercent, goodRecPercent, riskyRecPercent);
     }
@@ -40,5 +42,9 @@ public class StrategyBGRHistoryChart extends Component implements HasSize {
                 toArray(goodRecPercent),
                 toArray(riskyRecPercent)
         );
+    }
+
+    public String getStrategyName() {
+        return null;
     }
 }

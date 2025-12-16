@@ -65,9 +65,22 @@ public class StrategiesDashboardView extends VerticalLayout {
                 gridLayout.add(row);
             }
 
+            // Calculate overall average probabilities
+            String strategy = chart.getStrategyName();
+            List<InvestmentRecommendation> recommendations = data.get(strategy);
+            String overallProbability = calculateOverallProbability(recommendations);
+
+            // Add a short info label above the chart
+            VerticalLayout chartLayout = new VerticalLayout();
+            chartLayout.setPadding(false);
+            chartLayout.setSpacing(false);
+
+            chartLayout.add(new com.vaadin.flow.component.html.Span("Average success probability: " + overallProbability));
             chart.setWidth("50%");
             chart.setHeight("400px");
-            row.add(chart);
+            chartLayout.add(chart);
+
+            row.add(chartLayout);
 
             count++;
         }
@@ -77,6 +90,19 @@ public class StrategiesDashboardView extends VerticalLayout {
         return content;
     }
 
+    /**
+     * Calculates overall probability for risky, good, best recommendations over the whole period
+     */
+    private String calculateOverallProbability(List<InvestmentRecommendation> recommendations) {
+        Map<String, List<InvestmentRecommendation>> groupedByType = recommendations.stream()
+                .collect(Collectors.groupingBy(InvestmentRecommendation::getRecommendationType));
+
+        String riskyAvg = groupedByType.containsKey("Risky") ? calculateChanceOfSuccess(groupedByType.get("Risky")) : "0";
+        String goodAvg = groupedByType.containsKey("Good") ? calculateChanceOfSuccess(groupedByType.get("Good")) : "0";
+        String bestAvg = groupedByType.containsKey("Best") ? calculateChanceOfSuccess(groupedByType.get("Best")) : "0";
+
+        return "Risky: " + riskyAvg + ", Good: " + goodAvg + ", Best: " + bestAvg;
+    }
     private List<StrategyBGRHistoryChart> getStrategyBGRHistoryCharts(Map<String, List<InvestmentRecommendation>> data) {
         List<StrategyBGRHistoryChart> historyBGRCharts = new ArrayList<>();
 
@@ -117,7 +143,7 @@ public class StrategiesDashboardView extends VerticalLayout {
 
             }
 
-            historyBGRCharts.add(new StrategyBGRHistoryChart(dates, bestRecPercent, goodRecPercent, riskyRecPercent));
+            historyBGRCharts.add(new StrategyBGRHistoryChart(strategy, dates, bestRecPercent, goodRecPercent, riskyRecPercent));
         }
         return historyBGRCharts;
     }
