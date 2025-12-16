@@ -16,14 +16,14 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Service("High Volume Momentum Strategy")
-public class HighVolumeMomentumStrategy implements RecommendationStrategy {
+@Service("Extreme Morning Spike Strategy")
+public class ExtremeMorningSpikeStrategy implements RecommendationStrategy {
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public HighVolumeMomentumStrategy(FileDiskStorageService fileDiskStorageService) {
+    public ExtremeMorningSpikeStrategy(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }
@@ -46,13 +46,13 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
             List<StockPriceData> morningData =
                     (List<StockPriceData>) baseExcelImport.importExcel(wb);
 
-            // Momentum filter: rising + volume
+            // Filter: rising stocks with highest % change
             List<StockPriceData> candidates = morningData.stream()
                     .filter(d -> d.getSymbol() != null)
                     .filter(d -> d.getChangePercent() != null
                             && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
                     .filter(d -> d.getTransactions() != null && d.getTransactions() >= 10)
-                    .sorted(Comparator.comparing(StockPriceData::getTransactions).reversed())
+                    .sorted(Comparator.comparing(StockPriceData::getChangePercent).reversed())
                     .limit(10)
                     .toList();
 
@@ -77,7 +77,7 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
             );
 
         } catch (Exception e) {
-            log.error(ctx.map(), "HighVolumeMomentumStrategy morning error", e);
+            log.error(ctx.map(), "ExtremeMorningSpikeStrategy morning error", e);
             return reportData;
         }
 
@@ -127,7 +127,7 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
                             concatBad(reportData)));
 
         } catch (Exception e) {
-            log.error(ctx.map(), "HighVolumeMomentumStrategy evening error", e);
+            log.error(ctx.map(), "ExtremeMorningSpikeStrategy evening error", e);
         }
 
         return reportData;

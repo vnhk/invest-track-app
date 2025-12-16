@@ -16,14 +16,17 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Service("High Volume Momentum Strategy")
-public class HighVolumeMomentumStrategy implements RecommendationStrategy {
+@Service("Low Volatility Growers Strategy")
+public class LowVolatilityGrowersStrategy implements RecommendationStrategy {
+
+    private static final BigDecimal MIN_CHANGE = BigDecimal.valueOf(0.5);
+    private static final BigDecimal MAX_CHANGE = BigDecimal.valueOf(2.0);
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public HighVolumeMomentumStrategy(FileDiskStorageService fileDiskStorageService) {
+    public LowVolatilityGrowersStrategy(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }
@@ -46,13 +49,14 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
             List<StockPriceData> morningData =
                     (List<StockPriceData>) baseExcelImport.importExcel(wb);
 
-            // Momentum filter: rising + volume
             List<StockPriceData> candidates = morningData.stream()
                     .filter(d -> d.getSymbol() != null)
-                    .filter(d -> d.getChangePercent() != null
-                            && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
-                    .filter(d -> d.getTransactions() != null && d.getTransactions() >= 10)
-                    .sorted(Comparator.comparing(StockPriceData::getTransactions).reversed())
+                    .filter(d -> d.getChangePercent() != null)
+                    .filter(d -> d.getChangePercent().compareTo(MIN_CHANGE) >= 0)
+                    .filter(d -> d.getChangePercent().compareTo(MAX_CHANGE) <= 0)
+                    .filter(d -> d.getTransactions() != null && d.getTransactions() >= 20)
+                    // sort by lowest volatility first
+                    .sorted(Comparator.comparing(StockPriceData::getChangePercent))
                     .limit(10)
                     .toList();
 
@@ -77,7 +81,7 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
             );
 
         } catch (Exception e) {
-            log.error(ctx.map(), "HighVolumeMomentumStrategy morning error", e);
+            log.error(ctx.map(), "LowVolatilityGrowersStrategy morning error", e);
             return reportData;
         }
 
@@ -127,7 +131,7 @@ public class HighVolumeMomentumStrategy implements RecommendationStrategy {
                             concatBad(reportData)));
 
         } catch (Exception e) {
-            log.error(ctx.map(), "HighVolumeMomentumStrategy evening error", e);
+            log.error(ctx.map(), "LowVolatilityGrowersStrategy evening error", e);
         }
 
         return reportData;
