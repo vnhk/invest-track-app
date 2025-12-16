@@ -17,13 +17,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("High Volume Momentum Strategy")
-public class HighVolumeMomentumStrategy implements RecommendationStrategy {
+public class HighVolumeMomentumStrategyShortTerm implements ShortTermRecommendationStrategy {
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public HighVolumeMomentumStrategy(FileDiskStorageService fileDiskStorageService) {
+    public HighVolumeMomentumStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }

@@ -1,7 +1,7 @@
 package com.bervan.investtrack.service;
 
 import com.bervan.common.config.DynamicConfigLoader;
-import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
+import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +11,9 @@ import java.util.Map;
 @Service
 public class InvestmentStrategyLoader implements DynamicConfigLoader {
 
-    private final Map<String, RecommendationStrategy> strategies;
+    private final Map<String, ShortTermRecommendationStrategy> strategies;
 
-    public InvestmentStrategyLoader(Map<String, RecommendationStrategy> strategies) {
+    public InvestmentStrategyLoader(Map<String, ShortTermRecommendationStrategy> strategies) {
         this.strategies = strategies;
     }
 

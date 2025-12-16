@@ -6,7 +6,7 @@ import com.bervan.filestorage.model.BervanMockMultiPartFile;
 import com.bervan.filestorage.service.FileDiskStorageService;
 import com.bervan.ieentities.BaseExcelExport;
 import com.bervan.investtrack.model.StockPriceData;
-import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
+import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.logging.BaseProcessContext;
 import com.bervan.logging.JsonLogger;
 import com.microsoft.playwright.Locator;
@@ -36,12 +36,12 @@ public class StockPriceReportService {
     private final String URL = "https://www.bankier.pl/gielda/notowania/akcje";
     private final BaseProcessContext loadStockPricesContext = BaseProcessContext.builder()
             .processName("loadStockPrices").build();
-    private final Map<String, RecommendationStrategy> strategies;
+    private final Map<String, ShortTermRecommendationStrategy> strategies;
 
     protected StockPriceReportService(PlaywrightService playwrightService,
                                       FileDiskStorageService fileDiskStorageService,
                                       AsyncTaskService asyncTaskService,
-                                      Map<String, RecommendationStrategy> strategies) {
+                                      Map<String, ShortTermRecommendationStrategy> strategies) {
         this.playwrightService = playwrightService;
         this.fileDiskStorageService = fileDiskStorageService;
         this.asyncTaskService = asyncTaskService;

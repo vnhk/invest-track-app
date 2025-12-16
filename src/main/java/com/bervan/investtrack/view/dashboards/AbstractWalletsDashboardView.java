@@ -9,7 +9,7 @@ import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.WalletService;
-import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
+import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -44,11 +44,11 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final List<BigDecimal> aggregatedDepositsForOneWallet = new ArrayList<>();
     private final List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
     private final CurrencyConverter currencyConverter;
-    private final Map<String, RecommendationStrategy> strategies;
+    private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
 
     public AbstractWalletsDashboardView(CurrencyConverter currencyConverter,
-                                        WalletService service, Map<String, RecommendationStrategy> strategies,
+                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
                                         InvestmentRecommendationService recommendationService) {
         this.currencyConverter = currencyConverter;
         this.strategies = strategies;
@@ -274,8 +274,8 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
         Tab balance = new Tab("Balance");
         Tab earnings = new Tab("Earnings");
         Tab fire = new Tab("FIRE");
-        Tab strategies = new Tab("Strategies");
-        tabs.add(balance, earnings, fire, strategies);
+        Tab shortTermStrategies = new Tab("Short Term Strategies");
+        tabs.add(balance, earnings, fire, shortTermStrategies);
         add(tabs);
         VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
         filtersLayout.setSpacing(true);
@@ -295,7 +295,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
             } else if (selectedTab.getLabel().equals("FIRE")) {
                 filtersLayout.setVisible(false);
                 fireTab(wallets, dates, balances, deposits, sumOfDeposits);
-            } else if (selectedTab.getLabel().equals("Strategies")) {
+            } else if (selectedTab.getLabel().equals("Short Term Strategies")) {
                 filtersLayout.setVisible(false);
                 strategiesTab();
             }

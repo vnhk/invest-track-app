@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("Fall At Morning Strategy")
-public class FallAtMorningStrategy implements RecommendationStrategy {
+public class FallAtMorningStrategyShortTerm implements ShortTermRecommendationStrategy {
     public static Integer minAmountOfTransactionsBestToInvest = 50;
     public static Integer minAmountOfTransactionsGoodToInvest = 25;
     public static Integer minAmountOfTransactionsRiskyToInvest = 5;
@@ -33,7 +33,7 @@ public class FallAtMorningStrategy implements RecommendationStrategy {
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public FallAtMorningStrategy(FileDiskStorageService fileDiskStorageService) {
+    public FallAtMorningStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }

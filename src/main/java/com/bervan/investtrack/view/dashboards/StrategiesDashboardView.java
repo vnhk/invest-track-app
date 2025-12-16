@@ -5,7 +5,7 @@ import com.bervan.common.search.model.SearchOperation;
 import com.bervan.common.search.model.SortDirection;
 import com.bervan.investments.recommendation.InvestmentRecommendation;
 import com.bervan.investments.recommendation.InvestmentRecommendationService;
-import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
+import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.investtrack.view.charts.StrategyBGRHistoryChart;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 
 public class StrategiesDashboardView extends VerticalLayout {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
-    private final Map<String, RecommendationStrategy> strategies;
+    private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
 
-    public StrategiesDashboardView(Map<String, RecommendationStrategy> strategies,
+    public StrategiesDashboardView(Map<String, ShortTermRecommendationStrategy> strategies,
                                    InvestmentRecommendationService recommendationService) {
         this.strategies = strategies;
         this.recommendationService = recommendationService;

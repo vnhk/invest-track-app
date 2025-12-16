@@ -9,23 +9,20 @@ import com.bervan.logging.JsonLogger;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service("Random Strategy")
-public class RandomStrategy implements RecommendationStrategy {
+public class RandomStrategyShortTerm implements ShortTermRecommendationStrategy {
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
     private final Random random = new Random();
 
-    public RandomStrategy(FileDiskStorageService fileDiskStorageService) {
+    public RandomStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }

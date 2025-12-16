@@ -5,7 +5,7 @@ import com.bervan.common.service.BaseService;
 import com.bervan.history.model.BaseRepository;
 import com.bervan.investtrack.model.StockPriceData;
 import com.bervan.investtrack.service.ReportData;
-import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
+import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.logging.BaseProcessContext;
 import com.bervan.logging.JsonLogger;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,9 +21,9 @@ import java.util.UUID;
 @Service
 public class InvestmentRecommendationService extends BaseService<UUID, InvestmentRecommendation> {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "recommendations");
-    private final Map<String, RecommendationStrategy> strategies;
+    private final Map<String, ShortTermRecommendationStrategy> strategies;
 
-    public InvestmentRecommendationService(BaseRepository<InvestmentRecommendation, UUID> repository, SearchService searchService, Map<String, RecommendationStrategy> strategies) {
+    public InvestmentRecommendationService(BaseRepository<InvestmentRecommendation, UUID> repository, SearchService searchService, Map<String, ShortTermRecommendationStrategy> strategies) {
         super(repository, searchService);
         this.strategies = strategies;
     }

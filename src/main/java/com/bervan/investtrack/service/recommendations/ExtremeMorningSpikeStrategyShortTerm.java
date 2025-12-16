@@ -17,13 +17,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("Extreme Morning Spike Strategy")
-public class ExtremeMorningSpikeStrategy implements RecommendationStrategy {
+public class ExtremeMorningSpikeStrategyShortTerm implements ShortTermRecommendationStrategy {
 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public ExtremeMorningSpikeStrategy(FileDiskStorageService fileDiskStorageService) {
+    public ExtremeMorningSpikeStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }

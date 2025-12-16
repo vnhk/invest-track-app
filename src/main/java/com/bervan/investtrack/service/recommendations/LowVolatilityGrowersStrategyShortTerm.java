@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("Low Volatility Growers Strategy")
-public class LowVolatilityGrowersStrategy implements RecommendationStrategy {
+public class LowVolatilityGrowersStrategyShortTerm implements ShortTermRecommendationStrategy {
 
     private static final BigDecimal MIN_CHANGE = BigDecimal.valueOf(0.5);
     private static final BigDecimal MAX_CHANGE = BigDecimal.valueOf(2.0);
@@ -26,7 +26,7 @@ public class LowVolatilityGrowersStrategy implements RecommendationStrategy {
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
 
-    public LowVolatilityGrowersStrategy(FileDiskStorageService fileDiskStorageService) {
+    public LowVolatilityGrowersStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
         this.fileDiskStorageService = fileDiskStorageService;
     }
