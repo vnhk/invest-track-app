@@ -21,7 +21,6 @@ public class RandomStrategyShortTerm implements ShortTermRecommendationStrategy 
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final BaseExcelImport baseExcelImport;
     private final FileDiskStorageService fileDiskStorageService;
-    private final Random random = new Random();
 
     public RandomStrategyShortTerm(FileDiskStorageService fileDiskStorageService) {
         this.baseExcelImport = new BaseExcelImport(List.of(StockPriceData.class));
@@ -53,6 +52,7 @@ public class RandomStrategyShortTerm implements ShortTermRecommendationStrategy 
                 .toList();
 
         List<StockPriceData> baseList = filtered.size() >= 10 ? filtered : morningData;
+        Random random = new Random(day.toEpochDay()); // deterministic seed
         List<StockPriceData> shuffled = new ArrayList<>(baseList);
         Collections.shuffle(shuffled, random);
 
