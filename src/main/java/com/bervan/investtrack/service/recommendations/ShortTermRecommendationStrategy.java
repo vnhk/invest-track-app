@@ -10,47 +10,45 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ShortTermRecommendationStrategy {
 
     ReportData loadReportData(LocalDate day, BaseProcessContext recommendationContext);
 
-    default List<StockPriceData> getGood(List<StockPriceData> rec,
-                                         List<StockPriceData> evening) {
-
-        Map<String, StockPriceData> map = evening.stream()
-                .filter(e -> e.getSymbol() != null)
-                .collect(Collectors.toMap(
-                        StockPriceData::getSymbol,
-                        Function.identity(),
-                        (a, b) -> a));
+    default List<StockPriceData> getGoodComparedToMorning(List<StockPriceData> rec,
+                                                          List<StockPriceData> evening,
+                                                          Map<String, BigDecimal> morningMap) {
 
         return rec.stream()
-                .map(r -> map.get(r.getSymbol()))
+                .map(r -> evening.stream()
+                        .filter(e -> e.getSymbol() != null && e.getSymbol().equals(r.getSymbol()))
+                        .findFirst()
+                        .orElse(null))
                 .filter(Objects::nonNull)
-                .filter(e -> e.getChangePercent() != null
-                        && e.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(e -> {
+                    BigDecimal morningValue = morningMap.get(e.getSymbol());
+                    if (morningValue == null || e.getChangePercent() == null) return false;
+                    return e.getChangePercent().subtract(morningValue).compareTo(BigDecimal.ZERO) > 0;
+                })
                 .toList();
     }
 
-    default List<StockPriceData> getBad(List<StockPriceData> rec,
-                                        List<StockPriceData> evening) {
-
-        Map<String, StockPriceData> map = evening.stream()
-                .filter(e -> e.getSymbol() != null)
-                .collect(Collectors.toMap(
-                        StockPriceData::getSymbol,
-                        Function.identity(),
-                        (a, b) -> a));
+    default List<StockPriceData> getBadComparedToMorning(List<StockPriceData> rec,
+                                                         List<StockPriceData> evening,
+                                                         Map<String, BigDecimal> morningMap) {
 
         return rec.stream()
-                .map(r -> map.get(r.getSymbol()))
+                .map(r -> evening.stream()
+                        .filter(e -> e.getSymbol() != null && e.getSymbol().equals(r.getSymbol()))
+                        .findFirst()
+                        .orElse(null))
                 .filter(Objects::nonNull)
-                .filter(e -> e.getChangePercent() != null
-                        && e.getChangePercent().compareTo(BigDecimal.ZERO) < 0)
+                .filter(e -> {
+                    BigDecimal morningValue = morningMap.get(e.getSymbol());
+                    if (morningValue == null || e.getChangePercent() == null) return false;
+                    return e.getChangePercent().subtract(morningValue).compareTo(BigDecimal.ZERO) < 0;
+                })
                 .toList();
     }
 

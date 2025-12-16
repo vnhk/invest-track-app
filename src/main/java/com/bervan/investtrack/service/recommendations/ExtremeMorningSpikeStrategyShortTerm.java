@@ -11,8 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,101 +36,101 @@ public class ExtremeMorningSpikeStrategyShortTerm implements ShortTermRecommenda
         String todayMorning = fileName(day, "Morning");
         String todayEvening = fileName(day, "Evening");
 
-        // ---------- MORNING ----------
-        if (!fileDiskStorageService.isTmpFile(todayMorning)) {
-            return reportData;
-        }
+        if (!fileDiskStorageService.isTmpFile(todayMorning)) return reportData;
 
-        try (Workbook wb = baseExcelImport.load(
-                fileDiskStorageService.getTmpFile(todayMorning).toFile())) {
-
-            List<StockPriceData> morningData =
-                    (List<StockPriceData>) baseExcelImport.importExcel(wb);
-
-            // Filter: rising stocks with highest % change
-            List<StockPriceData> candidates = morningData.stream()
-                    .filter(d -> d.getSymbol() != null)
-                    .filter(d -> d.getChangePercent() != null
-                            && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
-                    .filter(d -> d.getTransactions() != null && d.getTransactions() >= 10)
-                    .sorted(Comparator.comparing(StockPriceData::getChangePercent).reversed())
-                    .limit(10)
-                    .toList();
-
-            int bestSize = Math.min(3, candidates.size());
-            int goodSize = Math.min(4, Math.max(0, candidates.size() - bestSize));
-
-            List<StockPriceData> best = candidates.subList(0, bestSize);
-            List<StockPriceData> good = candidates.subList(bestSize, bestSize + goodSize);
-            List<StockPriceData> risky = candidates.subList(bestSize + goodSize, candidates.size());
-
-            reportData.setBestToInvest(best);
-            reportData.setGoodToInvest(good);
-            reportData.setRiskyToInvest(risky);
-
-            reportData.setMorningMap(
-                    morningData.stream()
-                            .filter(d -> d.getSymbol() != null)
-                            .collect(Collectors.toMap(
-                                    StockPriceData::getSymbol,
-                                    Function.identity(),
-                                    (a, b) -> a))
-            );
-
+        List<StockPriceData> morningData;
+        try (Workbook wb = baseExcelImport.load(fileDiskStorageService.getTmpFile(todayMorning).toFile())) {
+            morningData = (List<StockPriceData>) baseExcelImport.importExcel(wb);
         } catch (Exception e) {
-            log.error(ctx.map(), "ExtremeMorningSpikeStrategy morning error", e);
+            log.error(ctx.map(), "Morning load error", e);
             return reportData;
         }
 
-        // ---------- EVENING ----------
-        if (!fileDiskStorageService.isTmpFile(todayEvening)) {
-            return reportData;
-        }
+        // --- Build morning map for later comparison ---
+        Map<String, BigDecimal> morningMap = morningData.stream()
+                .filter(d -> d.getSymbol() != null && d.getChangePercent() != null)
+                .collect(Collectors.toMap(
+                        StockPriceData::getSymbol,
+                        StockPriceData::getChangePercent,
+                        (a, b) -> a
+                ));
 
-        try (Workbook wb = baseExcelImport.load(
-                fileDiskStorageService.getTmpFile(todayEvening).toFile())) {
+        // --- Select candidates ---
+        List<StockPriceData> candidates = morningData.stream()
+                .filter(d -> d.getSymbol() != null)
+                .filter(d -> d.getChangePercent() != null && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
+                .filter(d -> d.getTransactions() != null && d.getTransactions() >= 10)
+                .sorted((a, b) -> b.getChangePercent().compareTo(a.getChangePercent()))
+                .limit(10)
+                .toList();
 
-            List<StockPriceData> eveningData =
-                    (List<StockPriceData>) baseExcelImport.importExcel(wb);
+        int bestSize = Math.min(3, candidates.size());
+        int goodSize = Math.min(4, Math.max(0, candidates.size() - bestSize));
 
-            reportData.setGoodInvestmentsBasedOnBestRecommendation(
-                    getGood(reportData.getBestToInvest(), eveningData));
-            reportData.setGoodInvestmentsBasedOnGoodRecommendation(
-                    getGood(reportData.getGoodToInvest(), eveningData));
-            reportData.setGoodInvestmentsBasedOnRiskyRecommendation(
-                    getGood(reportData.getRiskyToInvest(), eveningData));
+        List<StockPriceData> best = filterMorning(morningData, candidates.subList(0, bestSize));
+        List<StockPriceData> good = filterMorning(morningData, candidates.subList(bestSize, bestSize + goodSize));
+        List<StockPriceData> risky = filterMorning(morningData, candidates.subList(bestSize + goodSize, candidates.size()));
 
-            reportData.setBadInvestmentsBasedOnBestRecommendation(
-                    getBad(reportData.getBestToInvest(), eveningData));
-            reportData.setBadInvestmentsBasedOnGoodRecommendation(
-                    getBad(reportData.getGoodToInvest(), eveningData));
-            reportData.setBadInvestmentsBasedOnRiskyRecommendation(
-                    getBad(reportData.getRiskyToInvest(), eveningData));
+        reportData.setBestToInvest(best);
+        reportData.setGoodToInvest(good);
+        reportData.setRiskyToInvest(risky);
 
-            reportData.setGoodInvestmentProbabilityBasedOnBestToday(
-                    probability(
-                            reportData.getGoodInvestmentsBasedOnBestRecommendation(),
-                            reportData.getBadInvestmentsBasedOnBestRecommendation()));
+        reportData.setMorningMap(
+                morningData.stream()
+                        .filter(d -> d.getSymbol() != null)
+                        .collect(Collectors.toMap(
+                                StockPriceData::getSymbol,
+                                Function.identity(),
+                                (a, b) -> a))
+        );
 
-            reportData.setGoodInvestmentProbabilityBasedOnGoodToday(
-                    probability(
-                            reportData.getGoodInvestmentsBasedOnGoodRecommendation(),
-                            reportData.getBadInvestmentsBasedOnGoodRecommendation()));
+        // --- Evening ---
+        if (!fileDiskStorageService.isTmpFile(todayEvening)) return reportData;
 
-            reportData.setGoodInvestmentProbabilityBasedOnRiskyToday(
-                    probability(
-                            reportData.getGoodInvestmentsBasedOnRiskyRecommendation(),
-                            reportData.getBadInvestmentsBasedOnRiskyRecommendation()));
-
-            reportData.setGoodInvestmentTotalProbabilityBasedOnToday(
-                    probability(
-                            concatGood(reportData),
-                            concatBad(reportData)));
-
+        List<StockPriceData> eveningData;
+        try (Workbook wb = baseExcelImport.load(fileDiskStorageService.getTmpFile(todayEvening).toFile())) {
+            eveningData = (List<StockPriceData>) baseExcelImport.importExcel(wb);
         } catch (Exception e) {
-            log.error(ctx.map(), "ExtremeMorningSpikeStrategy evening error", e);
+            log.error(ctx.map(), "Evening load error", e);
+            return reportData;
         }
+
+        reportData.setGoodInvestmentsBasedOnBestRecommendation(
+                getGoodComparedToMorning(best, eveningData, morningMap));
+        reportData.setGoodInvestmentsBasedOnGoodRecommendation(
+                getGoodComparedToMorning(good, eveningData, morningMap));
+        reportData.setGoodInvestmentsBasedOnRiskyRecommendation(
+                getGoodComparedToMorning(risky, eveningData, morningMap));
+
+        reportData.setBadInvestmentsBasedOnBestRecommendation(
+                getBadComparedToMorning(best, eveningData, morningMap));
+        reportData.setBadInvestmentsBasedOnGoodRecommendation(
+                getBadComparedToMorning(good, eveningData, morningMap));
+        reportData.setBadInvestmentsBasedOnRiskyRecommendation(
+                getBadComparedToMorning(risky, eveningData, morningMap));
+
+        reportData.setGoodInvestmentProbabilityBasedOnBestToday(
+                probability(reportData.getGoodInvestmentsBasedOnBestRecommendation(),
+                        reportData.getBadInvestmentsBasedOnBestRecommendation()));
+        reportData.setGoodInvestmentProbabilityBasedOnGoodToday(
+                probability(reportData.getGoodInvestmentsBasedOnGoodRecommendation(),
+                        reportData.getBadInvestmentsBasedOnGoodRecommendation()));
+        reportData.setGoodInvestmentProbabilityBasedOnRiskyToday(
+                probability(reportData.getGoodInvestmentsBasedOnRiskyRecommendation(),
+                        reportData.getBadInvestmentsBasedOnRiskyRecommendation()));
+
+        reportData.setGoodInvestmentTotalProbabilityBasedOnToday(
+                probability(concatGood(reportData), concatBad(reportData)));
 
         return reportData;
+    }
+
+    private List<StockPriceData> filterMorning(List<StockPriceData> morningData, List<StockPriceData> symbols) {
+        Set<String> symbolsSet = symbols.stream()
+                .map(StockPriceData::getSymbol)
+                .collect(Collectors.toSet());
+        return morningData.stream()
+                .filter(d -> d.getSymbol() != null && symbolsSet.contains(d.getSymbol()))
+                .toList();
     }
 }

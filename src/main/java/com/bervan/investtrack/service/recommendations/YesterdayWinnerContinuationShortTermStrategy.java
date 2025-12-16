@@ -62,7 +62,6 @@ public class YesterdayWinnerContinuationShortTermStrategy implements ShortTermRe
             return reportData;
         }
 
-        // ---------- morning recommendations ----------
         List<StockPriceData> candidates = yesterdayEveningData.stream()
                 .filter(d -> d.getSymbol() != null)
                 .filter(d -> d.getChangePercent() != null && d.getChangePercent().compareTo(BigDecimal.ZERO) > 0)
@@ -82,7 +81,6 @@ public class YesterdayWinnerContinuationShortTermStrategy implements ShortTermRe
         reportData.setGoodToInvest(good);
         reportData.setRiskyToInvest(risky);
 
-        // zapisz poranny poziom
         Map<String, BigDecimal> morningMap = todayMorningData.stream()
                 .filter(d -> d.getSymbol() != null)
                 .collect(Collectors.toMap(StockPriceData::getSymbol,
@@ -94,7 +92,6 @@ public class YesterdayWinnerContinuationShortTermStrategy implements ShortTermRe
                         Function.identity(),
                         (a, b) -> a)));
 
-        // ---------- evening analysis (relatywnie do porannego poziomu) ----------
         String todayEvening = fileName(day, "Evening");
         if (fileDiskStorageService.isTmpFile(todayEvening)) {
             try (Workbook wb = baseExcelImport.load(
@@ -104,18 +101,18 @@ public class YesterdayWinnerContinuationShortTermStrategy implements ShortTermRe
                         (List<StockPriceData>) baseExcelImport.importExcel(wb);
 
                 reportData.setGoodInvestmentsBasedOnBestRecommendation(
-                        getGoodRelativeToMorning(reportData.getBestToInvest(), eveningData, morningMap));
+                        getGoodComparedToMorning(reportData.getBestToInvest(), eveningData, morningMap));
                 reportData.setGoodInvestmentsBasedOnGoodRecommendation(
-                        getGoodRelativeToMorning(reportData.getGoodToInvest(), eveningData, morningMap));
+                        getGoodComparedToMorning(reportData.getGoodToInvest(), eveningData, morningMap));
                 reportData.setGoodInvestmentsBasedOnRiskyRecommendation(
-                        getGoodRelativeToMorning(reportData.getRiskyToInvest(), eveningData, morningMap));
+                        getGoodComparedToMorning(reportData.getRiskyToInvest(), eveningData, morningMap));
 
                 reportData.setBadInvestmentsBasedOnBestRecommendation(
-                        getBadRelativeToMorning(reportData.getBestToInvest(), eveningData, morningMap));
+                        getBadComparedToMorning(reportData.getBestToInvest(), eveningData, morningMap));
                 reportData.setBadInvestmentsBasedOnGoodRecommendation(
-                        getBadRelativeToMorning(reportData.getGoodToInvest(), eveningData, morningMap));
+                        getBadComparedToMorning(reportData.getGoodToInvest(), eveningData, morningMap));
                 reportData.setBadInvestmentsBasedOnRiskyRecommendation(
-                        getBadRelativeToMorning(reportData.getRiskyToInvest(), eveningData, morningMap));
+                        getBadComparedToMorning(reportData.getRiskyToInvest(), eveningData, morningMap));
 
                 reportData.setGoodInvestmentProbabilityBasedOnBestToday(
                         probability(reportData.getGoodInvestmentsBasedOnBestRecommendation(),
@@ -144,32 +141,6 @@ public class YesterdayWinnerContinuationShortTermStrategy implements ShortTermRe
                 .collect(Collectors.toSet());
         return morningData.stream()
                 .filter(d -> d.getSymbol() != null && symbolsSet.contains(d.getSymbol()))
-                .toList();
-    }
-
-    private List<StockPriceData> getGoodRelativeToMorning(List<StockPriceData> rec,
-                                                          List<StockPriceData> evening,
-                                                          Map<String, BigDecimal> morningMap) {
-        return evening.stream()
-                .filter(d -> d.getSymbol() != null)
-                .filter(d -> rec.stream().anyMatch(r -> r.getSymbol().equals(d.getSymbol())))
-                .filter(d -> {
-                    BigDecimal morningValue = morningMap.get(d.getSymbol());
-                    return morningValue != null && d.getChangePercent().subtract(morningValue).compareTo(BigDecimal.ZERO) > 0;
-                })
-                .toList();
-    }
-
-    private List<StockPriceData> getBadRelativeToMorning(List<StockPriceData> rec,
-                                                         List<StockPriceData> evening,
-                                                         Map<String, BigDecimal> morningMap) {
-        return evening.stream()
-                .filter(d -> d.getSymbol() != null)
-                .filter(d -> rec.stream().anyMatch(r -> r.getSymbol().equals(d.getSymbol())))
-                .filter(d -> {
-                    BigDecimal morningValue = morningMap.get(d.getSymbol());
-                    return morningValue != null && d.getChangePercent().subtract(morningValue).compareTo(BigDecimal.ZERO) < 0;
-                })
                 .toList();
     }
 }
