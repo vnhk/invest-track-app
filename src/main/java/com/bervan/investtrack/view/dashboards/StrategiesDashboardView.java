@@ -94,6 +94,10 @@ public class StrategiesDashboardView extends VerticalLayout {
      * Calculates overall probability for risky, good, best recommendations over the whole period
      */
     private String calculateOverallProbability(List<InvestmentRecommendation> recommendations) {
+        if (recommendations == null || recommendations.isEmpty()) {
+            return "Risky: 0, Good: 0, Best: 0";
+        }
+
         Map<String, List<InvestmentRecommendation>> groupedByType = recommendations.stream()
                 .collect(Collectors.groupingBy(InvestmentRecommendation::getRecommendationType));
 
@@ -103,6 +107,7 @@ public class StrategiesDashboardView extends VerticalLayout {
 
         return "Risky: " + riskyAvg + ", Good: " + goodAvg + ", Best: " + bestAvg;
     }
+
     private List<StrategyBGRHistoryChart> getStrategyBGRHistoryCharts(Map<String, List<InvestmentRecommendation>> data) {
         List<StrategyBGRHistoryChart> historyBGRCharts = new ArrayList<>();
 
