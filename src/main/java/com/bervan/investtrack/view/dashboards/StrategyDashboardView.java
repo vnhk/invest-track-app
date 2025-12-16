@@ -15,13 +15,13 @@ import org.springframework.data.domain.Pageable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StrategiesDashboardView extends VerticalLayout {
+public class StrategyDashboardView extends VerticalLayout {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
 
-    public StrategiesDashboardView(Map<String, ShortTermRecommendationStrategy> strategies,
-                                   InvestmentRecommendationService recommendationService) {
+    public StrategyDashboardView(Map<String, ShortTermRecommendationStrategy> strategies,
+                                 InvestmentRecommendationService recommendationService) {
         this.strategies = strategies;
         this.recommendationService = recommendationService;
         setSizeFull();

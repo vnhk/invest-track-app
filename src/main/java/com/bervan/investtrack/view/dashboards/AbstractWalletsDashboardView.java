@@ -312,7 +312,7 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
 
     private void strategiesTab() {
         content.removeAll();
-        content.add(new StrategiesDashboardView(strategies, recommendationService));
+        content.add(new StrategyDashboardView(strategies, recommendationService));
     }
 
     private void earningsTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
