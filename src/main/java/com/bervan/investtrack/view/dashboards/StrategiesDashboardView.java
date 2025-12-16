@@ -8,6 +8,7 @@ import com.bervan.investments.recommendation.InvestmentRecommendationService;
 import com.bervan.investtrack.service.recommendations.RecommendationStrategy;
 import com.bervan.investtrack.view.charts.StrategyBGRHistoryChart;
 import com.bervan.logging.JsonLogger;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.springframework.data.domain.Pageable;
 
@@ -43,11 +44,36 @@ public class StrategiesDashboardView extends VerticalLayout {
     private VerticalLayout createMainContent(Map<String, List<InvestmentRecommendation>> data) {
         VerticalLayout content = new VerticalLayout();
         content.setSizeFull();
+        content.setPadding(false);
+        content.setSpacing(false);
 
         List<StrategyBGRHistoryChart> historyBGRCharts = getStrategyBGRHistoryCharts(data);
 
-        content.add(historyBGRCharts.toArray(StrategyBGRHistoryChart[]::new));
+        VerticalLayout gridLayout = new VerticalLayout();
+        gridLayout.setSizeFull();
+        gridLayout.setPadding(false);
+        gridLayout.setSpacing(false);
 
+        HorizontalLayout row = null;
+        int count = 0;
+        for (StrategyBGRHistoryChart chart : historyBGRCharts) {
+            if (count % 2 == 0) {
+                row = new HorizontalLayout();
+                row.setWidthFull();
+                row.setPadding(false);
+                row.setSpacing(true);
+                gridLayout.add(row);
+            }
+
+            chart.setWidth("50%");
+            chart.setHeight("400px");
+            row.add(chart);
+
+            count++;
+        }
+
+        content.add(gridLayout);
+        content.getStyle().set("overflow", "auto");
         return content;
     }
 
