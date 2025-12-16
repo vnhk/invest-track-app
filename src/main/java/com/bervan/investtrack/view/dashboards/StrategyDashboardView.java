@@ -8,6 +8,7 @@ import com.bervan.investments.recommendation.InvestmentRecommendationService;
 import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.investtrack.view.charts.StrategyBGRHistoryChart;
 import com.bervan.logging.JsonLogger;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +18,9 @@ import java.util.stream.Collectors;
 
 public class StrategyDashboardView extends VerticalLayout {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
-    private final Map<String, ShortTermRecommendationStrategy> strategies;
-    private final InvestmentRecommendationService recommendationService;
 
     public StrategyDashboardView(Map<String, ShortTermRecommendationStrategy> strategies,
                                  InvestmentRecommendationService recommendationService) {
-        this.strategies = strategies;
-        this.recommendationService = recommendationService;
         setSizeFull();
         setPadding(false);
         setSpacing(false);
@@ -32,6 +29,7 @@ public class StrategyDashboardView extends VerticalLayout {
         Map<String, List<InvestmentRecommendation>> data = new HashMap<>();
 
         for (String strategy : strategies.keySet()) {
+            log.info("Loading recommendations for strategy: " + strategy);
             SearchRequest request = new SearchRequest();
             request.addCriterion("STRATEGY", InvestmentRecommendation.class, "strategy", SearchOperation.EQUALS_OPERATION, strategy);
             List<InvestmentRecommendation> recommendations = recommendationService.load(request, Pageable.ofSize(TEN_YEARS), "id", SortDirection.ASC);
@@ -79,7 +77,7 @@ public class StrategyDashboardView extends VerticalLayout {
             chartLayout.setPadding(false);
             chartLayout.setSpacing(false);
 
-            chartLayout.add(new com.vaadin.flow.component.html.Span(strategy + ": " + overallProbability));
+            chartLayout.add(new Span(strategy + ": " + overallProbability));
             chart.setWidth("50%");
             chart.setHeight("400px");
             chartLayout.add(chart);
@@ -116,6 +114,7 @@ public class StrategyDashboardView extends VerticalLayout {
         List<StrategyBGRHistoryChart> historyBGRCharts = new ArrayList<>();
 
         for (String strategy : data.keySet()) {
+            log.debug("Creating chart for strategy: " + strategy);
             List<String> dates = new ArrayList<>();
             List<String> bestRecPercent = new ArrayList<>();
             List<String> goodRecPercent = new ArrayList<>();
