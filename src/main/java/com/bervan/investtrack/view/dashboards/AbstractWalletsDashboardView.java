@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CssImport("./invest-track.css")
 public abstract class AbstractWalletsDashboardView extends AbstractPageView {
@@ -149,52 +150,100 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     }
 
     private void oneWalletCalculations(List<Wallet> sortedWallets) {
+
         aggregatedDatesForOneWallet.clear();
         aggregatedBalancesForOneWallet.clear();
         aggregatedDepositsForOneWallet.clear();
         aggregatedSumOfDepositsForOneWallet.clear();
 
-        // Map to aggregate values by date
+        // Aggregated values by date (chronological order)
         Map<LocalDate, BigDecimal> totalBalancesByDate = new TreeMap<>();
         Map<LocalDate, BigDecimal> totalDepositsByDate = new TreeMap<>();
         Map<LocalDate, BigDecimal> totalSumOfDepositsByDate = new TreeMap<>();
 
-        // Go through each wallet and add its values
+        // Collect all snapshot dates from all wallets
+        Set<LocalDate> allDates = sortedWallets.stream()
+                .map(Wallet::getSnapshots)
+                .flatMap(Collection::stream)
+                .map(WalletSnapshot::getSnapshotDate)
+                .map(d -> d.with(TemporalAdjusters.lastDayOfMonth()))
+                .collect(Collectors.toSet());
+
+        // Sort all dates once
+        List<LocalDate> sortedAllDates = allDates.stream()
+                .sorted()
+                .toList();
+
+        // Process each wallet separately
         for (Wallet wallet : sortedWallets) {
+
             UUID id = wallet.getId();
+
             List<String> walletDates = dates.getOrDefault(id, List.of());
             List<BigDecimal> walletBalances = balances.getOrDefault(id, List.of());
             List<BigDecimal> walletDeposits = deposits.getOrDefault(id, List.of());
             List<BigDecimal> walletSumOfDeposits = sumOfDeposits.getOrDefault(id, List.of());
 
+            // Map snapshot date -> index in wallet lists
+            Map<LocalDate, Integer> indexByDate = new HashMap<>();
             for (int i = 0; i < walletDates.size(); i++) {
-                String sDate = walletDates.get(i);
-                LocalDate date = LocalDate.parse(sDate, new DateTimeFormatterBuilder().appendPattern("dd-MM-yyyy").toFormatter());
-                if (date.getDayOfMonth() != date.lengthOfMonth()) {
-                    date = date.with(TemporalAdjusters.lastDayOfMonth());
+                LocalDate date = LocalDate.parse(
+                        walletDates.get(i),
+                        DateTimeFormatter.ofPattern("dd-MM-yyyy")
+                ).with(TemporalAdjusters.lastDayOfMonth());
+
+                indexByDate.put(date, i);
+            }
+
+            // Last known values for this wallet
+            BigDecimal lastBalance = BigDecimal.ZERO;
+            BigDecimal lastDeposit = BigDecimal.ZERO;
+            BigDecimal lastSumDeposit = BigDecimal.ZERO;
+
+            // Iterate through all dates to fill missing snapshots
+            for (LocalDate date : sortedAllDates) {
+
+                // If snapshot exists for this date, update last known values
+                if (indexByDate.containsKey(date)) {
+                    int i = indexByDate.get(date);
+
+                    lastBalance = i < walletBalances.size()
+                            ? walletBalances.get(i)
+                            : lastBalance;
+
+                    lastDeposit = i < walletDeposits.size()
+                            ? walletDeposits.get(i)
+                            : lastDeposit;
+
+                    lastSumDeposit = i < walletSumOfDeposits.size()
+                            ? walletSumOfDeposits.get(i)
+                            : lastSumDeposit;
                 }
 
-                // For safety, handle possible size mismatches
-                BigDecimal balance = i < walletBalances.size() ? walletBalances.get(i) : BigDecimal.ZERO;
-                BigDecimal deposit = i < walletDeposits.size() ? walletDeposits.get(i) : BigDecimal.ZERO;
-                BigDecimal sumDeposit = i < walletSumOfDeposits.size() ? walletSumOfDeposits.get(i) : BigDecimal.ZERO;
-
-                // Aggregate by date
-                totalBalancesByDate.merge(date, balance, BigDecimal::add);
-                totalDepositsByDate.merge(date, deposit, BigDecimal::add);
-                totalSumOfDepositsByDate.merge(date, sumDeposit, BigDecimal::add);
+                // Aggregate using last known values
+                totalBalancesByDate.merge(date, lastBalance, BigDecimal::add);
+                totalDepositsByDate.merge(date, lastDeposit, BigDecimal::add);
+                totalSumOfDepositsByDate.merge(date, lastSumDeposit, BigDecimal::add);
             }
         }
 
         // Fill output lists in chronological order
         for (LocalDate date : totalBalancesByDate.keySet()) {
-            String formattedDate = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-            aggregatedDatesForOneWallet.add(formattedDate);
+            aggregatedDatesForOneWallet.add(
+                    date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+            );
             aggregatedBalancesForOneWallet.add(totalBalancesByDate.get(date));
             aggregatedDepositsForOneWallet.add(totalDepositsByDate.get(date));
             aggregatedSumOfDepositsForOneWallet.add(totalSumOfDepositsByDate.get(date));
         }
-        sortAggregatedData(aggregatedDatesForOneWallet, aggregatedBalancesForOneWallet, aggregatedDepositsForOneWallet, aggregatedSumOfDepositsForOneWallet);
+
+        // Final safety sort (if needed elsewhere in UI)
+        sortAggregatedData(
+                aggregatedDatesForOneWallet,
+                aggregatedBalancesForOneWallet,
+                aggregatedDepositsForOneWallet,
+                aggregatedSumOfDepositsForOneWallet
+        );
     }
 
     // Sort all lists by date (keeping values in sync)
