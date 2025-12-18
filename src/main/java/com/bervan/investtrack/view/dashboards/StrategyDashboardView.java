@@ -170,6 +170,6 @@ public class StrategyDashboardView extends VerticalLayout {
         }
         int totalRecommendations = goodRecommendationsSize + badRecommendationsSize;
         double chanceOfSuccess = (double) goodRecommendationsSize / totalRecommendations;
-        return chanceOfSuccess + "";
+        return String.format("%.2f", chanceOfSuccess);
     }
 }
