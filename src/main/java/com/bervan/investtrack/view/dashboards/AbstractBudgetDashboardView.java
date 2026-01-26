@@ -4,7 +4,6 @@ import com.bervan.common.component.BervanComboBox;
 import com.bervan.common.component.BervanDatePicker;
 import com.bervan.common.view.AbstractPageView;
 import com.bervan.investments.recommendation.InvestmentRecommendationService;
-import com.bervan.investtrack.InvestTrackPageLayout;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.CurrencyConverter;
@@ -27,8 +26,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @CssImport("./invest-track.css")
-public abstract class AbstractWalletsDashboardView extends AbstractPageView {
-    public static final String ROUTE_NAME = "/invest-track-app/wallets-dashboard/";
+public abstract class AbstractBudgetDashboardView extends AbstractPageView {
+    public static final String ROUTE_NAME = "/invest-track-app/dashboard/";
+
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final VerticalLayout content = new VerticalLayout();
     private final BervanComboBox<String> aggregationPeriodSelector = createAggregationPeriodSelector();
@@ -48,9 +48,9 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
     private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
 
-    public AbstractWalletsDashboardView(CurrencyConverter currencyConverter,
-                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
-                                        InvestmentRecommendationService recommendationService) {
+    public AbstractBudgetDashboardView(CurrencyConverter currencyConverter,
+                                       WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
+                                       InvestmentRecommendationService recommendationService) {
         this.currencyConverter = currencyConverter;
         this.strategies = strategies;
         this.recommendationService = recommendationService;
@@ -318,7 +318,6 @@ public abstract class AbstractWalletsDashboardView extends AbstractPageView {
 
     private void createAndAddTabs(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         removeAll();
-        add(new InvestTrackPageLayout(ROUTE_NAME, null));
         Tabs tabs = new Tabs();
         Tab balance = new Tab("Balance");
         Tab earnings = new Tab("Earnings");

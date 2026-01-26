@@ -6,6 +6,7 @@ import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.view.AbstractPageView;
 
 public abstract class AbstractBudgetView extends AbstractPageView {
+    public static final String ROUTE_NAME = "/invest-track-app/budget";
 
     public AbstractBudgetView(BudgetService service, BervanViewConfig bervanViewConfig) {
         setSizeFull();

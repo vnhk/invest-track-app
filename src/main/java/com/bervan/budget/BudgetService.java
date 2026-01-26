@@ -16,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +27,10 @@ public class BudgetService {
         this.budgetEntryService = budgetEntryService;
     }
 
+    private String getDateRootName(BudgetEntry e) {
+        return e.getEntryDate().getMonthValue() + "-" + e.getEntryDate().getYear();
+    }
+
     public TreeData<BudgetRow> loadTreeData(LocalDate startDate, LocalDate endDate) {
         TreeData<BudgetRow> treeData = new TreeData<>();
 
@@ -35,10 +38,11 @@ public class BudgetService {
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.GREATER_EQUAL_OPERATION, startDate);
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.LESS_EQUAL_OPERATION, endDate);
         List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
-        Map<LocalDate, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(BudgetEntry::getEntryDate));
+        //group by month not by days
+        Map<String, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(e -> getDateRootName(e)));
 
-        for (Map.Entry<LocalDate, List<BudgetEntry>> entry : byDate.entrySet()) {
-            BudgetRow dateGroup = group(entry.getKey().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")), "DATE_ROW");
+        for (Map.Entry<String, List<BudgetEntry>> entry : byDate.entrySet()) {
+            BudgetRow dateGroup = group(entry.getKey(), "DATE_ROW");
             treeData.addItem(null, dateGroup);
             Map<String, List<BudgetEntry>> byCategory = entry.getValue().stream().collect(Collectors.groupingBy(BudgetEntry::getCategory));
 
@@ -71,7 +75,7 @@ public class BudgetService {
 
     private BudgetRow group(String name, String rowType) {
         return new BudgetRow(
-                name, null, null, null, null, rowType, true
+                name, null, null, null, null, null, null, rowType, true
         );
     }
 
@@ -80,6 +84,8 @@ public class BudgetService {
                 budgetEntry.getName(),
                 budgetEntry.getEntryType(),
                 budgetEntry.getPaymentMethod(),
+                budgetEntry.getEntryDate() != null ? budgetEntry.getEntryDate().format(DateTimeFormatter.ofPattern("dd.MM")) : null,
+                budgetEntry.getNotes(),
                 budgetEntry.getValue(),
                 budgetEntry.getCurrency(),
                 "ITEM_ROW",
@@ -97,15 +103,7 @@ public class BudgetService {
 
     public BudgetRow createItemRow(BudgetEntry newItem, BudgetRow date, BudgetRow category) {
         newItem.setCategory(category.getName());
-        Date parse = null;
-        parse = parse(date);
-        newItem.setEntryDate(LocalDate.ofInstant(parse.toInstant(), TimeZone.getDefault().toZoneId()));
-
-        //validate newItem
-        //budgetEntryService.validate
-
         BudgetEntry saved = budgetEntryService.save(newItem);
-
         return item(saved);
     }
 

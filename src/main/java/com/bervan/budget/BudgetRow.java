@@ -14,6 +14,8 @@ public class BudgetRow {
     private String name;
     private String entryType;
     private String paymentMethod;
+    private String entryDate;
+    private String notes;
     private BigDecimal amount;
     private String currency;
     private String rowType;

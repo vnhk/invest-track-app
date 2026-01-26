@@ -11,7 +11,11 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
@@ -19,13 +23,26 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class BudgetGridView extends AbstractPageView {
+    private static final Map<String, VaadinIcon> CATEGORY_ICONS = Map.of(
+            "shop", VaadinIcon.CART,
+            "home", VaadinIcon.HOME,
+            "house", VaadinIcon.HOME,
+            "car", VaadinIcon.CAR,
+            "work", VaadinIcon.OFFICE,
+            "wedding", VaadinIcon.HEART,
+            "entertainment", VaadinIcon.MOVIE,
+            "subscription", VaadinIcon.RECORDS,
+            "loan", VaadinIcon.INSTITUTION
+    );
+    private static final VaadinIcon OTHERS_ICON = VaadinIcon.TAGS;
     private final TreeDataProvider<BudgetRow> provider;
     private final TreeData<BudgetRow> data;
     private final BudgetService service;
@@ -40,12 +57,12 @@ public class BudgetGridView extends AbstractPageView {
         grid.setWidthFull();
         grid.setHeightFull();
 
-        grid.addHierarchyColumn(BudgetRow::getName)
-                .setVisible(true);
-
-        grid.addColumn(new ComponentRenderer<>(this::name))
+        grid.addComponentHierarchyColumn(budgetRow -> {
+                    Component component = name(budgetRow);
+                    return component;
+                }).setHeader("Name")
                 .setAutoWidth(true)
-                .setHeader("Name");
+                .setResizable(true);
 
         grid.addColumn(new ComponentRenderer<>(this::money))
                 .setHeader("Amount")
@@ -53,9 +70,17 @@ public class BudgetGridView extends AbstractPageView {
 
         grid.addColumn(new ComponentRenderer<>(this::paymentMethod))
                 .setHeader("Payment Method")
-                .setWidth("100px");
+                .setWidth("25px");
 
-        data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.now());
+        grid.addColumn(e -> e.getEntryDate())
+                .setHeader("Date")
+                .setWidth("40px");
+
+        grid.addColumn(e -> e.getNotes())
+                .setHeader("Notes")
+                .setAutoWidth(true);
+
+        data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
         provider = new TreeDataProvider<>(data);
         grid.setDataProvider(provider);
 
@@ -64,6 +89,11 @@ public class BudgetGridView extends AbstractPageView {
             cb.setEnabled(!row.isGroup());
             return cb;
         }).setWidth("50px");
+
+        BudgetRow firstRoot = data.getRootItems().stream().findFirst().orElse(null);
+        if (firstRoot != null) { //expand #1 row
+            grid.expandRecursively(List.of(firstRoot), Integer.MAX_VALUE);
+        }
 
         add(grid);
         setSizeFull();
@@ -80,17 +110,48 @@ public class BudgetGridView extends AbstractPageView {
                 BervanButton bervanButton = new BervanButton("+", buttonClickEvent -> {
                     addCategoryRow(data.getParent(row));
                 });
-                bervanButton.getStyle().set("margin-left", "10px");
                 return bervanButton;
             } else if (row.getRowType().equals("ITEM_ROW")) {
                 BervanButton bervanButton = new BervanButton("+", buttonClickEvent -> {
                     addItemRow(data.getParent(row), data.getParent(data.getParent(row)));
                 });
-                bervanButton.getStyle().set("margin-left", "20px");
                 return bervanButton;
             }
         }
-        return new Span(row.getName());
+
+        if (row.getRowType().equals("CATEGORY_ROW")) {
+            String name = row.getName().toLowerCase();
+
+            VaadinIcon icon = CATEGORY_ICONS.entrySet().stream()
+                    .filter(e -> name.contains(e.getKey()))
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse(OTHERS_ICON);
+
+            Icon vaadinIcon = icon.create();
+            vaadinIcon.getStyle()
+                    .set("margin-right", "6px")
+                    .set("color", "var(--lumo-secondary-text-color)");
+
+            HorizontalLayout layout = new HorizontalLayout(vaadinIcon, new Span(row.getName()));
+            layout.setAlignItems(FlexComponent.Alignment.CENTER);
+            layout.setSpacing(false);
+
+            if (icon == OTHERS_ICON) {
+                String tooltipText = "Recognized categories:\n" +
+                        CATEGORY_ICONS.keySet().stream()
+                                .sorted()
+                                .collect(Collectors.joining(", "));
+
+                Tooltip.forComponent(layout)
+                        .withText(tooltipText)
+                        .withPosition(Tooltip.TooltipPosition.END);
+            }
+
+            return layout;
+        }
+
+        return new H4(row.getName());
     }
 
     private void addDateRow() {
@@ -100,7 +161,7 @@ public class BudgetGridView extends AbstractPageView {
         dialog.add(new Hr());
         dialog.add(new BervanButton("Add", e -> {
             List<BudgetRow> children = data.getChildren(null);
-            String dateStr = datePicker.getValue().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+            String dateStr = datePicker.getValue().getMonthValue() + "-" + datePicker.getValue().getYear();
             if (children.stream().anyMatch(c -> c.getName().equals(dateStr))) {
                 showPrimaryNotification("Date already exists.");
                 dialog.close();
@@ -143,7 +204,29 @@ public class BudgetGridView extends AbstractPageView {
         try {
             VerticalLayout verticalLayout = CommonComponentUtils.buildFormLayout(BudgetEntry.class, null, fieldsHolder, fieldsLayoutHolder, bervanViewConfig);
             dialog.add(verticalLayout);
+
+            //set last day of month as default entry date or if current month, set today
+            String dateValue = date.getName();
+            String[] dateSplit = dateValue.split("-");
+            int year = Integer.parseInt(dateSplit[1]);
+            int month = Integer.parseInt(dateSplit[0]);
+            LocalDate localDate = YearMonth.of(year, month).atEndOfMonth();
+
+            if (month == LocalDate.now().getMonthValue()) {
+                localDate = LocalDate.now();
+            }
+
+            fieldsHolder
+                    .get(BudgetEntry.class.getDeclaredField("entryDate"))
+                    .setValue(localDate);
+
             dialog.add(new BervanButton("Add", e -> {
+                for (Map.Entry<Field, AutoConfigurableField> fieldAutoConfigurableFieldEntry : fieldsHolder.entrySet()) {
+                    fieldAutoConfigurableFieldEntry.getValue().validate();
+                    if (fieldAutoConfigurableFieldEntry.getValue().isInvalid()) {
+                        return;
+                    }
+                }
                 BudgetEntry newBudgetEntry = new BudgetEntry();
                 for (Map.Entry<Field, AutoConfigurableField> fieldAutoConfigurableFieldEntry : fieldsHolder.entrySet()) {
                     try {
@@ -201,11 +284,11 @@ public class BudgetGridView extends AbstractPageView {
         }
 
         if (row.getPaymentMethod().equals("Cash")) {
-            return new Span(new Icon("vaadin:money-bill-wave"));
+            return new Span(new Icon("vaadin:cash"));
         } else if (row.getPaymentMethod().equals("Card")) {
             return new Span(new Icon("vaadin:credit-card"));
         } else if (row.getPaymentMethod().equals("Transfer")) {
-            return new Span(new Icon("vaadin:exchange"));
+            return new Span(new Icon("vaadin:money-exchange"));
         }
 
         return new Span("");

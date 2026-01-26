@@ -27,7 +27,7 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: false
-    required: true
+    required: false
 
   - field: name
     displayName: "Name"
@@ -74,7 +74,7 @@ columns:
   - field: entryDate
     displayName: "Date"
     internalName: entryDate
-    inSaveForm: false
+    inSaveForm: true
     inEditForm: true
     inTable: false
     required: true
