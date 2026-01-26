@@ -7,7 +7,7 @@ import com.bervan.common.view.AbstractPageView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -185,9 +185,9 @@ public class BudgetGridView extends AbstractPageView {
         }
         boolean income = row.getEntryType().equals("Income");
 
-        H3 h3 = new H3(String.format("%s%,.2f %s", income ? "" : "-", row.getAmount(), currency));
-        h3.getStyle().setColor(income ? "green" : "red");
-        return h3;
+        H4 moneyText = new H4(String.format("%s%,.2f %s", income ? "" : "-", row.getAmount(), currency));
+        moneyText.getStyle().setColor(income ? "green" : "red");
+        return moneyText;
     }
 
 
