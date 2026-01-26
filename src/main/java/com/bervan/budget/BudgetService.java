@@ -1,169 +1,121 @@
 package com.bervan.budget;
 
+import com.bervan.budget.entry.BudgetEntry;
+import com.bervan.budget.entry.BudgetEntryService;
+import com.bervan.common.search.SearchRequest;
+import com.bervan.common.search.model.SearchOperation;
+import com.bervan.common.search.model.SortDirection;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 @Service
 public class BudgetService {
 
-    public List<BudgetGroup> loadBudget() {
-        return List.of(
-                billsGroup(),
-                loanGroup(),
-                funGroup()
-        );
+    private final BudgetEntryService budgetEntryService;
+
+    public BudgetService(BudgetEntryService budgetEntryService) {
+        this.budgetEntryService = budgetEntryService;
     }
 
-    private BudgetGroup billsGroup() {
-        return new BudgetGroup(
-                "Bills",
-                List.of(
-                        new BudgetCategory("Rent",
-                                new BigDecimal("1600"),
-                                new BigDecimal("-1600"),
-                                BigDecimal.ZERO,
-                                CategoryStatus.FULLY_SPENT
-                        ),
-                        new BudgetCategory("Groceries",
-                                new BigDecimal("400"),
-                                new BigDecimal("-225"),
-                                new BigDecimal("175"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("Electric",
-                                new BigDecimal("85"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("85"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("Water Bill",
-                                new BigDecimal("30"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("30"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("Internet Bill",
-                                new BigDecimal("50"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("50"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("Phone",
-                                new BigDecimal("70"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("70"),
-                                CategoryStatus.FUNDED
-                        )
-                )
-        );
-    }
+    public TreeData<BudgetRow> loadTreeData(LocalDate startDate, LocalDate endDate) {
+        TreeData<BudgetRow> treeData = new TreeData<>();
 
-    private BudgetGroup loanGroup() {
-        return new BudgetGroup(
-                "Loan Payments",
-                List.of(
-                        new BudgetCategory("Student Loan",
-                                new BigDecimal("250.34"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("250.34"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("Car Payment",
-                                new BigDecimal("200"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("200"),
-                                CategoryStatus.FUNDED
-                        )
-                )
-        );
-    }
+        SearchRequest request = new SearchRequest();
+        request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.GREATER_EQUAL_OPERATION, startDate);
+        request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.LESS_EQUAL_OPERATION, endDate);
+        List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
+        Map<LocalDate, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(BudgetEntry::getEntryDate));
 
-    private BudgetGroup funGroup() {
-        return new BudgetGroup(
-                "Just for Fun",
-                List.of(
-                        new BudgetCategory("Dining Out",
-                                new BigDecimal("200"),
-                                new BigDecimal("-120"),
-                                new BigDecimal("80"),
-                                CategoryStatus.FUNDED
-                        ),
-                        new BudgetCategory("TV",
-                                new BigDecimal("40"),
-                                new BigDecimal("-40"),
-                                BigDecimal.ZERO,
-                                CategoryStatus.FULLY_SPENT
-                        ),
-                        new BudgetCategory("Gaming",
-                                new BigDecimal("20"),
-                                BigDecimal.ZERO,
-                                new BigDecimal("20"),
-                                CategoryStatus.FUNDED
-                        )
-                )
-        );
-    }
+        for (Map.Entry<LocalDate, List<BudgetEntry>> entry : byDate.entrySet()) {
+            BudgetRow dateGroup = group(entry.getKey().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")), "DATE_ROW");
+            treeData.addItem(null, dateGroup);
+            Map<String, List<BudgetEntry>> byCategory = entry.getValue().stream().collect(Collectors.groupingBy(BudgetEntry::getCategory));
 
-    public TreeData<BudgetRow> loadTreeData() {
+            for (Map.Entry<String, List<BudgetEntry>> category : byCategory.entrySet()) {
+                BudgetRow categoryGroup = group(category.getKey(), "CATEGORY_ROW");
+                treeData.addItem(dateGroup, categoryGroup);
 
-        TreeData<BudgetRow> data = new TreeData<>();
-
-        BudgetRow bills = group("Bills");
-        data.addItem(null, bills);
-
-        data.addItem(bills, item("Rent", 1600, -1600, 0));
-        data.addItem(bills, item("Groceries", 400, -225, 175));
-        data.addItem(bills, item("Electric", 85, 0, 85));
-
-        BudgetRow loans = group("Loan Payments");
-        data.addItem(null, loans);
-
-        data.addItem(loans, item("Student Loan", 250.34, 0, 250.34));
-        data.addItem(loans, item("Car Payment", 200, 0, 200));
-
-        return data;
-    }
-    private BudgetRow group(String name) {
-        return new BudgetRow(
-                name,
-                true,           // group
-                null,           // assigned
-                null,           // activity
-                null,           // available
-                null            // status
-        );
-    }
-
-    private BudgetRow item(String name,
-                           double assigned,
-                           double activity,
-                           double available) {
-
-        BigDecimal assignedBd = BigDecimal.valueOf(assigned);
-        BigDecimal activityBd = BigDecimal.valueOf(activity);
-        BigDecimal availableBd = BigDecimal.valueOf(available);
-
-        return new BudgetRow(
-                name,
-                false,          // not a group
-                assignedBd,
-                activityBd,
-                availableBd,
-                resolveStatus(assignedBd, availableBd)
-        );
-    }
-    private CategoryStatus resolveStatus(BigDecimal assigned,
-                                         BigDecimal available) {
-
-        if (available.signum() == 0) {
-            return CategoryStatus.FULLY_SPENT;
+                for (BudgetEntry budgetEntry : category.getValue()) {
+                    treeData.addItem(categoryGroup, item(budgetEntry));
+                }
+                addNewItemBudgetRow(treeData, categoryGroup, "ITEM_ROW");
+            }
+            addNewItemBudgetRow(treeData, dateGroup, "CATEGORY_ROW");
         }
-        if (available.compareTo(assigned) < 0) {
-            return CategoryStatus.FUNDED;
+        addNewItemBudgetRow(treeData, null, "DATE_ROW");
+
+        return treeData;
+    }
+
+    public void addNewItemBudgetRow(TreeData<BudgetRow> treeData, BudgetRow parent, String rowType) {
+        BudgetRow item = item(new BudgetEntry("+"));
+        item.setRowType(rowType);
+        treeData.addItem(parent, item);
+    }
+
+    public void addNewGroupBudgetRow(TreeData<BudgetRow> treeData, BudgetRow parent, String rowType) {
+        BudgetRow item = group("+", rowType);
+        treeData.addItem(parent, item);
+    }
+
+    private BudgetRow group(String name, String rowType) {
+        return new BudgetRow(
+                name, null, null, null, null, rowType, true
+        );
+    }
+
+    private BudgetRow item(BudgetEntry budgetEntry) {
+        return new BudgetRow(
+                budgetEntry.getName(),
+                budgetEntry.getEntryType(),
+                budgetEntry.getPaymentMethod(),
+                budgetEntry.getValue(),
+                budgetEntry.getCurrency(),
+                "ITEM_ROW",
+                false
+        );
+    }
+
+    public BudgetRow createDateRow(String dateStr) {
+        return group(dateStr, "DATE_ROW");
+    }
+
+    public BudgetRow createCategoryRow(String category) {
+        return group(category, "CATEGORY_ROW");
+    }
+
+    public BudgetRow createItemRow(BudgetEntry newItem, BudgetRow date, BudgetRow category) {
+        newItem.setCategory(category.getName());
+        Date parse = null;
+        parse = parse(date);
+        newItem.setEntryDate(LocalDate.ofInstant(parse.toInstant(), TimeZone.getDefault().toZoneId()));
+
+        //validate newItem
+        //budgetEntryService.validate
+
+        BudgetEntry saved = budgetEntryService.save(newItem);
+
+        return item(saved);
+    }
+
+    private Date parse(BudgetRow date) {
+        Date parse;
+        try {
+            parse = new SimpleDateFormat("dd-MM-yyyy").parse(date.getName());
+        } catch (ParseException ex) {
+            throw new RuntimeException(ex);
         }
-        return CategoryStatus.UNDERFUNDED;
+        return parse;
     }
 }

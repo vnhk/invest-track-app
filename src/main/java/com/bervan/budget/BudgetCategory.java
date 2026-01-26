@@ -15,6 +15,5 @@ public class BudgetCategory {
     private BigDecimal assigned;
     private BigDecimal activity;
     private BigDecimal available;
-    private CategoryStatus status;
 
 }

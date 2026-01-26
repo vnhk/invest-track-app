@@ -1,0 +1,102 @@
+columns:
+  - field: category
+    displayName: "Category"
+    internalName: category
+    inSaveForm: false
+    inEditForm: true
+    inTable: false
+    required: true
+    dynamicStrValues: true
+    min: 3
+    max: 120
+
+  - field: entryType
+    displayName: "Type"
+    internalName: entryType
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    strValues: [ "Income", "Expense" ]
+    min: 3
+    max: 10
+
+  - field: isRecurring
+    displayName: "Is Recurring?"
+    internalName: isRecurring
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+
+  - field: name
+    displayName: "Name"
+    internalName: name
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    min: 3
+    max: 100
+
+  - field: entryOwners
+    displayName: "Owners"
+    internalName: entryOwners
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    min: 3
+    max: 100
+
+  - field: currency
+    displayName: "Currency"
+    internalName: currency
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    strValues: [ "PLN", "EUR", "USD" ]
+    defaultValue: "PLN"
+    min: 1
+    max: 10
+
+  - field: value
+    displayName: "Value"
+    internalName: value
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    min: 0
+    max: 1000000000
+
+  - field: entryDate
+    displayName: "Date"
+    internalName: entryDate
+    inSaveForm: false
+    inEditForm: true
+    inTable: false
+    required: true
+
+  - field: paymentMethod
+    displayName: "Payment Method"
+    internalName: paymentMethod
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    strValues: [ "Cash", "Card", "Transfer" ]
+    required: true
+    min: 3
+    max: 50
+
+  - field: notes
+    displayName: "Notes"
+    internalName: notes
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: false
+    min: 0
+    max: 1000
+

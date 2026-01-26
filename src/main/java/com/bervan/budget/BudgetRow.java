@@ -12,10 +12,10 @@ import java.math.BigDecimal;
 public class BudgetRow {
 
     private String name;
+    private String entryType;
+    private String paymentMethod;
+    private BigDecimal amount;
+    private String currency;
+    private String rowType;
     private boolean group;
-    private BigDecimal assigned;
-    private BigDecimal activity;
-    private BigDecimal available;
-    private CategoryStatus status;
-
 }

@@ -1,17 +1,18 @@
 package com.bervan.budget;
 
+import com.bervan.budget.entry.BudgetEntry;
+import com.bervan.common.component.CommonComponentHelper;
+import com.bervan.common.config.BervanViewConfig;
 import com.bervan.common.view.AbstractPageView;
 
 public abstract class AbstractBudgetView extends AbstractPageView {
 
-    public AbstractBudgetView(BudgetService service) {
+    public AbstractBudgetView(BudgetService service, BervanViewConfig bervanViewConfig) {
         setSizeFull();
         setPadding(true);
         setSpacing(true);
 
         add(new BudgetHeader());
-//        service.loadBudget()
-//                .forEach(group -> add(new BudgetGroupComponent(group)));
-        add(new BudgetGridView(service));
+        add(new BudgetGridView(service, bervanViewConfig, new CommonComponentHelper(BudgetEntry.class)));
     }
 }
