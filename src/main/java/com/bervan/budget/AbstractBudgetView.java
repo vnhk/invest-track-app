@@ -9,7 +9,7 @@ import com.bervan.common.view.AbstractPageView;
 public abstract class AbstractBudgetView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/budget";
 
-    public AbstractBudgetView(BudgetService service, BervanViewConfig bervanViewConfig, BudgetEntryService budgetEntryService) {
+    public AbstractBudgetView(BudgetGridService service, BervanViewConfig bervanViewConfig, BudgetEntryService budgetEntryService) {
         setSizeFull();
         setPadding(true);
         setSpacing(true);

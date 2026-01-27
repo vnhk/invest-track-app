@@ -8,7 +8,7 @@ import com.bervan.common.view.AbstractPageView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -41,7 +41,7 @@ public class BudgetGridView extends AbstractPageView {
             "loan", VaadinIcon.INSTITUTION
     );
     private static final VaadinIcon OTHERS_ICON = VaadinIcon.TAGS;
-    private final BudgetService service;
+    private final BudgetGridService service;
     private final BudgetEntryService budgetEntryService;
     private final BervanViewConfig bervanViewConfig;
     private final ComponentHelper<UUID, BudgetEntry> componentHelper;
@@ -53,7 +53,7 @@ public class BudgetGridView extends AbstractPageView {
     private BervanButton delete;
     private BervanButton edit;
 
-    public BudgetGridView(BudgetService service, BudgetEntryService budgetEntryService, BervanViewConfig bervanViewConfig, ComponentHelper<UUID, BudgetEntry> componentHelper) {
+    public BudgetGridView(BudgetGridService service, BudgetEntryService budgetEntryService, BervanViewConfig bervanViewConfig, ComponentHelper<UUID, BudgetEntry> componentHelper) {
         this.service = service;
         this.budgetEntryService = budgetEntryService;
         this.bervanViewConfig = bervanViewConfig;
@@ -81,7 +81,7 @@ public class BudgetGridView extends AbstractPageView {
         setSizeFull();
     }
 
-    private HorizontalLayout buildToolbar(BudgetService service) {
+    private HorizontalLayout buildToolbar(BudgetGridService service) {
         HorizontalLayout toolbar = new HorizontalLayout();
         toolbar.setWidthFull();
         toolbar.setSpacing(true);
@@ -135,7 +135,7 @@ public class BudgetGridView extends AbstractPageView {
         return cb;
     }
 
-    private void copyToAnotherMonth(BudgetService service) {
+    private void copyToAnotherMonth(BudgetGridService service) {
         Dialog dialog = new Dialog();
         dialog.setWidth("60vw");
         dialog.add(new Hr());
@@ -251,7 +251,7 @@ public class BudgetGridView extends AbstractPageView {
             return layout;
         }
 
-        return new H4(row.getName());
+        return new H5(row.getName());
     }
 
     private void addDateRow() {
@@ -345,10 +345,6 @@ public class BudgetGridView extends AbstractPageView {
     }
 
     private Component money(BudgetRow row) {
-        if (row.isGroup()) {
-            return new Span(""); // groups don't have it
-        }
-
         if (row.getAmount() == null || row.getCurrency() == null) {
             return new Span("");
         }
@@ -363,9 +359,16 @@ public class BudgetGridView extends AbstractPageView {
         }
         boolean income = row.getEntryType().equals("Income");
 
-        H4 moneyText = new H4(String.format("%s%,.2f %s", income ? "" : "-", row.getAmount(), currency));
-        moneyText.getStyle().setColor(income ? "green" : "red");
-        return moneyText;
+        if (row.isGroup()) {
+            H5 moneyText = new H5(String.format("%s%,.2f %s", income ? "" : "-", row.getAmount(), currency));
+            moneyText.getStyle().setColor(income ? "green" : "red");
+            moneyText.getStyle().set("margin-left", "50px");
+            return moneyText;
+        } else {
+            H5 moneyText = new H5(String.format("%s%,.2f %s", income ? "" : "-", row.getAmount(), currency));
+            moneyText.getStyle().setColor(income ? "green" : "red");
+            return moneyText;
+        }
     }
 
     private Component paymentMethod(BudgetRow row) {

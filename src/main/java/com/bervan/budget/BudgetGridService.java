@@ -9,6 +9,7 @@ import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,11 +19,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class BudgetService {
+public class BudgetGridService {
 
     private final BudgetEntryService budgetEntryService;
 
-    public BudgetService(BudgetEntryService budgetEntryService) {
+    public BudgetGridService(BudgetEntryService budgetEntryService) {
         this.budgetEntryService = budgetEntryService;
     }
 
@@ -41,24 +42,60 @@ public class BudgetService {
         Map<String, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(e -> getDateRootName(e)));
 
         for (Map.Entry<String, List<BudgetEntry>> entry : byDate.entrySet()) {
+            BigDecimal dateSumOfAmounts = BigDecimal.ZERO;
             BudgetRow dateGroup = group(entry.getKey(), "DATE_ROW");
+
             treeData.addItem(null, dateGroup);
             Map<String, List<BudgetEntry>> byCategory = entry.getValue().stream().collect(Collectors.groupingBy(BudgetEntry::getCategory));
 
             for (Map.Entry<String, List<BudgetEntry>> category : byCategory.entrySet()) {
                 BudgetRow categoryGroup = group(category.getKey(), "CATEGORY_ROW");
                 treeData.addItem(dateGroup, categoryGroup);
+                BigDecimal categorySumOfAmounts = BigDecimal.ZERO;
 
                 for (BudgetEntry budgetEntry : category.getValue()) {
-                    treeData.addItem(categoryGroup, item(budgetEntry));
+                    BudgetRow item = item(budgetEntry);
+                    treeData.addItem(categoryGroup, item);
+                    //sum all items in a category
+                    categorySumOfAmounts = appendBudgetEntryAmount(item, categorySumOfAmounts);
                 }
+                //for each category update money details
+                updateMoneyDetailsForCategory(categoryGroup, categorySumOfAmounts);
                 addNewItemBudgetRow(treeData, categoryGroup, "ITEM_ROW");
+
+                //sum all category expenses/incomes for a date
+                dateSumOfAmounts = appendBudgetEntryAmount(categoryGroup, dateSumOfAmounts);
             }
+            // for each date update money details
+            updateMoneyDetailsForCategory(dateGroup, dateSumOfAmounts);
+
             addNewItemBudgetRow(treeData, dateGroup, "CATEGORY_ROW");
         }
         addNewItemBudgetRow(treeData, null, "DATE_ROW");
 
         return treeData;
+    }
+
+    private void updateMoneyDetailsForCategory(BudgetRow categoryGroup, BigDecimal sumOfAmounts) {
+        categoryGroup.setAmount(sumOfAmounts);
+        categoryGroup.setCurrency("PLN");//to be converted to one currency later
+        if (sumOfAmounts.compareTo(BigDecimal.ZERO) > 0) {
+            categoryGroup.setEntryType("Income");
+        } else {
+            categoryGroup.setEntryType("Expense");
+        }
+    }
+
+    private BigDecimal appendBudgetEntryAmount(BudgetRow budgetEntry, BigDecimal sumOfAmounts) {
+        if (budgetEntry.getAmount() != null) {
+            if (budgetEntry.getEntryType().equals("Expense")) {
+                sumOfAmounts = sumOfAmounts.subtract(budgetEntry.getAmount());
+            } else {
+                sumOfAmounts = sumOfAmounts.add(budgetEntry.getAmount());
+            }
+        }
+
+        return sumOfAmounts;
     }
 
     public void addNewItemBudgetRow(TreeData<BudgetRow> treeData, BudgetRow parent, String rowType) {
