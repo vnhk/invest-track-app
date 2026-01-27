@@ -3,6 +3,7 @@ package com.bervan.budget.entry;
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,23 +19,24 @@ import java.util.UUID;
 @Getter
 @Setter
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@AllArgsConstructor
 public class BudgetEntry extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
 
     @Id
     private UUID id;
+    private String name;
     private Boolean deleted = false;
     private LocalDateTime modificationDate;
     private String category;
-    private Boolean isRecurring;
-    private String name;
 //    @CollectionTable(name = "budget_entry_owners")
-//    private List<String> entryOwners = new ArrayList<>();
+    //    private List<String> entryOwners = new ArrayList<>();
     private String currency;
     private BigDecimal value;
     private LocalDate entryDate;
     private String paymentMethod;
     private String entryType;
     private String notes;
+    private Boolean isRecurring;
 
     // Default constructor
     public BudgetEntry() {

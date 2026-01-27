@@ -9,13 +9,12 @@ import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,12 +74,13 @@ public class BudgetService {
 
     private BudgetRow group(String name, String rowType) {
         return new BudgetRow(
-                name, null, null, null, null, null, null, rowType, true
+                null, name, null, null, null, null, null, null, rowType, true
         );
     }
 
-    private BudgetRow item(BudgetEntry budgetEntry) {
+    public BudgetRow item(BudgetEntry budgetEntry) {
         return new BudgetRow(
+                budgetEntry.getId(),
                 budgetEntry.getName(),
                 budgetEntry.getEntryType(),
                 budgetEntry.getPaymentMethod(),
@@ -101,19 +101,18 @@ public class BudgetService {
         return group(category, "CATEGORY_ROW");
     }
 
-    public BudgetRow createItemRow(BudgetEntry newItem, BudgetRow date, BudgetRow category) {
-        newItem.setCategory(category.getName());
-        BudgetEntry saved = budgetEntryService.save(newItem);
-        return item(saved);
+    public void copyToMonth(BudgetRow row, LocalDate newDate) {
+        if (row.getId() == null) {
+            return;
+        }
+
+        BudgetEntry entry = budgetEntryService.findById(row.getId());
+        BudgetEntry newBudgetEntry = new BudgetEntry(null, entry.getName(), false, LocalDateTime.now(), entry.getCategory(),
+                entry.getCurrency(), entry.getValue(), newDate, entry.getPaymentMethod(), entry.getEntryType(), entry.getNotes(), entry.getIsRecurring());
+        budgetEntryService.save(newBudgetEntry);
     }
 
-    private Date parse(BudgetRow date) {
-        Date parse;
-        try {
-            parse = new SimpleDateFormat("dd-MM-yyyy").parse(date.getName());
-        } catch (ParseException ex) {
-            throw new RuntimeException(ex);
-        }
-        return parse;
+    public BudgetEntry getItem(UUID id) {
+        return budgetEntryService.findById(id);
     }
 }
