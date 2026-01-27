@@ -31,6 +31,13 @@ public class BudgetGridService {
         return e.getEntryDate().getMonthValue() + "-" + e.getEntryDate().getYear();
     }
 
+    public List<BudgetEntry> loadAllRecurring() {
+        SearchRequest request = new SearchRequest();
+        request.addCriterion("IS_RECURRING_CRITERIA", BudgetEntry.class, "isRecurring", SearchOperation.EQUALS_OPERATION, true);
+        List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
+        return loaded;
+    }
+
     public TreeData<BudgetRow> loadTreeData(LocalDate startDate, LocalDate endDate) {
         TreeData<BudgetRow> treeData = new TreeData<>();
 
@@ -144,12 +151,25 @@ public class BudgetGridService {
         }
 
         BudgetEntry entry = budgetEntryService.findById(row.getId());
+        BudgetEntry newBudgetEntry = getCopyForNewDate(newDate, entry);
+        budgetEntryService.save(newBudgetEntry);
+    }
+
+    public BudgetEntry getCopyForNewDate(LocalDate newDate, BudgetEntry entry) {
         BudgetEntry newBudgetEntry = new BudgetEntry(null, entry.getName(), false, LocalDateTime.now(), entry.getCategory(),
                 entry.getCurrency(), entry.getValue(), newDate, entry.getPaymentMethod(), entry.getEntryType(), entry.getNotes(), entry.getIsRecurring());
-        budgetEntryService.save(newBudgetEntry);
+        return newBudgetEntry;
     }
 
     public BudgetEntry getItem(UUID id) {
         return budgetEntryService.findById(id);
+    }
+
+    public void copyRecurringToAnotherDate(LocalDate newDate) {
+        List<BudgetEntry> budgetEntries = loadAllRecurring();
+        for (BudgetEntry budgetEntry : budgetEntries) {
+            BudgetEntry copyForNewDate = getCopyForNewDate(newDate, budgetEntry);
+            budgetEntryService.save(copyForNewDate);
+        }
     }
 }

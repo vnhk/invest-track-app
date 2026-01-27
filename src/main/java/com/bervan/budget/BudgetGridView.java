@@ -266,11 +266,13 @@ public class BudgetGridView extends AbstractPageView {
                 showPrimaryNotification("Date already exists.");
                 dialog.close();
             }
-            BudgetRow newDate = service.createDateRow(dateStr);
-            data.addItem(null, newDate);
-            service.addNewGroupBudgetRow(data, newDate, "CATEGORY_ROW");
-            refreshAll();
-            showPrimaryNotification("Date added successfully.");
+
+            service.copyRecurringToAnotherDate(datePicker.getValue());
+
+            data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
+            provider = new TreeDataProvider<>(data);
+            grid.setDataProvider(provider);
+            showPrimaryNotification("Date added successfully. Recurring entries will be added automatically.");
             dialog.close();
         }));
         dialog.open();
