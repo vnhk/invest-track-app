@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,7 @@ public class BudgetGridService {
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.GREATER_EQUAL_OPERATION, startDate);
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.LESS_EQUAL_OPERATION, endDate);
         List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
-        //group by month not by days
+        //group by month not by day of month
         Map<String, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(e -> getDateRootName(e)));
 
         for (Map.Entry<String, List<BudgetEntry>> entry : byDate.entrySet()) {
@@ -89,6 +90,7 @@ public class BudgetGridService {
         if (sumOfAmounts.compareTo(BigDecimal.ZERO) > 0) {
             categoryGroup.setEntryType("Income");
         } else {
+            categoryGroup.setAmount(categoryGroup.getAmount().multiply(BigDecimal.valueOf(-1)));
             categoryGroup.setEntryType("Expense");
         }
     }
@@ -101,7 +103,6 @@ public class BudgetGridService {
                 sumOfAmounts = sumOfAmounts.add(budgetEntry.getAmount());
             }
         }
-
         return sumOfAmounts;
     }
 
@@ -171,5 +172,17 @@ public class BudgetGridService {
             BudgetEntry copyForNewDate = getCopyForNewDate(newDate, budgetEntry);
             budgetEntryService.save(copyForNewDate);
         }
+    }
+
+    public List<BudgetEntry> load(Set<UUID> uuids) {
+        return budgetEntryService.loadById(uuids);
+    }
+
+    public void update(List<BudgetEntry> originalSelected, LocalDate newDate, String newCategory) {
+        originalSelected.forEach(e -> {
+            e.setEntryDate(newDate);
+            e.setCategory(newCategory);
+        });
+        budgetEntryService.save(originalSelected);
     }
 }

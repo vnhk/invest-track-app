@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 public class BudgetGridView extends AbstractPageView {
     private static final Map<String, VaadinIcon> CATEGORY_ICONS = Map.of(
             "shop", VaadinIcon.CART,
-            "home", VaadinIcon.HOME,
+            "shopping", VaadinIcon.CART,
+            "food", VaadinIcon.CUTLERY,
             "house", VaadinIcon.HOME,
             "car", VaadinIcon.CAR,
             "work", VaadinIcon.OFFICE,
@@ -52,36 +53,29 @@ public class BudgetGridView extends AbstractPageView {
     private BervanButton copy;
     private BervanButton delete;
     private BervanButton edit;
+    private BervanButton move;
 
     public BudgetGridView(BudgetGridService service, BudgetEntryService budgetEntryService, BervanViewConfig bervanViewConfig, ComponentHelper<UUID, BudgetEntry> componentHelper) {
         this.service = service;
         this.budgetEntryService = budgetEntryService;
         this.bervanViewConfig = bervanViewConfig;
         this.componentHelper = componentHelper;
-        data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
-        provider = new TreeDataProvider<>(data);
         grid = new TreeGrid<>();
-        selectedRows = new HashSet<>();
 
-        HorizontalLayout toolbar = buildToolbar(service);
+        HorizontalLayout toolbar = buildToolbar();
 
         grid.setWidthFull();
         grid.setHeightFull();
+
         buildColumns();
-        grid.setDataProvider(provider);
-
-        grid.addComponentColumn(row -> {
-            Checkbox cb = checkboxColumn(row, delete, copy, edit);
-            return cb;
-        }).setWidth("50px");
-
-        expandFirstRow();
 
         add(toolbar, grid);
         setSizeFull();
+
+        refreshAll();
     }
 
-    private HorizontalLayout buildToolbar(BudgetGridService service) {
+    private HorizontalLayout buildToolbar() {
         HorizontalLayout toolbar = new HorizontalLayout();
         toolbar.setWidthFull();
         toolbar.setSpacing(true);
@@ -90,19 +84,82 @@ public class BudgetGridView extends AbstractPageView {
                 grid.expandRecursively(data.getRootItems(), Integer.MAX_VALUE), BervanButtonStyle.WARNING);
         BervanButton collapseAll = new BervanButton("Collapse all", e ->
                 grid.collapseRecursively(data.getRootItems(), Integer.MAX_VALUE), BervanButtonStyle.WARNING);
-        delete = new BervanButton("Delete", e -> deleteSelected(), BervanButtonStyle.WARNING);
-        copy = new BervanButton("Copy", e -> copyToAnotherMonth(service), BervanButtonStyle.WARNING);
-        edit = new BervanButton("Edit", e -> editItemRow(selectedRows.iterator().next()), BervanButtonStyle.WARNING);
-
-        delete.setEnabled(false);
-        copy.setEnabled(false);
-        edit.setEnabled(false);
-
+        delete = new BervanButton("Delete", e -> delete(), BervanButtonStyle.WARNING);
+        copy = new BervanButton("Copy", e -> copy(), BervanButtonStyle.WARNING);
+        edit = new BervanButton("Edit", e -> edit(), BervanButtonStyle.WARNING);
+        move = new BervanButton("Move", e -> move(), BervanButtonStyle.WARNING);
         toolbar.add(expandAll, collapseAll, delete, copy, edit);
         return toolbar;
     }
 
-    private void deleteSelected() {
+    private void move() {
+        Dialog dialog = getDialog();
+        BervanDatePicker datePicker = new BervanDatePicker("New date (leave empty if you don't want to change)", false);
+        dialog.add(datePicker);
+
+        BervanTextField categoryField = new BervanTextField("New Category (leave empty if you don't want to change)");
+        dialog.add(categoryField);
+
+        String commonCategory = null;
+        LocalDate commonLocalDate = null;
+
+        Set<UUID> uuids = selectedRows.stream().map(e -> e.getId()).collect(Collectors.toSet());
+
+        List<BudgetEntry> originalSelected = service.load(uuids);
+        int categoryChanged = 0;
+        int dateChanged = 0;
+        String categoryToSet = null;
+        LocalDate dateToSet = null;
+
+        for (BudgetEntry selectedEntry : originalSelected) {
+            if (commonCategory == null) {
+                commonCategory = selectedEntry.getCategory();
+            }
+
+            if (commonLocalDate == null) {
+                commonLocalDate = selectedEntry.getEntryDate();
+            }
+
+            if (commonLocalDate != selectedEntry.getEntryDate()) {
+                dateChanged++;
+            }
+
+            if (commonCategory != selectedEntry.getCategory()) {
+                categoryChanged++;
+            }
+        }
+
+        if (categoryChanged <= 1) {
+            categoryField.setValue(commonCategory);
+        }
+        if (dateChanged <= 1) {
+            datePicker.setValue(commonLocalDate);
+        }
+
+        dialog.add(new BervanButton("Move", e1 -> {
+            LocalDate newDate = datePicker.getValue();
+            String newCategory = categoryField.getValue();
+
+            service.update(originalSelected, newDate, newCategory);
+
+            refreshAll();
+
+            showPrimaryNotification("Items moved successfully.");
+
+            dialog.close();
+        }));
+
+        dialog.open();
+    }
+
+    private Dialog getDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("60vw");
+        dialog.add(new Hr());
+        return dialog;
+    }
+
+    private void delete() {
         for (BudgetRow row : selectedRows) {
             BudgetRow parent = data.getParent(row);
             data.removeItem(row);
@@ -135,10 +192,8 @@ public class BudgetGridView extends AbstractPageView {
         return cb;
     }
 
-    private void copyToAnotherMonth(BudgetGridService service) {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("60vw");
-        dialog.add(new Hr());
+    private void copy() {
+        Dialog dialog = getDialog();
         BervanDatePicker field = new BervanDatePicker("New date", true);
         dialog.add(field);
 
@@ -148,9 +203,8 @@ public class BudgetGridView extends AbstractPageView {
             for (BudgetRow row : selectedRows) {
                 service.copyToMonth(row, newDate);
             }
-            data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
-            provider = new TreeDataProvider<>(data);
-            grid.setDataProvider(provider);
+
+            refreshAll();
 
             showPrimaryNotification("Items copied successfully.");
 
@@ -183,6 +237,11 @@ public class BudgetGridView extends AbstractPageView {
         grid.addColumn(e -> e.getNotes())
                 .setHeader("Notes")
                 .setAutoWidth(true);
+
+        grid.addComponentColumn(row -> {
+            Checkbox cb = checkboxColumn(row, delete, copy, edit);
+            return cb;
+        }).setWidth("50px");
     }
 
     private void expandFirstRow() {
@@ -198,7 +257,10 @@ public class BudgetGridView extends AbstractPageView {
         edit.setEnabled(false);
 
         selectedRows = new HashSet<>();
-        provider.refreshAll();
+        data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
+        provider = new TreeDataProvider<>(data);
+        grid.setDataProvider(provider);
+
         expandFirstRow();
     }
 
@@ -268,10 +330,7 @@ public class BudgetGridView extends AbstractPageView {
             }
 
             service.copyRecurringToAnotherDate(datePicker.getValue());
-
-            data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
-            provider = new TreeDataProvider<>(data);
-            grid.setDataProvider(provider);
+            refreshAll();
             showPrimaryNotification("Date added successfully. Recurring entries will be added automatically.");
             dialog.close();
         }));
@@ -332,15 +391,14 @@ public class BudgetGridView extends AbstractPageView {
         saveItemDialog.openSaveDialog();
     }
 
-    private void editItemRow(BudgetRow item) {
+    private void edit() {
+        BudgetRow item = selectedRows.iterator().next();
         EditItemDialog<UUID, BudgetEntry> editItemDialog = new EditItemDialog<>(componentHelper, budgetEntryService, bervanViewConfig);
         BudgetEntry budgetEntry = service.getItem(item.getId());
 
         editItemDialog.openEditDialog(budgetEntry);
         editItemDialog.setCustomizeSavingInEditFormFunction((BudgetEntry entry) -> {
-            data = service.loadTreeData(LocalDate.of(2020, 1, 1), LocalDate.of(2050, 1, 1));
-            provider = new TreeDataProvider<>(data);
-            grid.setDataProvider(provider);
+            refreshAll();
             return entry;
         });
 
