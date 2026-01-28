@@ -88,7 +88,7 @@ public class BudgetGridView extends AbstractPageView {
         copy = new BervanButton("Copy", e -> copy(), BervanButtonStyle.WARNING);
         edit = new BervanButton("Edit", e -> edit(), BervanButtonStyle.WARNING);
         move = new BervanButton("Move", e -> move(), BervanButtonStyle.WARNING);
-        toolbar.add(expandAll, collapseAll, delete, copy, edit);
+        toolbar.add(expandAll, collapseAll, delete, copy, edit, move);
         return toolbar;
     }
 
@@ -120,11 +120,11 @@ public class BudgetGridView extends AbstractPageView {
                 commonLocalDate = selectedEntry.getEntryDate();
             }
 
-            if (commonLocalDate != selectedEntry.getEntryDate()) {
+            if (!selectedEntry.getEntryDate().equals(commonLocalDate)) {
                 dateChanged++;
             }
 
-            if (commonCategory != selectedEntry.getCategory()) {
+            if (!selectedEntry.getCategory().equals(commonCategory)) {
                 categoryChanged++;
             }
         }
@@ -187,6 +187,7 @@ public class BudgetGridView extends AbstractPageView {
 
             delete.setEnabled(!selectedRows.isEmpty());
             copy.setEnabled(!selectedRows.isEmpty());
+            move.setEnabled(!selectedRows.isEmpty());
             edit.setEnabled(selectedRows.size() == 1);
         });
         return cb;
@@ -254,6 +255,7 @@ public class BudgetGridView extends AbstractPageView {
     private void refreshAll() {
         delete.setEnabled(false);
         copy.setEnabled(false);
+        move.setEnabled(false);
         edit.setEnabled(false);
 
         selectedRows = new HashSet<>();

@@ -46,6 +46,13 @@ public class BudgetGridService {
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.GREATER_EQUAL_OPERATION, startDate);
         request.addCriterion("ENTRY_DATE_CRITERIA", BudgetEntry.class, "entryDate", SearchOperation.LESS_EQUAL_OPERATION, endDate);
         List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
+
+        for (BudgetEntry budgetEntry : loaded) {
+            if(budgetEntry.getEntryDate() == null) {
+                budgetEntry.setEntryDate(LocalDate.now());
+                budgetEntryService.save(budgetEntry);
+            }
+        }
         //group by month not by day of month
         Map<String, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(e -> getDateRootName(e)));
 
@@ -180,8 +187,13 @@ public class BudgetGridService {
 
     public void update(List<BudgetEntry> originalSelected, LocalDate newDate, String newCategory) {
         originalSelected.forEach(e -> {
-            e.setEntryDate(newDate);
-            e.setCategory(newCategory);
+            if (newDate != null) {
+                e.setEntryDate(newDate);
+            }
+            if (newCategory != null && !newCategory.trim().isEmpty()) {
+                e.setCategory(newCategory);
+            }
+
         });
         budgetEntryService.save(originalSelected);
     }
