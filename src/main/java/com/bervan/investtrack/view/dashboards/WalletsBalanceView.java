@@ -71,13 +71,13 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
 
     private BigDecimal getTotalBalance(Map<UUID, List<BigDecimal>> balances, UUID walletId) {
         List<BigDecimal> b = balances.get(walletId);
-        if (b.isEmpty()) return BigDecimal.ZERO;
+        if (b == null || b.isEmpty()) return BigDecimal.ZERO;
         return b.get(b.size() - 1).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     private BigDecimal getTotalSumOfDeposit(Map<UUID, List<BigDecimal>> sumOfDeposits, UUID walletId) {
         List<BigDecimal> b = sumOfDeposits.get(walletId);
-        if (b.isEmpty()) return BigDecimal.ZERO;
+        if (b == null || b.isEmpty()) return BigDecimal.ZERO;
         return b.get(b.size() - 1).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 

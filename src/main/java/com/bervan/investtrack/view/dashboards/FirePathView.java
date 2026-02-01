@@ -23,7 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class FirePathView extends VerticalLayout {
-    private static final BigDecimal GLOBAL_TARGET = BigDecimal.valueOf(1_500_000L); // PLN
+    private static final BigDecimal DEFAULT_TARGET = BigDecimal.valueOf(1_500_000L); // PLN
     private static final BigDecimal INFLATION = BigDecimal.valueOf(0.038); // 3.8% last 10 years in PL
     private final CurrencyConverter currencyConverter;
     private final List<Wallet> wallets;
@@ -31,21 +31,72 @@ public class FirePathView extends VerticalLayout {
     private final Map<UUID, List<BigDecimal>> sumOfDeposits;
     private final Map<UUID, List<String>> dates;
 
+    private BigDecimal fireTarget;
+    private VerticalLayout mainContentLayout;
+
     public FirePathView(CurrencyConverter currencyConverter, List<Wallet> wallets,
                         Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits,
                         Map<UUID, List<String>> dates) {
+        this(currencyConverter, wallets, balances, sumOfDeposits, dates, DEFAULT_TARGET);
+    }
+
+    public FirePathView(CurrencyConverter currencyConverter, List<Wallet> wallets,
+                        Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits,
+                        Map<UUID, List<String>> dates, BigDecimal customTarget) {
         this.currencyConverter = currencyConverter;
         this.wallets = wallets;
         this.balances = balances;
         this.sumOfDeposits = sumOfDeposits;
         this.dates = dates;
+        this.fireTarget = customTarget != null ? customTarget : DEFAULT_TARGET;
 
         setSizeFull();
         setPadding(false);
         setSpacing(false);
         addClassName("fire-view");
 
-        add(createMainContent());
+        add(createGoalEditor());
+        mainContentLayout = new VerticalLayout();
+        mainContentLayout.setSizeFull();
+        mainContentLayout.setPadding(false);
+        mainContentLayout.setSpacing(false);
+        mainContentLayout.add(createMainContent());
+        add(mainContentLayout);
+    }
+
+    private HorizontalLayout createGoalEditor() {
+        HorizontalLayout goalLayout = new HorizontalLayout();
+        goalLayout.setWidthFull();
+        goalLayout.setAlignItems(Alignment.CENTER);
+
+        Span label = new Span("FIRE Goal (PLN):");
+
+        NumberField goalField = new NumberField();
+        goalField.setValue(fireTarget.doubleValue());
+        goalField.setMin(10000);
+        goalField.setMax(100000000);
+        goalField.setStep(50000);
+        goalField.setStepButtonsVisible(true);
+        goalField.setWidth("200px");
+
+        Span hint = new Span("Change the goal and the projections will update automatically.");
+        hint.getStyle().set("font-size", "0.875rem")
+                .set("color", "var(--invest-text-secondary, rgba(255,255,255,0.7))");
+
+        goalField.addValueChangeListener(event -> {
+            if (event.getValue() != null && event.getValue() > 0) {
+                fireTarget = BigDecimal.valueOf(event.getValue());
+                refreshContent();
+            }
+        });
+
+        goalLayout.add(label, goalField, hint);
+        return goalLayout;
+    }
+
+    private void refreshContent() {
+        mainContentLayout.removeAll();
+        mainContentLayout.add(createMainContent());
     }
 
     private static double getMonthlyReturn(long monthsBetween, BigDecimal combinedTotalDeposits, BigDecimal combinedCurrentBalance) {
@@ -82,6 +133,11 @@ public class FirePathView extends VerticalLayout {
             List<BigDecimal> sumOfWalletDeposits = sumOfDeposits.getOrDefault(wId, Collections.emptyList());
             List<String> walletDates = dates.getOrDefault(wId, Collections.emptyList());
 
+            // Skip wallets with no data
+            if (walletBalances.isEmpty() || sumOfWalletDeposits.isEmpty() || walletDates.isEmpty()) {
+                continue;
+            }
+
             combinedCurrentBalance = combinedCurrentBalance.add(convert(walletBalances.get(walletBalances.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
             combinedTotalDeposits = combinedTotalDeposits.add(convert(sumOfWalletDeposits.get(sumOfWalletDeposits.size() - 1), CurrencyConverter.Currency.of(wallet.getCurrency()), CurrencyConverter.Currency.PLN));
 
@@ -92,8 +148,16 @@ public class FirePathView extends VerticalLayout {
             }
         }
 
+        // Handle case where no valid data was found
+        if (firstDate.equals(LocalDate.MAX) || lastDate.equals(LocalDate.MIN)) {
+            firstDate = LocalDate.now().minusYears(1);
+            lastDate = LocalDate.now();
+        }
+
         long monthsBetween = ChronoUnit.MONTHS.between(firstDate.withDayOfMonth(1), lastDate.withDayOfMonth(1)) + 1;
-        double avgMonthlyDeposit = monthsBetween > 0 ? combinedTotalDeposits.divide(BigDecimal.valueOf(monthsBetween), 18, RoundingMode.HALF_UP).doubleValue() : 0.0;
+        if (monthsBetween <= 0) monthsBetween = 1;
+        double avgMonthlyDeposit = combinedTotalDeposits.compareTo(BigDecimal.ZERO) > 0 ?
+                combinedTotalDeposits.divide(BigDecimal.valueOf(monthsBetween), 18, RoundingMode.HALF_UP).doubleValue() : 0.0;
         double monthlyReturn = getMonthlyReturn(monthsBetween, combinedTotalDeposits, combinedCurrentBalance);
 
         VerticalLayout content = new VerticalLayout();
@@ -182,7 +246,7 @@ public class FirePathView extends VerticalLayout {
         List<FireStage> result = new ArrayList<>();
         for (StageDef def : stageDefs) {
             BigDecimal pct = def.percent.divide(BigDecimal.valueOf(100), 18, RoundingMode.HALF_UP);
-            BigDecimal stageAmount = GLOBAL_TARGET.multiply(pct).setScale(0, RoundingMode.HALF_UP);
+            BigDecimal stageAmount = fireTarget.multiply(pct).setScale(0, RoundingMode.HALF_UP);
             BigDecimal howMuchLeft = stageAmount.subtract(combinedCurrentBalance);
             boolean achieved = howMuchLeft.compareTo(BigDecimal.ZERO) <= 0;
             String howMuchLeftStr = achieved ? "Achieved" : nf.format(howMuchLeft);
@@ -296,7 +360,7 @@ public class FirePathView extends VerticalLayout {
 
         Div bottomInfo = new Div();
         bottomInfo.addClassName("bottom-info");
-        bottomInfo.setText("Target: " + nf.format(GLOBAL_TARGET) + ".");
+        bottomInfo.setText("Target: " + nf.format(fireTarget) + ".");
 
         howMuchYouCanSaveInTotal.addValueChangeListener(howMuchYouCanSaveInTotalChanged -> {
             chartInputDataChanged(combinedCurrentBalance, avgMonthlyDeposit, monthlyReturn, yearsSlider.getValue(), howMuchYouCanSaveInTotalChanged.getValue(),

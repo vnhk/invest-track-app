@@ -1,0 +1,414 @@
+/**
+ * Invest Track Dashboard Styles
+ * Glassmorphism effects and modern dashboard components
+ */
+
+/* ===== CSS Variables ===== */
+:root {
+    /* Glassmorphism */
+    --invest-glass-bg: rgba(17, 25, 40, 0.75);
+    --invest-glass-bg-light: rgba(255, 255, 255, 0.1);
+    --invest-glass-blur: 16px;
+    --invest-glass-border: rgba(255, 255, 255, 0.18);
+    --invest-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+
+    /* Colors */
+    --invest-primary: #6366f1;
+    --invest-accent: #22d3ee;
+    --invest-success: #10b981;
+    --invest-danger: #ef4444;
+    --invest-warning: #f59e0b;
+    --invest-info: #3b82f6;
+
+    /* Surfaces */
+    --invest-surface-1: rgba(30, 41, 59, 0.8);
+    --invest-surface-2: rgba(51, 65, 85, 0.7);
+    --invest-surface-hover: rgba(71, 85, 105, 0.5);
+
+    /* Text */
+    --invest-text-primary: rgba(255, 255, 255, 0.95);
+    --invest-text-secondary: rgba(255, 255, 255, 0.7);
+    --invest-text-tertiary: rgba(255, 255, 255, 0.5);
+
+    /* Spacing */
+    --invest-spacing-xs: 4px;
+    --invest-spacing-sm: 8px;
+    --invest-spacing-md: 16px;
+    --invest-spacing-lg: 24px;
+    --invest-spacing-xl: 32px;
+
+    /* Border Radius */
+    --invest-radius-sm: 6px;
+    --invest-radius-md: 12px;
+    --invest-radius-lg: 16px;
+    --invest-radius-xl: 24px;
+
+    /* Transitions */
+    --invest-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --invest-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Dashboard Container ===== */
+.invest-dashboard {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%);
+    min-height: 100vh;
+    padding: var(--invest-spacing-lg);
+}
+
+/* ===== KPI Cards ===== */
+.invest-kpi-row {
+    display: flex;
+    gap: var(--invest-spacing-lg);
+    flex-wrap: wrap;
+    margin-bottom: var(--invest-spacing-xl);
+}
+
+.invest-kpi-card {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    padding: var(--invest-spacing-lg);
+    min-width: 200px;
+    flex: 1;
+    transition: transform var(--invest-transition-normal),
+                box-shadow var(--invest-transition-normal);
+}
+
+.invest-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.invest-kpi-card.kpi-has-tooltip {
+    cursor: help;
+    position: relative;
+}
+
+.invest-kpi-card.kpi-has-tooltip::after {
+    content: "ⓘ";
+    position: absolute;
+    top: var(--invest-spacing-sm);
+    right: var(--invest-spacing-sm);
+    font-size: 0.875rem;
+    color: var(--invest-text-tertiary);
+    opacity: 0.7;
+    transition: opacity var(--invest-transition-fast);
+}
+
+.invest-kpi-card.kpi-has-tooltip:hover::after {
+    opacity: 1;
+    color: var(--invest-accent);
+}
+
+.invest-kpi-card .kpi-icon {
+    font-size: 2rem;
+    margin-bottom: var(--invest-spacing-sm);
+    color: var(--invest-accent);
+}
+
+.invest-kpi-card .kpi-title {
+    font-size: 0.875rem;
+    color: var(--invest-text-secondary);
+    margin: 0 0 var(--invest-spacing-xs) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.invest-kpi-card .kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--invest-text-primary);
+    margin: 0;
+}
+
+.invest-kpi-card .kpi-trend {
+    display: flex;
+    align-items: center;
+    gap: var(--invest-spacing-xs);
+    margin-top: var(--invest-spacing-sm);
+    font-size: 0.875rem;
+}
+
+.invest-kpi-card .kpi-trend.positive {
+    color: var(--invest-success);
+}
+
+.invest-kpi-card .kpi-trend.negative {
+    color: var(--invest-danger);
+}
+
+/* ===== Quick Filters ===== */
+.invest-quick-filters {
+    display: flex;
+    gap: var(--invest-spacing-sm);
+    margin-bottom: var(--invest-spacing-lg);
+    flex-wrap: wrap;
+}
+
+.invest-quick-filter-btn {
+    background: var(--invest-surface-1);
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-md);
+    color: var(--invest-text-secondary);
+    padding: var(--invest-spacing-sm) var(--invest-spacing-md);
+    cursor: pointer;
+    transition: all var(--invest-transition-fast);
+    font-weight: 500;
+}
+
+.invest-quick-filter-btn:hover {
+    background: var(--invest-surface-hover);
+    color: var(--invest-text-primary);
+}
+
+.invest-quick-filter-btn.active {
+    background: var(--invest-primary);
+    color: white;
+    border-color: var(--invest-primary);
+}
+
+/* ===== Chart Cards ===== */
+.invest-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--invest-spacing-lg);
+}
+
+@media (max-width: 1200px) {
+    .invest-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.invest-chart-card {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    padding: var(--invest-spacing-lg);
+}
+
+.invest-chart-card .chart-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--invest-text-primary);
+    margin: 0 0 var(--invest-spacing-md) 0;
+    padding-bottom: var(--invest-spacing-sm);
+    border-bottom: 1px solid var(--invest-glass-border);
+}
+
+/* ===== Heatmap ===== */
+.invest-heatmap {
+    display: grid;
+    gap: 2px;
+    padding: var(--invest-spacing-sm);
+}
+
+.invest-heatmap-header {
+    display: contents;
+}
+
+.invest-heatmap-header span {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--invest-text-tertiary);
+    padding: var(--invest-spacing-xs);
+}
+
+.invest-heatmap-row {
+    display: contents;
+}
+
+.invest-heatmap-year {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--invest-text-secondary);
+    padding: var(--invest-spacing-xs) var(--invest-spacing-sm);
+    display: flex;
+    align-items: center;
+}
+
+.invest-heatmap-cell {
+    border-radius: var(--invest-radius-sm);
+    padding: var(--invest-spacing-xs);
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: transform var(--invest-transition-fast);
+    cursor: default;
+}
+
+.invest-heatmap-cell:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+/* Heatmap color scale - green for positive, red for negative */
+.invest-heatmap-cell.level-5 { background: rgba(16, 185, 129, 0.9); color: white; }
+.invest-heatmap-cell.level-4 { background: rgba(16, 185, 129, 0.7); color: white; }
+.invest-heatmap-cell.level-3 { background: rgba(16, 185, 129, 0.5); color: white; }
+.invest-heatmap-cell.level-2 { background: rgba(16, 185, 129, 0.3); color: var(--invest-text-primary); }
+.invest-heatmap-cell.level-1 { background: rgba(16, 185, 129, 0.1); color: var(--invest-text-primary); }
+.invest-heatmap-cell.level-0 { background: rgba(100, 116, 139, 0.3); color: var(--invest-text-secondary); }
+.invest-heatmap-cell.level--1 { background: rgba(239, 68, 68, 0.1); color: var(--invest-text-primary); }
+.invest-heatmap-cell.level--2 { background: rgba(239, 68, 68, 0.3); color: var(--invest-text-primary); }
+.invest-heatmap-cell.level--3 { background: rgba(239, 68, 68, 0.5); color: white; }
+.invest-heatmap-cell.level--4 { background: rgba(239, 68, 68, 0.7); color: white; }
+.invest-heatmap-cell.level--5 { background: rgba(239, 68, 68, 0.9); color: white; }
+
+.invest-heatmap-cell.empty {
+    background: transparent;
+    border: 1px dashed var(--invest-glass-border);
+}
+
+/* ===== Comparison Table ===== */
+.invest-comparison-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.invest-comparison-table th,
+.invest-comparison-table td {
+    padding: var(--invest-spacing-sm) var(--invest-spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--invest-glass-border);
+}
+
+.invest-comparison-table th {
+    background: var(--invest-surface-1);
+    color: var(--invest-text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.invest-comparison-table tr:hover td {
+    background: var(--invest-surface-hover);
+}
+
+.invest-comparison-table td {
+    color: var(--invest-text-primary);
+}
+
+/* ===== Budget Chart ===== */
+.invest-budget-chart {
+    min-height: 300px;
+}
+
+.invest-budget-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--invest-spacing-lg);
+    margin-top: var(--invest-spacing-md);
+}
+
+.invest-budget-legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--invest-spacing-xs);
+    font-size: 0.875rem;
+    color: var(--invest-text-secondary);
+}
+
+.invest-budget-legend-item .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.invest-budget-legend-item .legend-dot.income {
+    background: var(--invest-success);
+}
+
+.invest-budget-legend-item .legend-dot.expense {
+    background: var(--invest-danger);
+}
+
+/* ===== Allocation Pie ===== */
+.invest-allocation-container {
+    display: flex;
+    align-items: center;
+    gap: var(--invest-spacing-xl);
+}
+
+.invest-allocation-legend {
+    flex: 1;
+}
+
+.invest-allocation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--invest-spacing-sm) 0;
+    border-bottom: 1px solid var(--invest-glass-border);
+}
+
+.invest-allocation-item:last-child {
+    border-bottom: none;
+}
+
+.invest-allocation-label {
+    display: flex;
+    align-items: center;
+    gap: var(--invest-spacing-sm);
+}
+
+.invest-allocation-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.invest-allocation-value {
+    font-weight: 600;
+    color: var(--invest-text-primary);
+}
+
+/* ===== Tabs Override ===== */
+.invest-tabs {
+    margin-bottom: var(--invest-spacing-lg);
+}
+
+.invest-tabs vaadin-tab {
+    color: var(--invest-text-secondary);
+    font-weight: 500;
+}
+
+.invest-tabs vaadin-tab[selected] {
+    color: var(--invest-accent);
+}
+
+/* ===== Animations ===== */
+@keyframes invest-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.invest-fade-in {
+    animation: invest-fade-in var(--invest-transition-normal) ease-out;
+}
+
+/* ===== Utility Classes ===== */
+.invest-text-success { color: var(--invest-success); }
+.invest-text-danger { color: var(--invest-danger); }
+.invest-text-warning { color: var(--invest-warning); }
+.invest-text-info { color: var(--invest-info); }
+
+.invest-bg-glass {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+}

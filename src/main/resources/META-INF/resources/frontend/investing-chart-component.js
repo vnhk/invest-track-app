@@ -307,3 +307,181 @@ window.renderStrategyBGRHistoryChart = (canvas, dates, bestRecPercent, goodRecPe
         }
     });
 };
+
+// Budget Income vs Expense stacked bar chart
+window.renderBudgetIncomeExpenseChart = (canvas, months, incomeData, expenseData) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || 'rgba(255,255,255,0.9)';
+
+    if (canvas === null) return;
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expense',
+                    data: expenseData,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {color: textColor}
+                }
+            },
+            scales: {
+                x: {
+                    stacked: false,
+                    ticks: {color: textColor},
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                },
+                y: {
+                    stacked: false,
+                    beginAtZero: true,
+                    ticks: {color: textColor},
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                }
+            }
+        }
+    });
+};
+
+// Asset Allocation Pie Chart
+window.renderAssetAllocationChart = (canvas, labels, values, colors) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || 'rgba(255,255,255,0.9)';
+
+    if (canvas === null) return;
+    const ctx = canvas.getContext('2d');
+
+    // Default colors if not provided
+    const defaultColors = [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(34, 211, 238, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(236, 72, 153, 0.8)',
+        'rgba(59, 130, 246, 0.8)'
+    ];
+
+    const bgColors = colors && colors.length > 0 ? colors : defaultColors;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: bgColors,
+                borderColor: 'rgba(255,255,255,0.2)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: textColor,
+                        padding: 15,
+                        font: {size: 12}
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.raw.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+};
+
+// Category Trends Line Chart
+window.renderCategoryTrendsChart = (canvas, months, categoriesData) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || 'rgba(255,255,255,0.9)';
+
+    if (canvas === null) return;
+    const ctx = canvas.getContext('2d');
+
+    const colors = [
+        'rgba(99, 102, 241, 1)',
+        'rgba(34, 211, 238, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(139, 92, 246, 1)',
+        'rgba(236, 72, 153, 1)',
+        'rgba(59, 130, 246, 1)',
+        'rgba(168, 162, 158, 1)',
+        'rgba(251, 191, 36, 1)'
+    ];
+
+    // categoriesData is an object { categoryName: [values...] }
+    const datasets = Object.keys(categoriesData).map((category, index) => ({
+        label: category,
+        data: categoriesData[category],
+        borderColor: colors[index % colors.length],
+        backgroundColor: colors[index % colors.length],
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3
+    }));
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {color: textColor}
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {color: textColor},
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {color: textColor},
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                }
+            }
+        }
+    });
+};

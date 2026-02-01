@@ -6,7 +6,9 @@ import com.bervan.common.view.AbstractPageView;
 import com.bervan.investments.recommendation.InvestmentRecommendationService;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
+import com.bervan.investtrack.service.BudgetChartDataService;
 import com.bervan.investtrack.service.CurrencyConverter;
+import com.bervan.investtrack.service.InvestmentCalculationService;
 import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.logging.JsonLogger;
@@ -47,13 +49,27 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private final CurrencyConverter currencyConverter;
     private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
+    private final InvestmentCalculationService calculationService;
+    private final BudgetChartDataService budgetChartDataService;
+    private final WalletService walletService;
+
+    // Track current tab to preserve selection on refresh
+    private Tabs tabs;
+    private VerticalLayout filtersLayout;
+    private String currentTabLabel = "Dashboard";
+    private List<Wallet> currentWallets;
 
     public AbstractBudgetDashboardView(CurrencyConverter currencyConverter,
                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
-                                       InvestmentRecommendationService recommendationService) {
+                                       InvestmentRecommendationService recommendationService,
+                                       InvestmentCalculationService calculationService,
+                                       BudgetChartDataService budgetChartDataService) {
         this.currencyConverter = currencyConverter;
         this.strategies = strategies;
         this.recommendationService = recommendationService;
+        this.calculationService = calculationService;
+        this.budgetChartDataService = budgetChartDataService;
+        this.walletService = service;
         try {
             Set<Wallet> wallets = service.load(Pageable.ofSize(16));
             if (wallets.size() > 16) {
@@ -92,18 +108,51 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         allWalletsCalculations(sortedWallets);
         oneWalletCalculations(sortedWallets);
 
-        if (aggregationSelector.getValue().equals("All Wallets")) {
-            createAndAddTabs(sortedWallets, dates, balances, deposits, sumOfDeposits);
-        } else if (aggregationSelector.getValue().equals("One Wallet")) {
-            BigDecimal returnRate = getReturnRateForAggregatedWallets();
+        List<Wallet> walletsToUse;
+        Map<UUID, List<String>> datesToUse;
+        Map<UUID, List<BigDecimal>> balancesToUse;
+        Map<UUID, List<BigDecimal>> depositsToUse;
+        Map<UUID, List<BigDecimal>> sumOfDepositsToUse;
 
+        if (aggregationSelector.getValue().equals("All Wallets")) {
+            walletsToUse = sortedWallets;
+            datesToUse = dates;
+            balancesToUse = balances;
+            depositsToUse = deposits;
+            sumOfDepositsToUse = sumOfDeposits;
+        } else {
+            BigDecimal returnRate = getReturnRateForAggregatedWallets();
             Wallet oneAggregatedWallet = new Wallet();
             oneAggregatedWallet.setName("Aggregated Wallet (" + returnRate + "%)");
             oneAggregatedWallet.setId(UUID.randomUUID());
 
-            createAndAddTabs(List.of(oneAggregatedWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDatesForOneWallet),
-                    Map.of(oneAggregatedWallet.getId(), aggregatedBalancesForOneWallet), Map.of(oneAggregatedWallet.getId(), aggregatedDepositsForOneWallet),
-                    Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForOneWallet));
+            walletsToUse = List.of(oneAggregatedWallet);
+            datesToUse = Map.of(oneAggregatedWallet.getId(), aggregatedDatesForOneWallet);
+            balancesToUse = Map.of(oneAggregatedWallet.getId(), aggregatedBalancesForOneWallet);
+            depositsToUse = Map.of(oneAggregatedWallet.getId(), aggregatedDepositsForOneWallet);
+            sumOfDepositsToUse = Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForOneWallet);
+        }
+
+        this.currentWallets = walletsToUse;
+
+        // Only create tabs once, then just refresh content
+        if (tabs == null) {
+            createAndAddTabs(walletsToUse, datesToUse, balancesToUse, depositsToUse, sumOfDepositsToUse);
+        } else {
+            // Just refresh current tab content
+            refreshCurrentTab(walletsToUse, datesToUse, balancesToUse, depositsToUse, sumOfDepositsToUse);
+        }
+    }
+
+    private void refreshCurrentTab(List<Wallet> wallets, Map<UUID, List<String>> dates,
+                                   Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits,
+                                   Map<UUID, List<BigDecimal>> sumOfDeposits) {
+        switch (currentTabLabel) {
+            case "Dashboard" -> mainDashboardTab();
+            case "Balance" -> balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
+            case "Earnings" -> earningsTab(wallets, dates, balances, deposits, sumOfDeposits);
+            case "FIRE" -> fireTab(wallets, dates, balances, deposits, sumOfDeposits);
+            case "Short Term Strategies" -> strategiesTab();
         }
     }
 
@@ -318,14 +367,17 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
 
     private void createAndAddTabs(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         removeAll();
-        Tabs tabs = new Tabs();
+
+        this.tabs = new Tabs();
+        Tab mainDashboard = new Tab("Dashboard");
         Tab balance = new Tab("Balance");
         Tab earnings = new Tab("Earnings");
         Tab fire = new Tab("FIRE");
         Tab shortTermStrategies = new Tab("Short Term Strategies");
-        tabs.add(balance, earnings, fire, shortTermStrategies);
+        tabs.add(mainDashboard, balance, earnings, fire, shortTermStrategies);
         add(tabs);
-        VerticalLayout filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
+
+        this.filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
         filtersLayout.setSpacing(true);
         filtersLayout.setPadding(true);
         add(filtersLayout);
@@ -333,24 +385,43 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
 
         tabs.addSelectedChangeListener(event -> {
             Tab selectedTab = event.getSelectedTab();
+            currentTabLabel = selectedTab.getLabel();
 
-            if (selectedTab.getLabel().equals("Balance")) {
-                filtersLayout.setVisible(true);
-                balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
-            } else if (selectedTab.getLabel().equals("Earnings")) {
-                filtersLayout.setVisible(true);
-                earningsTab(wallets, dates, balances, deposits, sumOfDeposits);
-            } else if (selectedTab.getLabel().equals("FIRE")) {
-                filtersLayout.setVisible(false);
-                fireTab(wallets, dates, balances, deposits, sumOfDeposits);
-            } else if (selectedTab.getLabel().equals("Short Term Strategies")) {
-                filtersLayout.setVisible(false);
-                strategiesTab();
+            // Use currentWallets and current data maps for the callback
+            switch (currentTabLabel) {
+                case "Dashboard" -> {
+                    filtersLayout.setVisible(false);
+                    mainDashboardTab();
+                }
+                case "Balance" -> {
+                    filtersLayout.setVisible(true);
+                    balanceTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                }
+                case "Earnings" -> {
+                    filtersLayout.setVisible(true);
+                    earningsTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                }
+                case "FIRE" -> {
+                    filtersLayout.setVisible(false);
+                    fireTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                }
+                case "Short Term Strategies" -> {
+                    filtersLayout.setVisible(false);
+                    strategiesTab();
+                }
             }
         });
 
-        tabs.setSelectedTab(balance);
-        balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
+        // Set initial tab
+        filtersLayout.setVisible(false);
+        tabs.setSelectedTab(mainDashboard);
+        currentTabLabel = "Dashboard";
+        mainDashboardTab();
+    }
+
+    private void mainDashboardTab() {
+        content.removeAll();
+        content.add(new MainDashboardView(walletService, currencyConverter, calculationService, budgetChartDataService));
     }
 
     private void fireTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {

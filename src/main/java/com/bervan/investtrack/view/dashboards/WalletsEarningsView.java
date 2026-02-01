@@ -63,11 +63,14 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
     }
 
     private BigDecimal getTotalEarnings(Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, UUID walletId) {
-        BigDecimal totalEarnings;
         List<BigDecimal> sod = sumOfDeposits.get(walletId);
         List<BigDecimal> b = balances.get(walletId);
-        totalEarnings = b.get(b.size() - 1).subtract(sod.get(sod.size() - 1)).setScale(2, BigDecimal.ROUND_HALF_UP);
-        return totalEarnings;
+
+        if (sod == null || sod.isEmpty() || b == null || b.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        return b.get(b.size() - 1).subtract(sod.get(sod.size() - 1)).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     protected void buildCharts(List<Wallet> wallets, Map<UUID, List<String>> dates, String selected, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> sumOfDeposits, Div gridContainer,
