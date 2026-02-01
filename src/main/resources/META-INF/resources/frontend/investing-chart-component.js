@@ -412,9 +412,10 @@ window.renderAssetAllocationChart = (canvas, labels, values, colors) => {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.raw / total) * 100).toFixed(1);
-                            return `${context.label}: ${context.raw.toLocaleString()} (${percentage}%)`;
+                            const total = context.dataset.data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                            const value = parseFloat(context.raw);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
                         }
                     }
                 }

@@ -62,10 +62,15 @@ public class BudgetGridView extends AbstractPageView {
         this.componentHelper = componentHelper;
         grid = new TreeGrid<>();
 
+        // Apply glassmorphism container
+        addClassName("budget-tree-container");
+
         HorizontalLayout toolbar = buildToolbar();
+        toolbar.addClassName("budget-tree-toolbar");
 
         grid.setWidthFull();
         grid.setHeightFull();
+        grid.addClassName("budget-tree-grid");
 
         buildColumns();
 
@@ -81,13 +86,29 @@ public class BudgetGridView extends AbstractPageView {
         toolbar.setSpacing(true);
 
         BervanButton expandAll = new BervanButton("Expand all", e ->
-                grid.expandRecursively(data.getRootItems(), Integer.MAX_VALUE), BervanButtonStyle.WARNING);
+                grid.expandRecursively(data.getRootItems(), Integer.MAX_VALUE));
+        expandAll.addClassName("glass-btn");
+
         BervanButton collapseAll = new BervanButton("Collapse all", e ->
-                grid.collapseRecursively(data.getRootItems(), Integer.MAX_VALUE), BervanButtonStyle.WARNING);
-        delete = new BervanButton("Delete", e -> delete(), BervanButtonStyle.WARNING);
-        copy = new BervanButton("Copy", e -> copy(), BervanButtonStyle.WARNING);
-        edit = new BervanButton("Edit", e -> edit(), BervanButtonStyle.WARNING);
-        move = new BervanButton("Move", e -> move(), BervanButtonStyle.WARNING);
+                grid.collapseRecursively(data.getRootItems(), Integer.MAX_VALUE));
+        collapseAll.addClassName("glass-btn");
+
+        delete = new BervanButton("Delete", e -> delete());
+        delete.addClassName("glass-btn");
+        delete.addClassName("danger");
+
+        copy = new BervanButton("Copy", e -> copy());
+        copy.addClassName("glass-btn");
+        copy.addClassName("primary");
+
+        edit = new BervanButton("Edit", e -> edit());
+        edit.addClassName("glass-btn");
+        edit.addClassName("primary");
+
+        move = new BervanButton("Move", e -> move());
+        move.addClassName("glass-btn");
+        move.addClassName("warning");
+
         toolbar.add(expandAll, collapseAll, delete, copy, edit, move);
         return toolbar;
     }
