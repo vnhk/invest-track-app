@@ -3,31 +3,31 @@
  * Glassmorphism effects and modern dashboard components
  */
 
-/* ===== CSS Variables ===== */
+/* ===== CSS Variables - Use theme glass variables with fallbacks ===== */
 :root {
-    /* Glassmorphism */
-    --invest-glass-bg: rgba(17, 25, 40, 0.75);
-    --invest-glass-bg-light: rgba(255, 255, 255, 0.1);
-    --invest-glass-blur: 16px;
-    --invest-glass-border: rgba(255, 255, 255, 0.18);
-    --invest-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+    /* Glassmorphism - fallbacks, themes override via --glass-* variables */
+    --invest-glass-bg: var(--glass-bg, rgba(17, 25, 40, 0.75));
+    --invest-glass-bg-light: var(--glass-btn-bg, rgba(255, 255, 255, 0.1));
+    --invest-glass-blur: var(--glass-blur, 16px);
+    --invest-glass-border: var(--glass-border, rgba(255, 255, 255, 0.18));
+    --invest-glass-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.37));
 
-    /* Colors */
-    --invest-primary: #6366f1;
-    --invest-accent: #22d3ee;
-    --invest-success: #10b981;
-    --invest-danger: #ef4444;
-    --invest-warning: #f59e0b;
-    --invest-info: #3b82f6;
+    /* Colors - use theme primary colors with fallbacks */
+    --invest-primary: var(--glass-primary, #6366f1);
+    --invest-accent: var(--lumo-secondary-text-color, #22d3ee);
+    --invest-success: var(--vaadin-notification-card-bgColor-success, #10b981);
+    --invest-danger: var(--vaadin-notification-card-bgColor-error, #ef4444);
+    --invest-warning: var(--vaadin-notification-card-bgColor-warning, #f59e0b);
+    --invest-info: var(--lumo-primary-color, #3b82f6);
 
     /* Surfaces */
-    --invest-surface-1: rgba(30, 41, 59, 0.8);
-    --invest-surface-2: rgba(51, 65, 85, 0.7);
-    --invest-surface-hover: rgba(71, 85, 105, 0.5);
+    --invest-surface-1: var(--glass-header-bg, rgba(30, 41, 59, 0.8));
+    --invest-surface-2: var(--glass-btn-hover-bg, rgba(51, 65, 85, 0.7));
+    --invest-surface-hover: var(--glass-row-hover, rgba(71, 85, 105, 0.5));
 
     /* Text */
-    --invest-text-primary: rgba(255, 255, 255, 0.95);
-    --invest-text-secondary: rgba(255, 255, 255, 0.7);
+    --invest-text-primary: var(--glass-text-primary, rgba(255, 255, 255, 0.95));
+    --invest-text-secondary: var(--glass-text-secondary, rgba(255, 255, 255, 0.7));
     --invest-text-tertiary: rgba(255, 255, 255, 0.5);
 
     /* Spacing */
@@ -50,7 +50,7 @@
 
 /* ===== Dashboard Container ===== */
 .invest-dashboard {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%);
+    background: var(--glass-container-gradient, linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%));
     min-height: 100vh;
     padding: var(--invest-spacing-lg);
 }
