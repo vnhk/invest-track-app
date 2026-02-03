@@ -13,10 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,7 +47,26 @@ public class BudgetGridService {
         //group by month not by day of month
         Map<String, List<BudgetEntry>> byDate = loaded.stream().collect(Collectors.groupingBy(e -> getDateRootName(e)));
 
-        for (Map.Entry<String, List<BudgetEntry>> entry : byDate.entrySet()) {
+        // Sort dates descending (newest first)
+        List<String> sortedDates = new ArrayList<>(byDate.keySet());
+        sortedDates.sort((d1, d2) -> {
+            // Format is "month-year" e.g. "1-2025"
+            String[] parts1 = d1.split("-");
+            String[] parts2 = d2.split("-");
+            int year1 = Integer.parseInt(parts1[1]);
+            int year2 = Integer.parseInt(parts2[1]);
+            int month1 = Integer.parseInt(parts1[0]);
+            int month2 = Integer.parseInt(parts2[0]);
+            // Compare year first, then month (descending)
+            if (year1 != year2) {
+                return year2 - year1;
+            }
+            return month2 - month1;
+        });
+
+        for (String dateKey : sortedDates) {
+            List<BudgetEntry> entries = byDate.get(dateKey);
+            Map.Entry<String, List<BudgetEntry>> entry = Map.entry(dateKey, entries);
             BigDecimal dateSumOfAmounts = BigDecimal.ZERO;
             BudgetRow dateGroup = group(entry.getKey(), "DATE_ROW");
 

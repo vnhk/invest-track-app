@@ -274,6 +274,9 @@ public class BudgetGridView extends AbstractPageView {
     }
 
     private void refreshAll() {
+        // Save expanded state before refresh
+        Set<String> expandedNames = getExpandedRowNames();
+
         delete.setEnabled(false);
         copy.setEnabled(false);
         move.setEnabled(false);
@@ -284,7 +287,63 @@ public class BudgetGridView extends AbstractPageView {
         provider = new TreeDataProvider<>(data);
         grid.setDataProvider(provider);
 
-        expandFirstRow();
+        // Restore expanded state
+        restoreExpandedState(expandedNames);
+    }
+
+    private Set<String> getExpandedRowNames() {
+        Set<String> expandedNames = new HashSet<>();
+        if (data != null) {
+            for (BudgetRow root : data.getRootItems()) {
+                collectExpandedNames(root, expandedNames);
+            }
+        }
+        return expandedNames;
+    }
+
+    private void collectExpandedNames(BudgetRow row, Set<String> expandedNames) {
+        if (grid.isExpanded(row)) {
+            expandedNames.add(row.getName());
+            for (BudgetRow child : data.getChildren(row)) {
+                collectExpandedNames(child, expandedNames);
+            }
+        }
+    }
+
+    private void restoreExpandedState(Set<String> expandedNames) {
+        if (expandedNames.isEmpty()) {
+            // No previous state - expand first row
+            expandFirstRow();
+            return;
+        }
+
+        boolean anyRestored = false;
+        for (BudgetRow root : data.getRootItems()) {
+            if (expandedNames.contains(root.getName())) {
+                grid.expand(root);
+                anyRestored = true;
+                restoreChildExpanded(root, expandedNames);
+            }
+        }
+
+        if (!anyRestored) {
+            // Structure changed completely - collapse all (already collapsed by default)
+            // Do nothing, tree stays collapsed
+        }
+    }
+
+    private void restoreChildExpanded(BudgetRow parent, Set<String> expandedNames) {
+        for (BudgetRow child : data.getChildren(parent)) {
+            if (expandedNames.contains(child.getName())) {
+                grid.expand(child);
+                restoreChildExpanded(child, expandedNames);
+            }
+        }
+    }
+
+    private void refreshProvider() {
+        // Just refresh the provider without reloading from DB
+        provider.refreshAll();
     }
 
     private Component name(BudgetRow row) {
@@ -350,14 +409,70 @@ public class BudgetGridView extends AbstractPageView {
             if (children.stream().anyMatch(c -> c.getName().equals(dateStr))) {
                 showPrimaryNotification("Date already exists.");
                 dialog.close();
+                return;
             }
 
-            service.copyRecurringToAnotherDate(datePicker.getValue());
-            refreshAll();
-            showPrimaryNotification("Date added successfully. Recurring entries will be added automatically.");
+            // Add new date row to tree (UI only, not saved to DB)
+            BudgetRow newDateRow = service.createDateRow(dateStr);
+            data.addItem(null, newDateRow);
+            service.addNewItemBudgetRow(data, newDateRow, "CATEGORY_ROW");
+
+            // Reorder root items so newest date is first
+            reorderRootItemsByDate();
+
+            // Just refresh provider, no DB reload
+            refreshProvider();
+            grid.expand(newDateRow);
+
+            showPrimaryNotification("Date added successfully.");
             dialog.close();
         }));
         dialog.open();
+    }
+
+    private void reorderRootItemsByDate() {
+        List<BudgetRow> rootItems = new ArrayList<>(data.getRootItems());
+
+        // Sort dates descending (newest first), keep "+" at the end
+        rootItems.sort((r1, r2) -> {
+            if (r1.getName().equals("+")) return 1;
+            if (r2.getName().equals("+")) return -1;
+
+            try {
+                String[] parts1 = r1.getName().split("-");
+                String[] parts2 = r2.getName().split("-");
+                int year1 = Integer.parseInt(parts1[1]);
+                int year2 = Integer.parseInt(parts2[1]);
+                int month1 = Integer.parseInt(parts1[0]);
+                int month2 = Integer.parseInt(parts2[0]);
+                if (year1 != year2) {
+                    return year2 - year1;
+                }
+                return month2 - month1;
+            } catch (Exception ex) {
+                return 0;
+            }
+        });
+
+        // Rebuild TreeData with sorted order
+        TreeData<BudgetRow> newData = new TreeData<>();
+        for (BudgetRow root : rootItems) {
+            newData.addItem(null, root);
+            copyChildrenRecursively(data, newData, root);
+        }
+
+        data.clear();
+        for (BudgetRow root : newData.getRootItems()) {
+            data.addItem(null, root);
+            copyChildrenRecursively(newData, data, root);
+        }
+    }
+
+    private void copyChildrenRecursively(TreeData<BudgetRow> source, TreeData<BudgetRow> target, BudgetRow parent) {
+        for (BudgetRow child : source.getChildren(parent)) {
+            target.addItem(parent, child);
+            copyChildrenRecursively(source, target, child);
+        }
     }
 
     private void addCategoryRow(BudgetRow parent) {
@@ -369,11 +484,17 @@ public class BudgetGridView extends AbstractPageView {
             if (children.stream().anyMatch(c -> c.getName().equals(category.getValue()))) {
                 showPrimaryNotification("Category already exists.");
                 dialog.close();
+                return;
             }
             BudgetRow newCategory = service.createCategoryRow(category.getValue());
             data.addItem(parent, newCategory);
             service.addNewItemBudgetRow(data, newCategory, "ITEM_ROW");
-            refreshAll();
+
+            // Just refresh provider, no DB reload
+            refreshProvider();
+            grid.expand(parent);
+            grid.expand(newCategory);
+
             showPrimaryNotification("Category added successfully.");
             dialog.close();
         }));
