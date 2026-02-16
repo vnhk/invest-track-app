@@ -28,6 +28,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -55,6 +56,10 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private Binder<Wallet> walletBinder = new Binder<>(Wallet.class);
     private boolean editMode = false;
     private WalletSnapshotListView snapshotsView;
+    @Value("${file.service.storage.folder.main}")
+    private String pathToFileStorage;
+    @Value("${global-tmp-dir.file-storage-relative-path}")
+    private String globalTmpDir;
 
     public AbstractWalletView(WalletService service, WalletSnapshotService snapshotService, BervanViewConfig bervanViewConfig) {
         super();
@@ -112,7 +117,8 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     }
 
     private void createSnapshotForm() {
-        snapshotsView = new WalletSnapshotListView(snapshotService, wallet, bervanViewConfig);
+        snapshotsView = new WalletSnapshotListView(snapshotService, wallet, bervanViewConfig,
+                pathToFileStorage, globalTmpDir);
         snapshotsView.renderCommonComponents();
     }
 

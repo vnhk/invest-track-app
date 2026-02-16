@@ -21,9 +21,13 @@ public class WalletSnapshotListView extends AbstractBervanTableView<UUID, Wallet
     private final Wallet wallet;
     private boolean firstLoad = true;
 
-    public WalletSnapshotListView(BaseService<UUID, WalletSnapshot> service, Wallet wallet, BervanViewConfig bervanViewConfig) {
+    public WalletSnapshotListView(BaseService<UUID, WalletSnapshot> service, Wallet wallet,
+                                    BervanViewConfig bervanViewConfig,
+                                    String pathToFileStorage, String globalTmpDir) {
         super(null, service, bervanViewConfig, WalletSnapshot.class);
         this.wallet = wallet;
+        this.pathToFileStorage = pathToFileStorage;
+        this.globalTmpDir = globalTmpDir;
         pageSize = 10000;
     }
 
