@@ -9,9 +9,7 @@ import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 
 import java.util.UUID;
 
@@ -27,13 +25,16 @@ public abstract class AbstractWalletsView extends AbstractBervanTableView<UUID, 
     }
 
     @Override
-    protected void preColumnAutoCreation(Grid<Wallet> grid) {
-        grid.addComponentColumn(entity -> {
-                    Icon linkIcon = new Icon(VaadinIcon.LINK);
-                    linkIcon.getStyle().set("cursor", "pointer");
-                    return new Anchor(ROUTE_NAME + "/" + entity.getName(), new HorizontalLayout(linkIcon));
-                }).setKey("link")
-                .setWidth("6px")
-                .setResizable(false);
+    protected Grid<Wallet> getGrid() {
+        Grid<Wallet> grid = new Grid<>(Wallet.class, false);
+        buildGridAutomatically(grid);
+
+        if (grid.getColumnByKey("name") != null) {
+            grid.getColumnByKey("name").setRenderer(new ComponentRenderer<>(
+                    entity -> new Anchor(ROUTE_NAME + "/" + entity.getName(), entity.getName())
+            ));
+        }
+
+        return grid;
     }
 }
