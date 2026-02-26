@@ -5,6 +5,7 @@ import com.bervan.budget.entry.BudgetEntryService;
 import com.bervan.common.search.SearchRequest;
 import com.bervan.common.search.model.SearchOperation;
 import com.bervan.common.search.model.SortDirection;
+import com.bervan.investtrack.service.CurrencyConverter;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,9 +21,11 @@ import java.util.stream.Collectors;
 public class BudgetGridService {
 
     private final BudgetEntryService budgetEntryService;
+    private final CurrencyConverter currencyConverter;
 
-    public BudgetGridService(BudgetEntryService budgetEntryService) {
+    public BudgetGridService(BudgetEntryService budgetEntryService, CurrencyConverter currencyConverter) {
         this.budgetEntryService = budgetEntryService;
+        this.currencyConverter = currencyConverter;
     }
 
     private String getDateRootName(BudgetEntry e) {
@@ -114,13 +117,23 @@ public class BudgetGridService {
 
     private BigDecimal appendBudgetEntryAmount(BudgetRow budgetEntry, BigDecimal sumOfAmounts) {
         if (budgetEntry.getAmount() != null) {
+            BigDecimal amountInPln = toPlnSafe(budgetEntry.getAmount(), budgetEntry.getCurrency());
             if (budgetEntry.getEntryType().equals("Expense")) {
-                sumOfAmounts = sumOfAmounts.subtract(budgetEntry.getAmount());
+                sumOfAmounts = sumOfAmounts.subtract(amountInPln);
             } else {
-                sumOfAmounts = sumOfAmounts.add(budgetEntry.getAmount());
+                sumOfAmounts = sumOfAmounts.add(amountInPln);
             }
         }
         return sumOfAmounts;
+    }
+
+    private BigDecimal toPlnSafe(BigDecimal amount, String currency) {
+        if (currency == null || currency.equals("PLN")) return amount;
+        try {
+            return currencyConverter.convert(amount, CurrencyConverter.Currency.of(currency), CurrencyConverter.Currency.PLN);
+        } catch (Exception e) {
+            return amount;
+        }
     }
 
     public void addNewItemBudgetRow(TreeData<BudgetRow> treeData, BudgetRow parent, String rowType) {
