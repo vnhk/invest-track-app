@@ -32,9 +32,24 @@ public class BudgetGridService {
         return e.getEntryDate().getMonthValue() + "-" + e.getEntryDate().getYear();
     }
 
-    public List<BudgetEntry> loadAllRecurring() {
+    public List<BudgetEntry> loadAllRecurringLastMonth() {
         SearchRequest request = new SearchRequest();
         request.addCriterion("IS_RECURRING_CRITERIA", BudgetEntry.class, "isRecurring", SearchOperation.EQUALS_OPERATION, true);
+        LocalDate now = LocalDate.now();
+        LocalDate firstDayLastMonth = now.minusMonths(1).withDayOfMonth(1);
+        LocalDate lastDayLastMonth = firstDayLastMonth.withDayOfMonth(firstDayLastMonth.lengthOfMonth());
+        request.addCriterion("DATE_FROM",
+                BudgetEntry.class,
+                "entryDate",
+                SearchOperation.GREATER_EQUAL_OPERATION,
+                firstDayLastMonth);
+
+        // entryDate <= lastDayLastMonth
+        request.addCriterion("DATE_TO",
+                BudgetEntry.class,
+                "entryDate",
+                SearchOperation.LESS_EQUAL_OPERATION,
+                lastDayLastMonth);
         List<BudgetEntry> loaded = budgetEntryService.load(request, Pageable.ofSize(1000000000), "entryDate", SortDirection.DESC);
         return loaded;
     }
@@ -197,7 +212,7 @@ public class BudgetGridService {
     }
 
     public void copyRecurringToAnotherDate(LocalDate newDate) {
-        List<BudgetEntry> budgetEntries = loadAllRecurring();
+        List<BudgetEntry> budgetEntries = loadAllRecurringLastMonth();
         for (BudgetEntry budgetEntry : budgetEntries) {
             BudgetEntry copyForNewDate = getCopyForNewDate(newDate, budgetEntry);
             budgetEntryService.save(copyForNewDate);
