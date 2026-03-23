@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.TreeSet;
 
 @Service
 public class BudgetChartDataService {
@@ -188,6 +189,82 @@ public class BudgetChartDataService {
         );
     }
 
+    public Set<String> getAllCategories(LocalDate startDate, LocalDate endDate) {
+        return loadEntries(startDate, endDate).stream()
+                .map(BudgetEntry::getCategory)
+                .filter(Objects::nonNull)
+                .filter(c -> !c.isBlank())
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    public MonthlyBudgetData getMonthlyIncomeExpense(LocalDate startDate, LocalDate endDate, Set<String> categories) {
+        List<BudgetEntry> entries = loadEntries(startDate, endDate);
+
+        if (categories != null && !categories.isEmpty()) {
+            entries = entries.stream()
+                    .filter(e -> e.getCategory() != null && categories.contains(e.getCategory()))
+                    .collect(Collectors.toList());
+        }
+
+        Map<String, BigDecimal> incomeByMonth = new LinkedHashMap<>();
+        Map<String, BigDecimal> expenseByMonth = new LinkedHashMap<>();
+
+        YearMonth start = YearMonth.from(startDate);
+        YearMonth end = YearMonth.from(endDate);
+        for (YearMonth ym = start; !ym.isAfter(end); ym = ym.plusMonths(1)) {
+            String key = formatYearMonth(ym);
+            incomeByMonth.put(key, BigDecimal.ZERO);
+            expenseByMonth.put(key, BigDecimal.ZERO);
+        }
+
+        for (BudgetEntry entry : entries) {
+            if (entry.getEntryDate() == null || entry.getValue() == null) continue;
+            String key = formatYearMonth(YearMonth.from(entry.getEntryDate()));
+            BigDecimal value = entry.getValue().abs();
+            if ("Income".equals(entry.getEntryType())) {
+                incomeByMonth.merge(key, value, BigDecimal::add);
+            } else {
+                expenseByMonth.merge(key, value, BigDecimal::add);
+            }
+        }
+
+        return new MonthlyBudgetData(incomeByMonth, expenseByMonth);
+    }
+
+    public CategoryRankingData getCategoryRanking(LocalDate startDate, LocalDate endDate, Set<String> categories) {
+        List<BudgetEntry> entries = loadEntries(startDate, endDate);
+
+        if (categories != null && !categories.isEmpty()) {
+            entries = entries.stream()
+                    .filter(e -> e.getCategory() != null && categories.contains(e.getCategory()))
+                    .collect(Collectors.toList());
+        }
+
+        Map<String, BigDecimal> expenseTotals = new HashMap<>();
+        Map<String, BigDecimal> incomeTotals = new HashMap<>();
+
+        for (BudgetEntry entry : entries) {
+            if (entry.getCategory() == null || entry.getValue() == null) continue;
+            if ("Expense".equals(entry.getEntryType())) {
+                expenseTotals.merge(entry.getCategory(), entry.getValue().abs(), BigDecimal::add);
+            } else {
+                incomeTotals.merge(entry.getCategory(), entry.getValue().abs(), BigDecimal::add);
+            }
+        }
+
+        List<CategoryTotal> topExpenses = expenseTotals.entrySet().stream()
+                .map(e -> new CategoryTotal(e.getKey(), e.getValue()))
+                .sorted((a, b) -> b.total().compareTo(a.total()))
+                .toList();
+
+        List<CategoryTotal> topIncome = incomeTotals.entrySet().stream()
+                .map(e -> new CategoryTotal(e.getKey(), e.getValue()))
+                .sorted((a, b) -> b.total().compareTo(a.total()))
+                .toList();
+
+        return new CategoryRankingData(topExpenses, topIncome);
+    }
+
     private List<BudgetEntry> loadEntries(LocalDate startDate, LocalDate endDate) {
         SearchRequest request = new SearchRequest();
         request.addCriterion("START_DATE", BudgetEntry.class, "entryDate",
@@ -205,6 +282,8 @@ public class BudgetChartDataService {
     public record MonthlyBudgetData(Map<String, BigDecimal> income, Map<String, BigDecimal> expense) {}
 
     public record CategoryTotal(String category, BigDecimal total) {}
+
+    public record CategoryRankingData(List<CategoryTotal> topExpenses, List<CategoryTotal> topIncome) {}
 
     public record BudgetSummary(
             BigDecimal totalIncome,

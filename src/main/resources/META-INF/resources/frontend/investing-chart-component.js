@@ -316,6 +316,8 @@ window.renderBudgetIncomeExpenseChart = (canvas, months, incomeData, expenseData
 
     if (canvas === null) return;
     const ctx = canvas.getContext('2d');
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
 
     new Chart(ctx, {
         type: 'bar',
