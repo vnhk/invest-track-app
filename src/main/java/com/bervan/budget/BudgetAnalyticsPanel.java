@@ -55,6 +55,9 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
         applyButton.addClassName("glass-btn");
         applyButton.addClassName("glass-btn-primary");
 
+        fromDate.addValueChangeListener(e -> reloadCategories());
+        toDate.addValueChangeListener(e -> reloadCategories());
+
         HorizontalLayout controlsRow = new HorizontalLayout(fromDate, toDate, applyButton);
         controlsRow.setAlignItems(Alignment.END);
 
@@ -67,16 +70,16 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
         add(new H4("Budget Analytics"), controlsRow, categoryButtons, categoryFilter,
                 chartContainer, new Hr(), rankingContainer);
 
+        reloadCategories();
         refresh();
     }
 
-    private void refresh() {
+    private void reloadCategories() {
         LocalDate from = fromDate.getValue();
         LocalDate to = toDate.getValue();
         if (from == null || to == null || from.isAfter(to)) return;
 
         Set<String> allCategories = chartDataService.getAllCategories(from, to);
-
         Set<String> previousSelection = new HashSet<>(categoryFilter.getValue());
         categoryFilter.setItems(allCategories);
 
@@ -87,8 +90,14 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
             newSelection.retainAll(allCategories);
             categoryFilter.setValue(newSelection.isEmpty() ? allCategories : newSelection);
         }
+    }
 
-        Set<String> selected = categoryFilter.getValue();
+    private void refresh() {
+        LocalDate from = fromDate.getValue();
+        LocalDate to = toDate.getValue();
+        if (from == null || to == null || from.isAfter(to)) return;
+
+        Set<String> selected = new HashSet<>(categoryFilter.getValue());
         renderChart(from, to, selected);
         renderRanking(from, to, selected);
     }
