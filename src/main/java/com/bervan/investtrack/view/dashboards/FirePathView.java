@@ -54,6 +54,7 @@ public class FirePathView extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         addClassName("fire-view");
+        addClassName("invest-dashboard");
 
         add(createGoalEditor());
         mainContentLayout = new VerticalLayout();
@@ -68,6 +69,7 @@ public class FirePathView extends VerticalLayout {
         HorizontalLayout goalLayout = new HorizontalLayout();
         goalLayout.setWidthFull();
         goalLayout.setAlignItems(Alignment.CENTER);
+        goalLayout.addClassName("fire-goal-editor");
 
         Span label = new Span("FIRE Goal (PLN):");
 

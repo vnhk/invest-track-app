@@ -4,7 +4,6 @@ import com.bervan.common.view.AbstractPageView;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -21,18 +20,19 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
 
     public AbstractWalletsBaseDashboardView() {
         setSizeFull();
+        addClassName("invest-dashboard");
     }
 
     protected Div createCard(String title, Object value, VaadinIcon iconType) {
         Icon icon = iconType.create();
         icon.setSize("30px");
+        icon.addClassName("kpi-icon");
 
         H3 titleText = new H3(title);
-        titleText.getStyle().set("margin", "0");
+        titleText.addClassName("kpi-title");
+
         Span valueText = new Span(value.toString());
-        valueText.getStyle()
-                .set("font-size", "1.5em")
-                .set("font-weight", "600");
+        valueText.addClassName("kpi-value");
 
         VerticalLayout textLayout = new VerticalLayout(titleText, valueText);
         textLayout.setSpacing(false);
@@ -45,11 +45,9 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
         content.getStyle().set("gap", "1em");
 
         Div card = new Div(content);
-        card.setClassName("dashboard-card-value");
+        card.addClassName("invest-kpi-card");
+        card.addClassName("invest-fade-in");
         card.getStyle()
-                .set("border-radius", "12px")
-                .set("box-shadow", "0 2px 6px rgba(0,0,0,0.1)")
-                .set("padding", "16px 24px")
                 .set("width", "280px")
                 .set("text-align", "left");
 
@@ -133,25 +131,12 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
     protected VerticalLayout createWalletTile(String walletName) {
         VerticalLayout tile = new VerticalLayout();
         tile.addClassName("wallet-tile");
-        tile.getStyle()
-                .set("border", "1px solid #ddd")
-                .set("border-radius", "8px")
-                .set("padding", "16px")
-                .set("background", "white")
-                .set("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
 
         H3 title = new H3(walletName);
-        title.getStyle()
-                .set("margin", "0 0 10px 0")
-                .set("color", "#333")
-                .set("text-align", "center");
+        title.addClassName("chart-title");
+        title.getStyle().set("text-align", "center");
 
-        Hr separator = new Hr();
-        separator.getStyle()
-                .set("margin", "10px 0")
-                .set("border", "1px solid #eee");
-
-        tile.add(title, separator);
+        tile.add(title);
         tile.setSpacing(false);
         tile.setPadding(false);
         tile.setWidthFull();

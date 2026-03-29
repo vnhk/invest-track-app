@@ -401,6 +401,114 @@
     animation: invest-fade-in var(--invest-transition-normal) ease-out;
 }
 
+/* ===== Wallet Tile (Balance / Earnings tabs) ===== */
+.wallet-tile {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    padding: var(--invest-spacing-lg);
+    overflow: hidden;
+    transition: transform var(--invest-transition-normal), box-shadow var(--invest-transition-normal);
+}
+
+.wallet-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Fire View ===== */
+.fire-goal-editor {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    padding: var(--invest-spacing-md) var(--invest-spacing-lg);
+    margin-bottom: var(--invest-spacing-lg);
+}
+
+.fire-card {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    padding: var(--invest-spacing-lg);
+    margin-bottom: var(--invest-spacing-lg);
+}
+
+.fire-card .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--invest-text-primary);
+    margin: 0 0 var(--invest-spacing-md) 0;
+    padding-bottom: var(--invest-spacing-sm);
+    border-bottom: 1px solid var(--invest-glass-border);
+    display: block;
+}
+
+.fire-card .card-note {
+    font-size: 0.75rem;
+    color: var(--invest-text-tertiary);
+    margin-top: var(--invest-spacing-sm);
+    display: block;
+}
+
+.metric-box {
+    background: var(--invest-glass-bg-light);
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-md);
+    padding: var(--invest-spacing-md);
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+}
+
+.metric-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--invest-text-primary);
+    margin-bottom: var(--invest-spacing-xs);
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--invest-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.metrics-row {
+    flex-wrap: wrap;
+    gap: var(--invest-spacing-md) !important;
+}
+
+.section-label {
+    font-size: 0.875rem;
+    color: var(--invest-text-secondary);
+    display: block;
+}
+
+.bottom-info {
+    font-size: 0.875rem;
+    color: var(--invest-text-tertiary);
+    margin-top: var(--invest-spacing-md);
+    padding-top: var(--invest-spacing-sm);
+    border-top: 1px solid var(--invest-glass-border);
+    display: block;
+}
+
+.fire-progress {
+    --vaadin-progress-bar-color: var(--invest-primary);
+}
+
 /* ===== Utility Classes ===== */
 .invest-text-success { color: var(--invest-success); }
 .invest-text-danger { color: var(--invest-danger); }

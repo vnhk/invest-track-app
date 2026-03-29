@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @CssImport("./invest-track.css")
+@CssImport("./invest-track-dashboard.css")
 public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/dashboard/";
 
