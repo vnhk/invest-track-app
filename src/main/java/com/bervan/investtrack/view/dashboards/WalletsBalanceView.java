@@ -57,7 +57,7 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
             HorizontalLayout horizontalLayout = new HorizontalLayout(createCard("Total Balance", totalBalance, VaadinIcon.MONEY),
                     createCard("Total Deposit", totalDeposit, VaadinIcon.PIGGY_BANK),
                     createCard("Total Profit", totalBalance.subtract(totalDeposit), VaadinIcon.TRENDING_UP));
-            horizontalLayout.getStyle().setMarginLeft("20px");
+            horizontalLayout.addClassName("invest-kpi-row");
             add(horizontalLayout);
 
             add(gridContainer);

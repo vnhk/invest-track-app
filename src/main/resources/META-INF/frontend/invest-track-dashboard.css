@@ -53,6 +53,37 @@
     background: var(--glass-container-gradient, linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%));
     min-height: 100vh;
     padding: var(--invest-spacing-lg);
+
+    /* Dark overrides for Vaadin input fields */
+    --vaadin-input-field-background: var(--invest-surface-1);
+    --vaadin-input-field-label-color: var(--invest-text-secondary);
+    --vaadin-input-field-border-color: var(--invest-glass-border);
+    --vaadin-input-field-value-color: var(--invest-text-primary);
+    --vaadin-input-field-hovered-label-color: var(--invest-text-primary);
+    --vaadin-input-field-focused-label-color: var(--invest-accent, #22d3ee);
+    --vaadin-input-field-icon-color: var(--invest-text-secondary);
+    --lumo-body-text-color: var(--invest-text-primary);
+    --lumo-secondary-text-color: var(--invest-text-secondary);
+    --lumo-tertiary-text-color: var(--invest-text-tertiary);
+    --lumo-base-color: #1e2a40;
+    --lumo-contrast-5pct: rgba(255, 255, 255, 0.05);
+    --lumo-contrast-10pct: rgba(255, 255, 255, 0.1);
+    --lumo-contrast-20pct: rgba(255, 255, 255, 0.2);
+    --lumo-contrast-30pct: rgba(255, 255, 255, 0.3);
+    --lumo-contrast-50pct: rgba(255, 255, 255, 0.5);
+    --lumo-contrast-60pct: rgba(255, 255, 255, 0.6);
+    --lumo-contrast-90pct: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== Filters Panel (Balance/Earnings tabs) ===== */
+.invest-filters-panel {
+    background: var(--invest-glass-bg);
+    backdrop-filter: blur(var(--invest-glass-blur));
+    -webkit-backdrop-filter: blur(var(--invest-glass-blur));
+    border: 1px solid var(--invest-glass-border);
+    border-radius: var(--invest-radius-xl);
+    box-shadow: var(--invest-glass-shadow);
+    margin-bottom: var(--invest-spacing-md);
 }
 
 /* ===== KPI Cards ===== */

@@ -65,6 +65,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                                        InvestmentRecommendationService recommendationService,
                                        InvestmentCalculationService calculationService,
                                        BudgetChartDataService budgetChartDataService) {
+        addClassName("invest-dashboard");
         this.currencyConverter = currencyConverter;
         this.strategies = strategies;
         this.recommendationService = recommendationService;
@@ -381,6 +382,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         this.filtersLayout = new VerticalLayout(new HorizontalLayout(aggregationSelector, aggregationPeriodSelector, currencySelector, fromDateFilter, toDateFilter));
         filtersLayout.setSpacing(true);
         filtersLayout.setPadding(true);
+        filtersLayout.addClassName("invest-filters-panel");
         add(filtersLayout);
         add(content);
 

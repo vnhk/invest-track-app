@@ -52,7 +52,7 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
 
             HorizontalLayout horizontalLayout = new HorizontalLayout(
                     createCard("Total Profit", totalEarnings, VaadinIcon.TRENDING_UP));
-            horizontalLayout.getStyle().setMarginLeft("20px");
+            horizontalLayout.addClassName("invest-kpi-row");
             add(horizontalLayout, gridContainer);
 
             buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer, fromDateFilter.getValue(), toDateFilter.getValue());

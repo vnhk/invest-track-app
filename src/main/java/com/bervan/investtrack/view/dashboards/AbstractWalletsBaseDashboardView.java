@@ -20,7 +20,6 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
 
     public AbstractWalletsBaseDashboardView() {
         setSizeFull();
-        addClassName("invest-dashboard");
     }
 
     protected Div createCard(String title, Object value, VaadinIcon iconType) {
@@ -113,12 +112,11 @@ public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView 
         gridContainer.addClassName("wallet-grid-container");
         gridContainer.getStyle()
                 .set("display", "grid")
-                .set("grid-template-columns", "1fr 1fr")
-                .set("grid-template-rows", "1fr 1fr")
+                .set("grid-template-columns", "repeat(2, 1fr)")
+                .set("grid-auto-rows", "420px")
                 .set("gap", "20px")
-                .set("height", "80vh")
-                .set("width", "90vw")
-                .set("padding", "20px");
+                .set("width", "100%")
+                .set("padding", "8px 0");
         return gridContainer;
     }
 

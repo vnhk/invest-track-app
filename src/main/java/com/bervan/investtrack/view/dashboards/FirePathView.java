@@ -54,7 +54,6 @@ public class FirePathView extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         addClassName("fire-view");
-        addClassName("invest-dashboard");
 
         add(createGoalEditor());
         mainContentLayout = new VerticalLayout();
