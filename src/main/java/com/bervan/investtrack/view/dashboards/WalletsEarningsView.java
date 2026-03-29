@@ -23,22 +23,6 @@ public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
     public WalletsEarningsView(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits, BervanComboBox<String> periodSelectorAggregation, BervanDatePicker fromDateFilter, BervanDatePicker toDateFilter) {
         try {
             Div gridContainer = getGridContainer();
-            periodSelectorAggregation.addValueChangeListener(e -> {
-                String selected = e.getValue();
-                if (selected == null) return;
-                gridContainer.removeAll();
-                buildCharts(wallets, dates, selected, balances, sumOfDeposits, gridContainer, fromDateFilter.getValue(), toDateFilter.getValue());
-            });
-
-            fromDateFilter.addValueChangeListener(event -> {
-                gridContainer.removeAll();
-                buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer, event.getValue(), toDateFilter.getValue());
-            });
-
-            toDateFilter.addValueChangeListener(event -> {
-                gridContainer.removeAll();
-                buildCharts(wallets, dates, periodSelectorAggregation.getValue(), balances, sumOfDeposits, gridContainer, fromDateFilter.getValue(), event.getValue());
-            });
 
             BigDecimal totalEarnings = BigDecimal.ZERO;
             if (balances.size() == 1) {

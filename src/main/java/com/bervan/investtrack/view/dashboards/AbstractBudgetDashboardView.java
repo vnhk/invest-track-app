@@ -59,6 +59,10 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private VerticalLayout filtersLayout;
     private String currentTabLabel = "Dashboard";
     private List<Wallet> currentWallets;
+    private Map<UUID, List<String>> currentDates;
+    private Map<UUID, List<BigDecimal>> currentBalances;
+    private Map<UUID, List<BigDecimal>> currentDeposits;
+    private Map<UUID, List<BigDecimal>> currentSumOfDeposits;
 
     public AbstractBudgetDashboardView(CurrencyConverter currencyConverter,
                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
@@ -95,6 +99,24 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
 
             currencySelector.addValueChangeListener(event -> {
                 refreshDashboards(sortedWallets);
+            });
+
+            aggregationPeriodSelector.addValueChangeListener(event -> {
+                if (tabs != null && currentWallets != null) {
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                }
+            });
+
+            fromDateFilter.addValueChangeListener(event -> {
+                if (tabs != null && currentWallets != null) {
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                }
+            });
+
+            toDateFilter.addValueChangeListener(event -> {
+                if (tabs != null && currentWallets != null) {
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                }
             });
 
             refreshDashboards(sortedWallets);
@@ -136,6 +158,10 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         }
 
         this.currentWallets = walletsToUse;
+        this.currentDates = datesToUse;
+        this.currentBalances = balancesToUse;
+        this.currentDeposits = depositsToUse;
+        this.currentSumOfDeposits = sumOfDepositsToUse;
 
         // Only create tabs once, then just refresh content
         if (tabs == null) {
@@ -398,15 +424,15 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                 }
                 case "Balance" -> {
                     filtersLayout.setVisible(true);
-                    balanceTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                    balanceTab(this.currentWallets, this.currentDates, this.currentBalances, this.currentDeposits, this.currentSumOfDeposits);
                 }
                 case "Earnings" -> {
                     filtersLayout.setVisible(true);
-                    earningsTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                    earningsTab(this.currentWallets, this.currentDates, this.currentBalances, this.currentDeposits, this.currentSumOfDeposits);
                 }
                 case "FIRE" -> {
                     filtersLayout.setVisible(false);
-                    fireTab(this.currentWallets, this.dates, this.balances, this.deposits, this.sumOfDeposits);
+                    fireTab(this.currentWallets, this.currentDates, this.currentBalances, this.currentDeposits, this.currentSumOfDeposits);
                 }
                 case "Short Term Strategies" -> {
                     filtersLayout.setVisible(false);
