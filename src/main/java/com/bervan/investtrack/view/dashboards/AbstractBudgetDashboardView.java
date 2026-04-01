@@ -9,6 +9,7 @@ import com.bervan.investtrack.model.WalletSnapshot;
 import com.bervan.investtrack.service.BudgetChartDataService;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.InvestmentCalculationService;
+import com.bervan.investtrack.service.SP500DataService;
 import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.recommendations.ShortTermRecommendationStrategy;
 import com.bervan.logging.JsonLogger;
@@ -53,6 +54,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private final InvestmentCalculationService calculationService;
     private final BudgetChartDataService budgetChartDataService;
     private final WalletService walletService;
+    private final SP500DataService sp500DataService;
 
     // Track current tab to preserve selection on refresh
     private Tabs tabs;
@@ -68,7 +70,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
                                        InvestmentRecommendationService recommendationService,
                                        InvestmentCalculationService calculationService,
-                                       BudgetChartDataService budgetChartDataService) {
+                                       BudgetChartDataService budgetChartDataService,
+                                       SP500DataService sp500DataService) {
         addClassName("invest-dashboard");
         this.currencyConverter = currencyConverter;
         this.strategies = strategies;
@@ -76,6 +79,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         this.calculationService = calculationService;
         this.budgetChartDataService = budgetChartDataService;
         this.walletService = service;
+        this.sp500DataService = sp500DataService;
         try {
             Set<Wallet> wallets = service.load(Pageable.ofSize(16));
             if (wallets.size() > 16) {
@@ -470,7 +474,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
 
     private void balanceTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
         content.removeAll();
-        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter));
+        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter, sp500DataService));
     }
 
     private BervanComboBox<String> createAggregationPeriodSelector() {

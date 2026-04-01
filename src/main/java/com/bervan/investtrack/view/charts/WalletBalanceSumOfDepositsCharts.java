@@ -16,8 +16,14 @@ import java.util.UUID;
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
 public class WalletBalanceSumOfDepositsCharts extends Component implements HasSize {
-    public WalletBalanceSumOfDepositsCharts(List<String> dates, List<BigDecimal> walletBalance, List<BigDecimal> sumOfDeposits) {
-        renderWalletBalance(dates, walletBalance, sumOfDeposits);
+    public WalletBalanceSumOfDepositsCharts(List<String> dates, List<BigDecimal> walletBalance,
+                                             List<BigDecimal> sumOfDeposits) {
+        renderWalletBalance(dates, walletBalance, sumOfDeposits, null);
+    }
+
+    public WalletBalanceSumOfDepositsCharts(List<String> dates, List<BigDecimal> walletBalance,
+                                             List<BigDecimal> sumOfDeposits, List<BigDecimal> sp500Benchmark) {
+        renderWalletBalance(dates, walletBalance, sumOfDeposits, sp500Benchmark);
     }
 
     // Converts a List into a JreJsonObject with a single "data" key pointing to a JreJsonArray
@@ -33,7 +39,8 @@ public class WalletBalanceSumOfDepositsCharts extends Component implements HasSi
         return jreJsonObject;
     }
 
-    private void renderWalletBalance(List<String> dates, List<BigDecimal> walletBalance, List<BigDecimal> sumOfDeposits) {
+    private void renderWalletBalance(List<String> dates, List<BigDecimal> walletBalance,
+                                      List<BigDecimal> sumOfDeposits, List<BigDecimal> sp500Benchmark) {
         setId("walletBalanceChart_" + UUID.randomUUID());
 
         if (sumOfDeposits.size() != walletBalance.size()) {
@@ -44,12 +51,25 @@ public class WalletBalanceSumOfDepositsCharts extends Component implements HasSi
         JreJsonObject walletBalanceJson = getJreJsonObject(walletBalance);
         JreJsonObject sumOfDepositsJson = getJreJsonObject(sumOfDeposits);
 
-        UI.getCurrent().getPage().executeJs(
-                "window.renderWalletBalanceDepositAndWalletBalance($0, $1, $2, $3)",
-                getElement(),
-                datesJson.get("data"),
-                walletBalanceJson.get("data"),
-                sumOfDepositsJson.get("data")
-        );
+        boolean hasBenchmark = sp500Benchmark != null && !sp500Benchmark.isEmpty();
+        if (hasBenchmark) {
+            JreJsonObject sp500Json = getJreJsonObject(sp500Benchmark);
+            UI.getCurrent().getPage().executeJs(
+                    "window.renderWalletBalanceDepositAndWalletBalance($0, $1, $2, $3, $4)",
+                    getElement(),
+                    datesJson.get("data"),
+                    walletBalanceJson.get("data"),
+                    sumOfDepositsJson.get("data"),
+                    sp500Json.get("data")
+            );
+        } else {
+            UI.getCurrent().getPage().executeJs(
+                    "window.renderWalletBalanceDepositAndWalletBalance($0, $1, $2, $3)",
+                    getElement(),
+                    datesJson.get("data"),
+                    walletBalanceJson.get("data"),
+                    sumOfDepositsJson.get("data")
+            );
+        }
     }
 }

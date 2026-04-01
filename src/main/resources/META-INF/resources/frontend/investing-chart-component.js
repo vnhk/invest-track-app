@@ -1,6 +1,6 @@
 import 'https://cdn.jsdelivr.net/npm/chart.js';
 
-window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalances, deposit) => {
+window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalances, deposit, sp500Benchmark) => {
     let textColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--chart-text-color')
         .trim();
@@ -13,30 +13,50 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
         .getPropertyValue('--chart-line2-color')
         .trim();
 
+    let charLine3Color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-line3-color')
+        ?.trim() || '#f97316';
+
     if (canvas === null) return;
     const ctx = canvas.getContext('2d');
+
+    const datasets = [
+        {
+            label: 'Wallet balance',
+            data: walletBalances,
+            backgroundColor: charLine1Color,
+            borderColor: charLine1Color,
+            borderWidth: 2,
+            fill: false
+        },
+        {
+            label: 'Sum of deposits',
+            data: deposit,
+            backgroundColor: charLine2Color,
+            borderColor: charLine2Color,
+            borderWidth: 2,
+            fill: false
+        }
+    ];
+
+    if (sp500Benchmark && sp500Benchmark.length > 0) {
+        datasets.push({
+            label: 'S&P 500 benchmark',
+            data: sp500Benchmark,
+            backgroundColor: charLine3Color,
+            borderColor: charLine3Color,
+            borderWidth: 2,
+            borderDash: [6, 3],
+            fill: false,
+            pointRadius: 2
+        });
+    }
+
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: dates,
-            datasets: [
-                {
-                    label: 'Wallet balance',
-                    data: walletBalances,
-                    backgroundColor: charLine1Color,
-                    borderColor: charLine1Color,
-                    borderWidth: 2,
-                    fill: false
-                },
-                {
-                    label: 'Sum of deposits',
-                    data: deposit,
-                    backgroundColor: charLine2Color,
-                    borderColor: charLine2Color,
-                    borderWidth: 2,
-                    fill: false
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,

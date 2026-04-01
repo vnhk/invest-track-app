@@ -3,6 +3,7 @@ package com.bervan.investtrack.view.dashboards;
 import com.bervan.common.component.BervanComboBox;
 import com.bervan.common.component.BervanDatePicker;
 import com.bervan.investtrack.model.Wallet;
+import com.bervan.investtrack.service.SP500DataService;
 import com.bervan.investtrack.view.charts.WalletBalanceSumOfDepositsCharts;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.html.Div;
@@ -12,6 +13,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,8 +21,10 @@ import java.util.UUID;
 
 public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
+    private final SP500DataService sp500DataService;
 
-    public WalletsBalanceView(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits, BervanComboBox<String> periodSelectorAggregation, BervanDatePicker fromDateFilter, BervanDatePicker toDateFilter) {
+    public WalletsBalanceView(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits, BervanComboBox<String> periodSelectorAggregation, BervanDatePicker fromDateFilter, BervanDatePicker toDateFilter, SP500DataService sp500DataService) {
+        this.sp500DataService = sp500DataService;
         try {
             Div gridContainer = getGridContainer();
 
@@ -88,14 +92,36 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                     wallet.getName() + returnRate
             );
 
+            List<String> chartDates = filteredDates.get(wallet.getId().toString());
+            List<BigDecimal> chartSumOfDeposits = filteredSumOfDeposits.get(wallet.getId().toString());
+            List<BigDecimal> sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits);
+
             WalletBalanceSumOfDepositsCharts chart = new WalletBalanceSumOfDepositsCharts(
-                    filteredDates.get(wallet.getId().toString()),
+                    chartDates,
                     filteredBalances.get(wallet.getId().toString()),
-                    filteredSumOfDeposits.get(wallet.getId().toString()));
+                    chartSumOfDeposits,
+                    sp500Benchmark);
             chart.setWidthFull();
             chart.getStyle().set("flex-grow", "1");
             walletTile.add(chart);
             gridContainer.add(walletTile);
         }
+    }
+
+    /** Derives monthly net deposits from cumulative sumOfDeposits, then delegates to SP500DataService. */
+    private List<BigDecimal> computeSP500Benchmark(List<String> dates, List<BigDecimal> sumOfDeposits) {
+        if (sp500DataService == null || dates == null || sumOfDeposits == null || sumOfDeposits.isEmpty()) {
+            return List.of();
+        }
+        List<BigDecimal> monthlyDeposits = new ArrayList<>(sumOfDeposits.size());
+        for (int i = 0; i < sumOfDeposits.size(); i++) {
+            if (i == 0) {
+                monthlyDeposits.add(sumOfDeposits.get(0));
+            } else {
+                BigDecimal delta = sumOfDeposits.get(i).subtract(sumOfDeposits.get(i - 1));
+                monthlyDeposits.add(delta.max(BigDecimal.ZERO));
+            }
+        }
+        return sp500DataService.calculateBenchmarkValues(dates, monthlyDeposits);
     }
 }
