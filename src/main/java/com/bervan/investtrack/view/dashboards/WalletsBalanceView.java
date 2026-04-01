@@ -94,7 +94,7 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
 
             List<String> chartDates = filteredDates.get(wallet.getId().toString());
             List<BigDecimal> chartSumOfDeposits = filteredSumOfDeposits.get(wallet.getId().toString());
-            List<BigDecimal> sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits);
+            List<BigDecimal> sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits, wallet.getCurrency());
 
             WalletBalanceSumOfDepositsCharts chart = new WalletBalanceSumOfDepositsCharts(
                     chartDates,
@@ -109,7 +109,7 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
     }
 
     /** Derives monthly net deposits from cumulative sumOfDeposits, then delegates to SP500DataService. */
-    private List<BigDecimal> computeSP500Benchmark(List<String> dates, List<BigDecimal> sumOfDeposits) {
+    private List<BigDecimal> computeSP500Benchmark(List<String> dates, List<BigDecimal> sumOfDeposits, String currency) {
         if (sp500DataService == null || dates == null || sumOfDeposits == null || sumOfDeposits.isEmpty()) {
             return List.of();
         }
@@ -122,6 +122,6 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                 monthlyDeposits.add(delta.max(BigDecimal.ZERO));
             }
         }
-        return sp500DataService.calculateBenchmarkValues(dates, monthlyDeposits);
+        return sp500DataService.calculateBenchmarkValues(dates, monthlyDeposits, currency != null ? currency : "PLN");
     }
 }
