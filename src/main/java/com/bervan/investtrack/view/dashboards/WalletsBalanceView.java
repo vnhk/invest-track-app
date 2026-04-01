@@ -119,7 +119,7 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                 monthlyDeposits.add(sumOfDeposits.get(0));
             } else {
                 BigDecimal delta = sumOfDeposits.get(i).subtract(sumOfDeposits.get(i - 1));
-                monthlyDeposits.add(delta.max(BigDecimal.ZERO));
+                monthlyDeposits.add(delta); // negative = withdrawal, handled in SP500DataService
             }
         }
         return sp500DataService.calculateBenchmarkValues(dates, monthlyDeposits, currency != null ? currency : "PLN");

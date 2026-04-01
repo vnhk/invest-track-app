@@ -94,11 +94,17 @@ public class SP500DataService {
                 continue;
             }
 
-            BigDecimal deposit = i < monthlyNetDeposits.size() ? monthlyNetDeposits.get(i) : BigDecimal.ZERO;
-            if (deposit != null && deposit.compareTo(BigDecimal.ZERO) > 0) {
-                // Convert deposit from portfolio currency → USD, then buy units
-                BigDecimal depositUsd = toUsd(deposit, portfolioCurrency, fxRate);
-                units = units.add(depositUsd.divide(sp500Price, 10, RoundingMode.HALF_UP));
+            BigDecimal netFlow = i < monthlyNetDeposits.size() ? monthlyNetDeposits.get(i) : BigDecimal.ZERO;
+            if (netFlow != null && netFlow.compareTo(BigDecimal.ZERO) != 0) {
+                BigDecimal netFlowUsd = toUsd(netFlow.abs(), portfolioCurrency, fxRate);
+                BigDecimal unitsDelta = netFlowUsd.divide(sp500Price, 10, RoundingMode.HALF_UP);
+                if (netFlow.compareTo(BigDecimal.ZERO) > 0) {
+                    // Deposit: buy fractional S&P 500 units
+                    units = units.add(unitsDelta);
+                } else {
+                    // Withdrawal: sell units; clamp to 0 to avoid negative holdings
+                    units = units.subtract(unitsDelta).max(BigDecimal.ZERO);
+                }
             }
 
             // Benchmark value in portfolio currency
