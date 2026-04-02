@@ -105,13 +105,9 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
 
             List<BigDecimal> sp500Benchmark;
             if (sp500SumOfDepositsOverride != null) {
-                // Aggregated mode: use pre-filtered SP500 deposits (only compareWithSP500=true wallets)
-                List<BigDecimal> sp500Deposits = sp500SumOfDepositsOverride.get(wallet.getId());
-                // Need to apply same date filtering as chartSumOfDeposits
-                Map<String, List<BigDecimal>> filteredSP500 = filterBigDecimalsByIndexes(
-                        Map.of(wallet.getId().toString(), sp500Deposits != null ? sp500Deposits : List.of()),
-                        filteredDates,
-                        aggregatedDates);
+                // Aggregated mode: aggregate SP500 deposits the same way as other data, then filter
+                Map<String, List<BigDecimal>> aggregatedSP500 = aggregateData(sp500SumOfDepositsOverride, selected);
+                Map<String, List<BigDecimal>> filteredSP500 = filterBigDecimalsByIndexes(aggregatedSP500, filteredDates, aggregatedDates);
                 List<BigDecimal> filteredSP500Deposits = filteredSP500.get(wallet.getId().toString());
                 List<BigDecimal> sp500Part = computeSP500Benchmark(chartDates, filteredSP500Deposits, wallet.getCurrency());
                 // Add non-SP500 deposits as cash (no S&P 500 growth on them)
