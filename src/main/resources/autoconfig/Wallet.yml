@@ -36,3 +36,11 @@ columns:
     inEditForm: true
     inTable: true
     required: true
+
+  - field: compareWithSP500
+    displayName: "Compare with S&P 500"
+    internalName: "compareWithSP500"
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: false

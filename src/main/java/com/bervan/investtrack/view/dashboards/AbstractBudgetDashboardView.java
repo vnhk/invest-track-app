@@ -48,6 +48,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private final List<BigDecimal> aggregatedBalancesForOneWallet = new ArrayList<>();
     private final List<BigDecimal> aggregatedDepositsForOneWallet = new ArrayList<>();
     private final List<BigDecimal> aggregatedSumOfDepositsForOneWallet = new ArrayList<>();
+    // SP500 benchmark uses only wallets with compareWithSP500=true
+    private final List<BigDecimal> aggregatedSumOfDepositsForSP500 = new ArrayList<>();
     private final CurrencyConverter currencyConverter;
     private final Map<String, ShortTermRecommendationStrategy> strategies;
     private final InvestmentRecommendationService recommendationService;
@@ -65,6 +67,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private Map<UUID, List<BigDecimal>> currentBalances;
     private Map<UUID, List<BigDecimal>> currentDeposits;
     private Map<UUID, List<BigDecimal>> currentSumOfDeposits;
+    // null = use per-wallet compareWithSP500 flag; non-null = override for aggregated wallet
+    private Map<UUID, List<BigDecimal>> currentSP500SumOfDeposits;
 
     public AbstractBudgetDashboardView(CurrencyConverter currencyConverter,
                                        WalletService service, Map<String, ShortTermRecommendationStrategy> strategies,
@@ -107,19 +111,19 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
 
             aggregationPeriodSelector.addValueChangeListener(event -> {
                 if (tabs != null && currentWallets != null) {
-                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits, currentSP500SumOfDeposits);
                 }
             });
 
             fromDateFilter.addValueChangeListener(event -> {
                 if (tabs != null && currentWallets != null) {
-                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits, currentSP500SumOfDeposits);
                 }
             });
 
             toDateFilter.addValueChangeListener(event -> {
                 if (tabs != null && currentWallets != null) {
-                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits);
+                    refreshCurrentTab(currentWallets, currentDates, currentBalances, currentDeposits, currentSumOfDeposits, currentSP500SumOfDeposits);
                 }
             });
 
@@ -142,23 +146,29 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         Map<UUID, List<BigDecimal>> depositsToUse;
         Map<UUID, List<BigDecimal>> sumOfDepositsToUse;
 
+        Map<UUID, List<BigDecimal>> sp500SumOfDepositsToUse;
+
         if (aggregationSelector.getValue().equals("All Wallets")) {
             walletsToUse = sortedWallets;
             datesToUse = dates;
             balancesToUse = balances;
             depositsToUse = deposits;
             sumOfDepositsToUse = sumOfDeposits;
+            sp500SumOfDepositsToUse = null; // per-wallet flag used in WalletsBalanceView
         } else {
             BigDecimal returnRate = getReturnRateForAggregatedWallets();
             Wallet oneAggregatedWallet = new Wallet();
             oneAggregatedWallet.setName("Aggregated Wallet (" + returnRate + "%)");
             oneAggregatedWallet.setId(UUID.randomUUID());
+            oneAggregatedWallet.setCurrency(currencySelector.getValue());
+            oneAggregatedWallet.setCompareWithSP500(true);
 
             walletsToUse = List.of(oneAggregatedWallet);
             datesToUse = Map.of(oneAggregatedWallet.getId(), aggregatedDatesForOneWallet);
             balancesToUse = Map.of(oneAggregatedWallet.getId(), aggregatedBalancesForOneWallet);
             depositsToUse = Map.of(oneAggregatedWallet.getId(), aggregatedDepositsForOneWallet);
             sumOfDepositsToUse = Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForOneWallet);
+            sp500SumOfDepositsToUse = Map.of(oneAggregatedWallet.getId(), aggregatedSumOfDepositsForSP500);
         }
 
         this.currentWallets = walletsToUse;
@@ -166,22 +176,24 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         this.currentBalances = balancesToUse;
         this.currentDeposits = depositsToUse;
         this.currentSumOfDeposits = sumOfDepositsToUse;
+        this.currentSP500SumOfDeposits = sp500SumOfDepositsToUse;
 
         // Only create tabs once, then just refresh content
         if (tabs == null) {
             createAndAddTabs(walletsToUse, datesToUse, balancesToUse, depositsToUse, sumOfDepositsToUse);
         } else {
             // Just refresh current tab content
-            refreshCurrentTab(walletsToUse, datesToUse, balancesToUse, depositsToUse, sumOfDepositsToUse);
+            refreshCurrentTab(walletsToUse, datesToUse, balancesToUse, depositsToUse, sumOfDepositsToUse, sp500SumOfDepositsToUse);
         }
     }
 
     private void refreshCurrentTab(List<Wallet> wallets, Map<UUID, List<String>> dates,
                                    Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits,
-                                   Map<UUID, List<BigDecimal>> sumOfDeposits) {
+                                   Map<UUID, List<BigDecimal>> sumOfDeposits,
+                                   Map<UUID, List<BigDecimal>> sp500SumOfDeposits) {
         switch (currentTabLabel) {
             case "Dashboard" -> mainDashboardTab();
-            case "Balance" -> balanceTab(wallets, dates, balances, deposits, sumOfDeposits);
+            case "Balance" -> balanceTab(wallets, dates, balances, deposits, sumOfDeposits, sp500SumOfDeposits);
             case "Earnings" -> earningsTab(wallets, dates, balances, deposits, sumOfDeposits);
             case "FIRE" -> fireTab(wallets, dates, balances, deposits, sumOfDeposits);
             case "Short Term Strategies" -> strategiesTab();
@@ -195,6 +207,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                     copy.setId(original.getId());
                     copy.setCurrency(currencySelector.getValue());
                     copy.setName(original.getName());
+                    copy.setCompareWithSP500(original.isCompareWithSP500());
                     copy.setSnapshots(original.getSnapshots().stream()
                             .map(snapshot -> {
                                 WalletSnapshot sCopy = new WalletSnapshot();
@@ -236,11 +249,13 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         aggregatedBalancesForOneWallet.clear();
         aggregatedDepositsForOneWallet.clear();
         aggregatedSumOfDepositsForOneWallet.clear();
+        aggregatedSumOfDepositsForSP500.clear();
 
         // Aggregated values by date (chronological order)
         Map<LocalDate, BigDecimal> totalBalancesByDate = new TreeMap<>();
         Map<LocalDate, BigDecimal> totalDepositsByDate = new TreeMap<>();
         Map<LocalDate, BigDecimal> totalSumOfDepositsByDate = new TreeMap<>();
+        Map<LocalDate, BigDecimal> totalSumOfDepositsByDateForSP500 = new TreeMap<>();
 
         // Collect all snapshot dates from all wallets
         Set<LocalDate> allDates = sortedWallets.stream()
@@ -305,6 +320,11 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                 totalBalancesByDate.merge(date, lastBalance, BigDecimal::add);
                 totalDepositsByDate.merge(date, lastDeposit, BigDecimal::add);
                 totalSumOfDepositsByDate.merge(date, lastSumDeposit, BigDecimal::add);
+                if (wallet.isCompareWithSP500()) {
+                    totalSumOfDepositsByDateForSP500.merge(date, lastSumDeposit, BigDecimal::add);
+                } else {
+                    totalSumOfDepositsByDateForSP500.merge(date, BigDecimal.ZERO, BigDecimal::add);
+                }
             }
         }
 
@@ -316,6 +336,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
             aggregatedBalancesForOneWallet.add(totalBalancesByDate.get(date));
             aggregatedDepositsForOneWallet.add(totalDepositsByDate.get(date));
             aggregatedSumOfDepositsForOneWallet.add(totalSumOfDepositsByDate.get(date));
+            aggregatedSumOfDepositsForSP500.add(totalSumOfDepositsByDateForSP500.getOrDefault(date, BigDecimal.ZERO));
         }
 
         // Final safety sort (if needed elsewhere in UI)
@@ -323,7 +344,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                 aggregatedDatesForOneWallet,
                 aggregatedBalancesForOneWallet,
                 aggregatedDepositsForOneWallet,
-                aggregatedSumOfDepositsForOneWallet
+                aggregatedSumOfDepositsForOneWallet,
+                aggregatedSumOfDepositsForSP500
         );
     }
 
@@ -331,7 +353,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
     private void sortAggregatedData(List<String> aggregatedDates,
                                     List<BigDecimal> aggregatedBalances,
                                     List<BigDecimal> aggregatedDeposits,
-                                    List<BigDecimal> aggregatedSumOfDeposits) {
+                                    List<BigDecimal> aggregatedSumOfDeposits,
+                                    List<BigDecimal> aggregatedSumOfDepositsForSP500) {
 
         // Create combined list of indices
         List<Integer> indices = new ArrayList<>();
@@ -354,12 +377,14 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         List<BigDecimal> sortedBalances = new ArrayList<>();
         List<BigDecimal> sortedDeposits = new ArrayList<>();
         List<BigDecimal> sortedSumOfDeposits = new ArrayList<>();
+        List<BigDecimal> sortedSumOfDepositsForSP500 = new ArrayList<>();
 
         for (int idx : indices) {
             sortedDates.add(aggregatedDates.get(idx));
             sortedBalances.add(aggregatedBalances.get(idx));
             sortedDeposits.add(aggregatedDeposits.get(idx));
             sortedSumOfDeposits.add(aggregatedSumOfDeposits.get(idx));
+            sortedSumOfDepositsForSP500.add(aggregatedSumOfDepositsForSP500.get(idx));
         }
 
         // Replace original lists’ contents
@@ -371,6 +396,8 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         aggregatedDeposits.addAll(sortedDeposits);
         aggregatedSumOfDeposits.clear();
         aggregatedSumOfDeposits.addAll(sortedSumOfDeposits);
+        aggregatedSumOfDepositsForSP500.clear();
+        aggregatedSumOfDepositsForSP500.addAll(sortedSumOfDepositsForSP500);
     }
 
     private void allWalletsCalculations(List<Wallet> sortedWallets) {
@@ -428,7 +455,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                 }
                 case "Balance" -> {
                     filtersLayout.setVisible(true);
-                    balanceTab(this.currentWallets, this.currentDates, this.currentBalances, this.currentDeposits, this.currentSumOfDeposits);
+                    balanceTab(this.currentWallets, this.currentDates, this.currentBalances, this.currentDeposits, this.currentSumOfDeposits, this.currentSP500SumOfDeposits);
                 }
                 case "Earnings" -> {
                     filtersLayout.setVisible(true);
@@ -472,9 +499,10 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
         content.add(new WalletsEarningsView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter));
     }
 
-    private void balanceTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits) {
+    private void balanceTab(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits,
+                            Map<UUID, List<BigDecimal>> sp500SumOfDeposits) {
         content.removeAll();
-        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter, sp500DataService));
+        content.add(new WalletsBalanceView(wallets, dates, balances, deposits, sumOfDeposits, aggregationPeriodSelector, fromDateFilter, toDateFilter, sp500DataService, sp500SumOfDeposits));
     }
 
     private BervanComboBox<String> createAggregationPeriodSelector() {

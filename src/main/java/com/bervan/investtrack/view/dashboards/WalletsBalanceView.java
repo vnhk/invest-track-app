@@ -22,9 +22,13 @@ import java.util.UUID;
 public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final SP500DataService sp500DataService;
+    // null = use per-wallet compareWithSP500 flag; non-null = override deposits for benchmark (aggregated mode)
+    private final Map<UUID, List<BigDecimal>> sp500SumOfDepositsOverride;
 
-    public WalletsBalanceView(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits, BervanComboBox<String> periodSelectorAggregation, BervanDatePicker fromDateFilter, BervanDatePicker toDateFilter, SP500DataService sp500DataService) {
+    public WalletsBalanceView(List<Wallet> wallets, Map<UUID, List<String>> dates, Map<UUID, List<BigDecimal>> balances, Map<UUID, List<BigDecimal>> deposits, Map<UUID, List<BigDecimal>> sumOfDeposits, BervanComboBox<String> periodSelectorAggregation, BervanDatePicker fromDateFilter, BervanDatePicker toDateFilter, SP500DataService sp500DataService,
+                              Map<UUID, List<BigDecimal>> sp500SumOfDepositsOverride) {
         this.sp500DataService = sp500DataService;
+        this.sp500SumOfDepositsOverride = sp500SumOfDepositsOverride;
         try {
             Div gridContainer = getGridContainer();
 
@@ -94,7 +98,22 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
 
             List<String> chartDates = filteredDates.get(wallet.getId().toString());
             List<BigDecimal> chartSumOfDeposits = filteredSumOfDeposits.get(wallet.getId().toString());
-            List<BigDecimal> sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits, wallet.getCurrency());
+
+            List<BigDecimal> sp500Benchmark;
+            if (sp500SumOfDepositsOverride != null) {
+                // Aggregated mode: use pre-filtered SP500 deposits (only compareWithSP500=true wallets)
+                List<BigDecimal> sp500Deposits = sp500SumOfDepositsOverride.get(wallet.getId());
+                // Need to apply same date filtering as chartSumOfDeposits
+                Map<String, List<BigDecimal>> filteredSP500 = filterBigDecimalsByIndexes(
+                        Map.of(wallet.getId().toString(), sp500Deposits != null ? sp500Deposits : List.of()),
+                        filteredDates,
+                        aggregatedDates);
+                sp500Benchmark = computeSP500Benchmark(chartDates, filteredSP500.get(wallet.getId().toString()), wallet.getCurrency());
+            } else if (wallet.isCompareWithSP500()) {
+                sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits, wallet.getCurrency());
+            } else {
+                sp500Benchmark = List.of();
+            }
 
             WalletBalanceSumOfDepositsCharts chart = new WalletBalanceSumOfDepositsCharts(
                     chartDates,
