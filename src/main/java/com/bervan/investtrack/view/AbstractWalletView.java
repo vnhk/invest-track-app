@@ -11,6 +11,7 @@ import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.WalletSnapshotService;
 import com.bervan.logging.JsonLogger;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -51,6 +52,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
     private TextArea descriptionField;
     private TextField currencyField;
     private ComboBox<String> riskLevelCombo;
+    private Checkbox compareWithSP500Check;
     private BervanButton saveWalletBtn;
     private BervanButton editWalletBtn;
     private Binder<Wallet> walletBinder = new Binder<>(Wallet.class);
@@ -171,6 +173,9 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         walletBinder.bind(descriptionField, Wallet::getDescription, Wallet::setDescription);
         walletBinder.bind(currencyField, Wallet::getCurrency, Wallet::setCurrency);
         walletBinder.bind(riskLevelCombo, Wallet::getRiskLevel, Wallet::setRiskLevel);
+        walletBinder.bind(compareWithSP500Check,
+                w -> !Boolean.FALSE.equals(w.getCompareWithSP500()),
+                (w, v) -> w.setCompareWithSP500(v));
     }
 
     private void loadWalletData() {
@@ -212,6 +217,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         // initialValueField.setReadOnly(readOnly);
         // currentValueField.setReadOnly(readOnly);
         riskLevelCombo.setReadOnly(readOnly);
+        compareWithSP500Check.setReadOnly(readOnly);
     }
 
     private void cancelEdit() {
@@ -261,6 +267,9 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         riskLevelCombo.setItems(Constants.RISK_LEVEL);
         riskLevelCombo.setReadOnly(true);
 
+        compareWithSP500Check = new Checkbox("Compare with S&P 500");
+        compareWithSP500Check.setReadOnly(true);
+
         editWalletBtn = new BervanButton("Edit Wallet", e -> toggleEditMode());
 
         saveWalletBtn = new BervanButton("Save Changes", e -> saveWallet());
@@ -275,7 +284,7 @@ public abstract class AbstractWalletView extends AbstractPageView implements Has
         contentArea.removeAll();
 
         FormLayout walletForm = new FormLayout();
-        walletForm.add(nameField, descriptionField, currencyField, riskLevelCombo);
+        walletForm.add(nameField, descriptionField, currencyField, riskLevelCombo, compareWithSP500Check);
         walletForm.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1),
                 new FormLayout.ResponsiveStep("500px", 2)

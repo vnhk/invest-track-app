@@ -30,7 +30,7 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
     private String currency;
     private String riskLevel;
     private LocalDateTime createdDate;
-    private boolean compareWithSP500 = true;
+    private Boolean compareWithSP500; // null treated as true (opt-out model)
 
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @OrderBy("snapshotDate ASC")

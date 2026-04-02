@@ -207,7 +207,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                     copy.setId(original.getId());
                     copy.setCurrency(currencySelector.getValue());
                     copy.setName(original.getName());
-                    copy.setCompareWithSP500(original.isCompareWithSP500());
+                    copy.setCompareWithSP500(original.getCompareWithSP500());
                     copy.setSnapshots(original.getSnapshots().stream()
                             .map(snapshot -> {
                                 WalletSnapshot sCopy = new WalletSnapshot();
@@ -320,7 +320,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                 totalBalancesByDate.merge(date, lastBalance, BigDecimal::add);
                 totalDepositsByDate.merge(date, lastDeposit, BigDecimal::add);
                 totalSumOfDepositsByDate.merge(date, lastSumDeposit, BigDecimal::add);
-                if (wallet.isCompareWithSP500()) {
+                if (!Boolean.FALSE.equals(wallet.getCompareWithSP500())) {
                     totalSumOfDepositsByDateForSP500.merge(date, lastSumDeposit, BigDecimal::add);
                 } else {
                     totalSumOfDepositsByDateForSP500.merge(date, BigDecimal.ZERO, BigDecimal::add);

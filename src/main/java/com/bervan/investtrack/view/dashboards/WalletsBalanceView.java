@@ -109,7 +109,7 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                         filteredDates,
                         aggregatedDates);
                 sp500Benchmark = computeSP500Benchmark(chartDates, filteredSP500.get(wallet.getId().toString()), wallet.getCurrency());
-            } else if (wallet.isCompareWithSP500()) {
+            } else if (!Boolean.FALSE.equals(wallet.getCompareWithSP500())) {
                 sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits, wallet.getCurrency());
             } else {
                 sp500Benchmark = List.of();
