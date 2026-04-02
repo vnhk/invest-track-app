@@ -46,9 +46,13 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                 }
             }
 
+            BigDecimal totalSP500Final = computeTotalSP500Final(wallets, dates, sumOfDeposits, sp500SumOfDepositsOverride);
+            BigDecimal sp500Profit = totalSP500Final.subtract(totalDeposit);
+
             HorizontalLayout horizontalLayout = new HorizontalLayout(createCard("Total Balance", totalBalance, VaadinIcon.MONEY),
                     createCard("Total Deposit", totalDeposit, VaadinIcon.PIGGY_BANK),
-                    createCard("Total Profit", totalBalance.subtract(totalDeposit), VaadinIcon.TRENDING_UP));
+                    createCard("Total Profit", totalBalance.subtract(totalDeposit), VaadinIcon.TRENDING_UP),
+                    createCard("Total Profit if SP500", sp500Profit, VaadinIcon.CHART_LINE));
             horizontalLayout.addClassName("invest-kpi-row");
             add(horizontalLayout);
 
@@ -108,7 +112,17 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
                         Map.of(wallet.getId().toString(), sp500Deposits != null ? sp500Deposits : List.of()),
                         filteredDates,
                         aggregatedDates);
-                sp500Benchmark = computeSP500Benchmark(chartDates, filteredSP500.get(wallet.getId().toString()), wallet.getCurrency());
+                List<BigDecimal> filteredSP500Deposits = filteredSP500.get(wallet.getId().toString());
+                List<BigDecimal> sp500Part = computeSP500Benchmark(chartDates, filteredSP500Deposits, wallet.getCurrency());
+                // Add non-SP500 deposits as cash (no S&P 500 growth on them)
+                List<BigDecimal> result = new ArrayList<>();
+                for (int i = 0; i < sp500Part.size(); i++) {
+                    BigDecimal totalDep = (chartSumOfDeposits != null && i < chartSumOfDeposits.size()) ? chartSumOfDeposits.get(i) : BigDecimal.ZERO;
+                    BigDecimal sp500Dep = (filteredSP500Deposits != null && i < filteredSP500Deposits.size()) ? filteredSP500Deposits.get(i) : BigDecimal.ZERO;
+                    BigDecimal nonSP500Dep = totalDep.subtract(sp500Dep).max(BigDecimal.ZERO);
+                    result.add(sp500Part.get(i).add(nonSP500Dep));
+                }
+                sp500Benchmark = result;
             } else if (!Boolean.FALSE.equals(wallet.getCompareWithSP500())) {
                 sp500Benchmark = computeSP500Benchmark(chartDates, chartSumOfDeposits, wallet.getCurrency());
             } else {
@@ -125,6 +139,47 @@ public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
             walletTile.add(chart);
             gridContainer.add(walletTile);
         }
+    }
+
+    private BigDecimal computeTotalSP500Final(List<Wallet> wallets, Map<UUID, List<String>> dates,
+                                              Map<UUID, List<BigDecimal>> sumOfDeposits,
+                                              Map<UUID, List<BigDecimal>> sp500SumOfDepositsOverride) {
+        BigDecimal total = BigDecimal.ZERO;
+        if (sp500SumOfDepositsOverride != null) {
+            // Aggregated mode: one synthetic wallet
+            for (Wallet wallet : wallets) {
+                UUID id = wallet.getId();
+                List<String> wDates = dates.get(id);
+                List<BigDecimal> wSumOfDeposits = sumOfDeposits.get(id);
+                List<BigDecimal> sp500Deps = sp500SumOfDepositsOverride.get(id);
+                List<BigDecimal> sp500Part = computeSP500Benchmark(wDates, sp500Deps, wallet.getCurrency());
+                if (!sp500Part.isEmpty()) {
+                    BigDecimal sp500Final = sp500Part.get(sp500Part.size() - 1);
+                    BigDecimal totalDep = (wSumOfDeposits != null && !wSumOfDeposits.isEmpty()) ? wSumOfDeposits.get(wSumOfDeposits.size() - 1) : BigDecimal.ZERO;
+                    BigDecimal sp500Dep = (sp500Deps != null && !sp500Deps.isEmpty()) ? sp500Deps.get(sp500Deps.size() - 1) : BigDecimal.ZERO;
+                    BigDecimal nonSP500Dep = totalDep.subtract(sp500Dep).max(BigDecimal.ZERO);
+                    total = total.add(sp500Final).add(nonSP500Dep);
+                }
+            }
+        } else {
+            // All-wallets mode: per-wallet flag
+            for (Wallet wallet : wallets) {
+                UUID id = wallet.getId();
+                List<String> wDates = dates.get(id);
+                List<BigDecimal> wSumOfDeposits = sumOfDeposits.get(id);
+                if (wDates == null || wSumOfDeposits == null || wSumOfDeposits.isEmpty()) continue;
+                if (!Boolean.FALSE.equals(wallet.getCompareWithSP500())) {
+                    List<BigDecimal> benchmark = computeSP500Benchmark(wDates, wSumOfDeposits, wallet.getCurrency());
+                    if (!benchmark.isEmpty()) {
+                        total = total.add(benchmark.get(benchmark.size() - 1));
+                    }
+                } else {
+                    // Non-SP500 wallet: count deposits as-is (no S&P 500 growth)
+                    total = total.add(wSumOfDeposits.get(wSumOfDeposits.size() - 1));
+                }
+            }
+        }
+        return total;
     }
 
     /** Derives monthly net deposits from cumulative sumOfDeposits, then delegates to SP500DataService. */
