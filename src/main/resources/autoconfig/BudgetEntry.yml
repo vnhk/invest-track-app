@@ -17,7 +17,8 @@ columns:
     inEditForm: true
     inTable: false
     required: true
-    strValues: [ "Income", "Expense" ]
+    strValues: [ "Expense","Income" ]
+    defaultValue: "Expense"
     min: 3
     max: 10
 
@@ -85,7 +86,8 @@ columns:
     inSaveForm: true
     inEditForm: true
     inTable: false
-    strValues: [ "Cash", "Card", "Transfer" ]
+    strValues: [ "Card", "Cash", "Transfer" ]
+    defaultValue: "Card"
     required: true
     min: 3
     max: 50
