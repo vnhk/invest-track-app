@@ -15,12 +15,23 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class BudgetAnalyticsPanel extends VerticalLayout {
+
+    private static final List<String> PALETTE = Arrays.asList(
+            "rgba(239, 68,  68,  0.85)",
+            "rgba(245, 158, 11,  0.85)",
+            "rgba(99,  102, 241, 0.85)",
+            "rgba(34,  211, 238, 0.85)",
+            "rgba(16,  185, 129, 0.85)",
+            "rgba(139, 92,  246, 0.85)",
+            "rgba(236, 72,  153, 0.85)",
+            "rgba(59,  130, 246, 0.85)",
+            "rgba(168, 162, 158, 0.85)",
+            "rgba(251, 191, 36,  0.85)"
+    );
+    private static final String OTHER_COLOR = "rgba(156, 163, 175, 0.85)";
 
     private final BudgetChartDataService chartDataService;
     private final DatePicker fromDate = new DatePicker("From");
@@ -173,49 +184,95 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
 
     private void refreshAvgPie() {
         avgPieContainer.removeAll();
-        Map<String, BigDecimal> data = chartDataService.getAverageCategoryExpenses(avgPieYear);
-        if (data.isEmpty()) {
+        Map<String, BigDecimal> rawData = chartDataService.getAverageCategoryExpenses(avgPieYear);
+        if (rawData.isEmpty()) {
             avgPieContainer.add(new Span("No expense data for " + avgPieYear));
             return;
         }
 
+        BigDecimal total = rawData.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Group items under 1% of total into "Other"
+        Map<String, BigDecimal> grouped = new LinkedHashMap<>();
+        BigDecimal otherSum = BigDecimal.ZERO;
+        for (Map.Entry<String, BigDecimal> entry : rawData.entrySet()) {
+            int pct = total.compareTo(BigDecimal.ZERO) > 0
+                    ? entry.getValue().multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).intValue()
+                    : 0;
+            if (pct < 1) {
+                otherSum = otherSum.add(entry.getValue());
+            } else {
+                grouped.put(entry.getKey(), entry.getValue());
+            }
+        }
+        if (otherSum.compareTo(BigDecimal.ZERO) > 0) {
+            grouped.put("Other", otherSum);
+        }
+
+        List<String> keys = new ArrayList<>(grouped.keySet());
+        List<String> colors = generateColors(keys.size());
+        if (grouped.containsKey("Other")) {
+            colors.set(keys.size() - 1, OTHER_COLOR);
+        }
+
         HorizontalLayout row = new HorizontalLayout();
         row.setWidthFull();
-        row.setAlignItems(Alignment.CENTER);
+        row.setAlignItems(Alignment.START);
+        row.getStyle().set("flex-wrap", "wrap");
 
-        BudgetCategoryAvgPieChart pie = new BudgetCategoryAvgPieChart(data);
-        pie.setWidth("420px");
-        pie.setHeight("320px");
+        BudgetCategoryAvgPieChart pie = new BudgetCategoryAvgPieChart(grouped, colors);
+        pie.setWidth("380px");
+        pie.setHeight("380px");
+        pie.getStyle().set("flex-shrink", "0");
 
-        VerticalLayout legend = buildAvgLegend(data);
-        legend.setWidth("auto");
-        row.setFlexGrow(1, legend);
+        VerticalLayout legend = buildAvgLegend(grouped, colors, total);
+        legend.getStyle()
+                .set("max-height", "380px")
+                .set("overflow-y", "auto")
+                .set("flex", "1")
+                .set("min-width", "260px");
 
         row.add(pie, legend);
         avgPieContainer.add(row);
     }
 
-    private VerticalLayout buildAvgLegend(Map<String, BigDecimal> data) {
+    private List<String> generateColors(int count) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < count; i++) result.add(PALETTE.get(i % PALETTE.size()));
+        return result;
+    }
+
+    private VerticalLayout buildAvgLegend(Map<String, BigDecimal> data, List<String> colors, BigDecimal total) {
         VerticalLayout col = new VerticalLayout();
         col.setPadding(false);
         col.setSpacing(false);
 
-        BigDecimal total = data.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<String> keys = new ArrayList<>(data.keySet());
 
-        for (Map.Entry<String, BigDecimal> entry : data.entrySet()) {
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            BigDecimal value = data.get(key);
+            String color = colors.get(i);
+
             int pct = total.compareTo(BigDecimal.ZERO) > 0
-                    ? entry.getValue().multiply(BigDecimal.valueOf(100))
-                    .divide(total, 0, RoundingMode.HALF_UP).intValue()
+                    ? value.multiply(BigDecimal.valueOf(100)).divide(total, 0, RoundingMode.HALF_UP).intValue()
                     : 0;
 
-            Span name = new Span(entry.getKey());
+            Div colorDot = new Div();
+            colorDot.getStyle()
+                    .set("width", "12px").set("height", "12px")
+                    .set("border-radius", "3px")
+                    .set("background", color)
+                    .set("flex-shrink", "0");
+
+            Span name = new Span(key);
             name.getStyle().set("flex", "1").set("font-size", "13px");
 
-            Span amount = new Span(String.format("%,.2f  (%d%%)", entry.getValue(), pct));
+            Span amount = new Span(String.format("%,.2f  (%d%%)", value, pct));
             amount.getStyle().set("font-weight", "600").set("font-size", "13px")
                     .set("color", "rgba(239,68,68,0.9)").set("min-width", "130px").set("text-align", "right");
 
-            HorizontalLayout legendRow = new HorizontalLayout(name, amount);
+            HorizontalLayout legendRow = new HorizontalLayout(colorDot, name, amount);
             legendRow.setWidthFull();
             legendRow.setAlignItems(Alignment.CENTER);
             legendRow.getStyle()

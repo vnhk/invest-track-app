@@ -191,7 +191,7 @@ public class BudgetChartDataService {
 
     /**
      * Get average monthly expense per category for a given year.
-     * Average = total / number of distinct months that had entries in that category.
+     * Average = total / total months in range (months with no entries count as 0).
      */
     public Map<String, BigDecimal> getAverageCategoryExpenses(int year) {
         LocalDate startDate = LocalDate.of(year, 1, 1);
@@ -200,27 +200,24 @@ public class BudgetChartDataService {
             endDate = LocalDate.now();
         }
 
+        int totalMonths = (int) YearMonth.from(startDate)
+                .until(YearMonth.from(endDate), java.time.temporal.ChronoUnit.MONTHS) + 1;
+
         List<BudgetEntry> entries = loadEntries(startDate, endDate);
 
         Map<String, BigDecimal> totals = new HashMap<>();
-        Map<String, Set<String>> categoryMonths = new HashMap<>();
 
         for (BudgetEntry entry : entries) {
             if (!"Expense".equals(entry.getEntryType()) || entry.getCategory() == null
                     || entry.getValue() == null || entry.getEntryDate() == null) continue;
-            String cat = entry.getCategory();
-            totals.merge(cat, entry.getValue().abs(), BigDecimal::add);
-            categoryMonths.computeIfAbsent(cat, k -> new HashSet<>())
-                    .add(formatYearMonth(YearMonth.from(entry.getEntryDate())));
+            totals.merge(entry.getCategory(), entry.getValue().abs(), BigDecimal::add);
         }
 
         return totals.entrySet().stream()
                 .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> e.getValue().divide(
-                                BigDecimal.valueOf(categoryMonths.get(e.getKey()).size()),
-                                2, java.math.RoundingMode.HALF_UP),
+                        e -> e.getValue().divide(BigDecimal.valueOf(totalMonths), 2, java.math.RoundingMode.HALF_UP),
                         (e1, e2) -> e1,
                         LinkedHashMap::new));
     }

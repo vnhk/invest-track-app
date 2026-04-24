@@ -447,6 +447,53 @@ window.renderAssetAllocationChart = (canvas, labels, values, colors) => {
     });
 };
 
+// Budget Category Pie Chart (no built-in legend — Java renders a custom legend alongside)
+window.renderBudgetCategoryPieChart = (canvas, labels, values, colors) => {
+    let textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || 'rgba(255,255,255,0.9)';
+
+    if (canvas === null) return;
+    const ctx = canvas.getContext('2d');
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors && colors.length > 0 ? colors : [
+                    'rgba(239,68,68,0.85)', 'rgba(245,158,11,0.85)', 'rgba(99,102,241,0.85)',
+                    'rgba(34,211,238,0.85)', 'rgba(16,185,129,0.85)', 'rgba(139,92,246,0.85)',
+                    'rgba(236,72,153,0.85)', 'rgba(59,130,246,0.85)', 'rgba(168,162,158,0.85)',
+                    'rgba(251,191,36,0.85)'
+                ],
+                borderColor: 'rgba(255,255,255,0.2)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                            const value = parseFloat(context.raw);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
 // Category Trends Line Chart
 window.renderCategoryTrendsChart = (canvas, months, categoriesData) => {
     let textColor = getComputedStyle(document.documentElement)
