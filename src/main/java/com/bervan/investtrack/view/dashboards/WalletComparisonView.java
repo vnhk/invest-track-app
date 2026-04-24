@@ -66,9 +66,10 @@ public class WalletComparisonView extends VerticalLayout {
 
         grid.addColumn(WalletMetrics::name).setHeader("Wallet").setFlexGrow(2);
         grid.addColumn(new ComponentRenderer<>(m -> {
-            Span span = new Span(m.walletType() != null ? m.walletType().getDisplayName() : "Investment");
+            WalletType type = m.resolvedType();
+            Span span = new Span(type.getDisplayName());
             span.addClassName("wallet-type-badge");
-            span.addClassName("wallet-type-" + (m.walletType() != null ? m.walletType().name().toLowerCase() : "investment"));
+            span.addClassName("wallet-type-" + type.name().toLowerCase());
             return span;
         })).setHeader("Type").setAutoWidth(true);
         grid.addColumn(WalletMetrics::currency).setHeader("Currency").setAutoWidth(true);
@@ -83,14 +84,14 @@ public class WalletComparisonView extends VerticalLayout {
             return span;
         })).setHeader("Return %").setAutoWidth(true);
         grid.addColumn(new ComponentRenderer<>(m -> {
-            if (!m.walletType().isInvestmentLike()) return new Span("—");
+            if (!m.resolvedType().isInvestmentLike()) return new Span("—");
             Span span = new Span(m.cagr().setScale(2, RoundingMode.HALF_UP) + "%");
             span.addClassName(m.cagr().compareTo(BigDecimal.ZERO) >= 0 ?
                     "invest-text-success" : "invest-text-danger");
             return span;
         })).setHeader("CAGR").setAutoWidth(true);
         grid.addColumn(new ComponentRenderer<>(m -> {
-            if (!m.walletType().isInvestmentLike()) return new Span("—");
+            if (!m.resolvedType().isInvestmentLike()) return new Span("—");
             Span span = new Span(m.twr().setScale(2, RoundingMode.HALF_UP) + "%");
             span.addClassName(m.twr().compareTo(BigDecimal.ZERO) >= 0 ?
                     "invest-text-success" : "invest-text-danger");
@@ -134,10 +135,9 @@ public class WalletComparisonView extends VerticalLayout {
             BigDecimal twr = calculationService.calculateTWR(snapshots)
                     .multiply(BigDecimal.valueOf(100));
 
-            WalletType type = wallet.getWalletType() != null ? wallet.getWalletType() : WalletType.INVESTMENT;
             result.add(new WalletMetrics(
                     wallet.getName(),
-                    type,
+                    wallet.getWalletType(),
                     wallet.getCurrency(),
                     wallet.getRiskLevel(),
                     balancePLN,
@@ -175,7 +175,7 @@ public class WalletComparisonView extends VerticalLayout {
 
     public record WalletMetrics(
             String name,
-            WalletType walletType,
+            String walletType,
             String currency,
             String riskLevel,
             BigDecimal balancePLN,
@@ -184,5 +184,11 @@ public class WalletComparisonView extends VerticalLayout {
             BigDecimal returnRate,
             BigDecimal cagr,
             BigDecimal twr
-    ) {}
+    ) {
+        public WalletType resolvedType() {
+            if (walletType == null) return WalletType.INVESTMENT;
+            try { return WalletType.valueOf(walletType); }
+            catch (IllegalArgumentException e) { return WalletType.INVESTMENT; }
+        }
+    }
 }

@@ -208,6 +208,7 @@ public abstract class AbstractBudgetDashboardView extends AbstractPageView {
                     copy.setCurrency(currencySelector.getValue());
                     copy.setName(original.getName());
                     copy.setCompareWithSP500(original.getCompareWithSP500());
+                    copy.setWalletType(original.getWalletType());
                     copy.setSnapshots(original.getSnapshots().stream()
                             .map(snapshot -> {
                                 WalletSnapshot sCopy = new WalletSnapshot();

@@ -18,6 +18,8 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
         ?.trim() || '#f97316';
 
     if (canvas === null) return;
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
     const ctx = canvas.getContext('2d');
 
     const datasets = [
@@ -60,6 +62,7 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {
@@ -103,6 +106,8 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
         .trim();
 
     if (canvas === null) return;
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: 'line',
@@ -121,6 +126,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {
@@ -134,7 +140,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
             scales: {
                 x: {
                     ticks: {
-                        color: textColor  // X
+                        color: textColor
                     },
                     grid: {
                         color: textColor
@@ -143,7 +149,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
                 y: {
                     beginAtZero: false,
                     ticks: {
-                        color: textColor // Y
+                        color: textColor
                     },
                     grid: {
                         color: textColor
@@ -174,6 +180,8 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
 
     if (canvas === null) return;
 
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
     const ctx = canvas.getContext('2d');
 
     avgInvestmentForAMonth = Math.round(avgInvestmentForAMonth);
@@ -196,6 +204,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
         data: {
             labels: yearsLabels,
             datasets: [
+
                 {
                     label: 'Currently (' + avgInvestmentForAMonth + ' invested, ' + currentlyNotInvested + ' not invested)',
                     data: baseline,
@@ -234,6 +243,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {color: textColor}
@@ -273,6 +283,8 @@ window.renderStrategyBGRHistoryChart = (canvas, dates, bestRecPercent, goodRecPe
 
     if (canvas === null) return;
 
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
     const ctx = canvas.getContext('2d');
 
     new Chart(ctx, {
@@ -309,6 +321,7 @@ window.renderStrategyBGRHistoryChart = (canvas, dates, bestRecPercent, goodRecPe
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {color: textColor}
