@@ -125,8 +125,12 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
                 chartDataService.getMonthlyIncomeExpense(from, to, categories);
         BudgetIncomeExpenseChart chart = new BudgetIncomeExpenseChart(data.income(), data.expense());
         chart.setWidth("100%");
-        chart.setHeight("400px");
-        chartContainer.add(chart);
+        chart.setHeight("100%");
+        Div wrapper = new Div(chart);
+        wrapper.setWidthFull();
+        wrapper.setHeight("400px");
+        wrapper.getStyle().set("position", "relative");
+        chartContainer.add(wrapper);
     }
 
     private void renderRanking(LocalDate from, LocalDate to, Set<String> categories) {
@@ -221,9 +225,12 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
         row.getStyle().set("flex-wrap", "wrap");
 
         BudgetCategoryAvgPieChart pie = new BudgetCategoryAvgPieChart(grouped, colors);
-        pie.setWidth("380px");
-        pie.setHeight("380px");
-        pie.getStyle().set("flex-shrink", "0");
+        pie.setWidth("100%");
+        pie.setHeight("100%");
+        Div pieWrapper = new Div(pie);
+        pieWrapper.setWidth("380px");
+        pieWrapper.setHeight("380px");
+        pieWrapper.getStyle().set("position", "relative").set("flex-shrink", "0");
 
         VerticalLayout legend = buildAvgLegend(grouped, colors, total);
         legend.getStyle()
@@ -232,7 +239,7 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
                 .set("flex", "1")
                 .set("min-width", "260px");
 
-        row.add(pie, legend);
+        row.add(pieWrapper, legend);
         avgPieContainer.add(row);
     }
 

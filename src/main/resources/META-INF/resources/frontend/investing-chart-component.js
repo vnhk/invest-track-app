@@ -62,7 +62,6 @@ window.renderWalletBalanceDepositAndWalletBalance = (canvas, dates, walletBalanc
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {
@@ -126,7 +125,6 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {
@@ -243,7 +241,6 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {color: textColor}
@@ -321,7 +318,6 @@ window.renderStrategyBGRHistoryChart = (canvas, dates, bestRecPercent, goodRecPe
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {color: textColor}
