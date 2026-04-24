@@ -2,6 +2,7 @@ package com.bervan.investtrack.view.dashboards;
 
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
+import com.bervan.investtrack.model.WalletType;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.InvestmentCalculationService;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -64,6 +65,12 @@ public class WalletComparisonView extends VerticalLayout {
         grid.setWidthFull();
 
         grid.addColumn(WalletMetrics::name).setHeader("Wallet").setFlexGrow(2);
+        grid.addColumn(new ComponentRenderer<>(m -> {
+            Span span = new Span(m.walletType() != null ? m.walletType().getDisplayName() : "Investment");
+            span.addClassName("wallet-type-badge");
+            span.addClassName("wallet-type-" + (m.walletType() != null ? m.walletType().name().toLowerCase() : "investment"));
+            return span;
+        })).setHeader("Type").setAutoWidth(true);
         grid.addColumn(WalletMetrics::currency).setHeader("Currency").setAutoWidth(true);
         grid.addColumn(WalletMetrics::riskLevel).setHeader("Risk").setAutoWidth(true);
         grid.addColumn(m -> currencyFormat.format(m.balancePLN())).setHeader("Balance (PLN)").setAutoWidth(true);
@@ -76,12 +83,14 @@ public class WalletComparisonView extends VerticalLayout {
             return span;
         })).setHeader("Return %").setAutoWidth(true);
         grid.addColumn(new ComponentRenderer<>(m -> {
+            if (!m.walletType().isInvestmentLike()) return new Span("—");
             Span span = new Span(m.cagr().setScale(2, RoundingMode.HALF_UP) + "%");
             span.addClassName(m.cagr().compareTo(BigDecimal.ZERO) >= 0 ?
                     "invest-text-success" : "invest-text-danger");
             return span;
         })).setHeader("CAGR").setAutoWidth(true);
         grid.addColumn(new ComponentRenderer<>(m -> {
+            if (!m.walletType().isInvestmentLike()) return new Span("—");
             Span span = new Span(m.twr().setScale(2, RoundingMode.HALF_UP) + "%");
             span.addClassName(m.twr().compareTo(BigDecimal.ZERO) >= 0 ?
                     "invest-text-success" : "invest-text-danger");
@@ -125,8 +134,10 @@ public class WalletComparisonView extends VerticalLayout {
             BigDecimal twr = calculationService.calculateTWR(snapshots)
                     .multiply(BigDecimal.valueOf(100));
 
+            WalletType type = wallet.getWalletType() != null ? wallet.getWalletType() : WalletType.INVESTMENT;
             result.add(new WalletMetrics(
                     wallet.getName(),
+                    type,
                     wallet.getCurrency(),
                     wallet.getRiskLevel(),
                     balancePLN,
@@ -164,6 +175,7 @@ public class WalletComparisonView extends VerticalLayout {
 
     public record WalletMetrics(
             String name,
+            WalletType walletType,
             String currency,
             String riskLevel,
             BigDecimal balancePLN,

@@ -551,3 +551,31 @@
     backdrop-filter: blur(var(--invest-glass-blur));
     -webkit-backdrop-filter: blur(var(--invest-glass-blur));
 }
+
+/* ===== KPI Section Labels ===== */
+.kpi-section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--invest-text-secondary);
+    margin: var(--invest-spacing-sm) 0 var(--invest-spacing-xs) 0;
+    padding-left: 4px;
+}
+
+/* ===== Wallet Type Badges ===== */
+.wallet-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.wallet-type-investment  { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+.wallet-type-savings     { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.wallet-type-bonds       { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.wallet-type-crypto      { background: rgba(239, 68, 68, 0.2);  color: #f87171; }
+.wallet-type-cash        { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }

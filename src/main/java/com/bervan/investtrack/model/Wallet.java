@@ -32,6 +32,9 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
     private LocalDateTime createdDate;
     private Boolean compareWithSP500; // null treated as true (opt-out model)
 
+    @Enumerated(EnumType.STRING)
+    private WalletType walletType = WalletType.INVESTMENT;
+
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @OrderBy("snapshotDate ASC")
     @Where(clause = "deleted = false or deleted is null")
@@ -116,6 +119,10 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
 
     public BigDecimal calculateNetInvestment() {
         return getTotalDeposits().subtract(getTotalWithdrawals());
+    }
+
+    public boolean isInvestmentLike() {
+        return walletType == null || walletType.isInvestmentLike();
     }
 
     public String getTableFilterableColumnValue() {

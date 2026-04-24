@@ -12,6 +12,7 @@ import com.bervan.investtrack.view.charts.WalletBalanceSumOfDepositsCharts;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -27,9 +28,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/**
- * Main unified dashboard with KPI cards, quick filters, and multiple charts
- */
 @CssImport("./invest-track-dashboard.css")
 public class MainDashboardView extends VerticalLayout {
 
@@ -41,7 +39,11 @@ public class MainDashboardView extends VerticalLayout {
     private final Div chartsContainer = new Div();
     private final HorizontalLayout quickFiltersLayout = new HorizontalLayout();
     private final NumberFormat currencyFormat;
-    private List<Wallet> wallets;
+
+    private List<Wallet> allWallets;
+    private List<Wallet> investmentWallets;
+    private List<Wallet> savingsWallets;
+
     private LocalDate filterStartDate;
     private LocalDate filterEndDate;
     private String activeFilter = "ALL";
@@ -71,17 +73,17 @@ public class MainDashboardView extends VerticalLayout {
     private void loadData() {
         try {
             Set<Wallet> loaded = walletService.load(Pageable.ofSize(100));
-            this.wallets = loaded.stream()
+            this.allWallets = loaded.stream()
                     .sorted(Comparator.comparing(Wallet::getReturnRate).reversed())
                     .toList();
+            this.investmentWallets = allWallets.stream().filter(Wallet::isInvestmentLike).toList();
+            this.savingsWallets = allWallets.stream().filter(w -> !w.isInvestmentLike()).toList();
 
-            // Find date range
-            Optional<LocalDate> minDate = wallets.stream()
+            Optional<LocalDate> minDate = allWallets.stream()
                     .flatMap(w -> w.getSnapshots().stream())
                     .map(WalletSnapshot::getSnapshotDate)
                     .min(LocalDate::compareTo);
-
-            Optional<LocalDate> maxDate = wallets.stream()
+            Optional<LocalDate> maxDate = allWallets.stream()
                     .flatMap(w -> w.getSnapshots().stream())
                     .map(WalletSnapshot::getSnapshotDate)
                     .max(LocalDate::compareTo);
@@ -90,7 +92,9 @@ public class MainDashboardView extends VerticalLayout {
             filterEndDate = maxDate.orElse(LocalDate.now());
 
         } catch (Exception e) {
-            this.wallets = Collections.emptyList();
+            this.allWallets = Collections.emptyList();
+            this.investmentWallets = Collections.emptyList();
+            this.savingsWallets = Collections.emptyList();
             filterStartDate = LocalDate.now().minusYears(1);
             filterEndDate = LocalDate.now();
         }
@@ -120,7 +124,7 @@ public class MainDashboardView extends VerticalLayout {
             case "1Y" -> now.minusYears(1);
             case "3Y" -> now.minusYears(3);
             case "5Y" -> now.minusYears(5);
-            default -> wallets.stream()
+            default -> allWallets.stream()
                     .flatMap(w -> w.getSnapshots().stream())
                     .map(WalletSnapshot::getSnapshotDate)
                     .min(LocalDate::compareTo)
@@ -130,7 +134,6 @@ public class MainDashboardView extends VerticalLayout {
         filterStartDate = start;
         filterEndDate = now;
 
-        // Update button styles
         quickFiltersLayout.getChildren().forEach(c -> {
             if (c instanceof BervanButton btn) {
                 btn.removeClassName("active");
@@ -144,117 +147,120 @@ public class MainDashboardView extends VerticalLayout {
     }
 
     private void buildDashboard() {
-        // KPI Cards
-        HorizontalLayout kpiRow = buildKpiCards();
-        add(kpiRow);
-
-        // Quick Filters
+        add(buildKpiSection());
         add(quickFiltersLayout);
 
-        // Charts Grid
         chartsContainer.addClassName("invest-chart-grid");
         refreshCharts();
         add(chartsContainer);
     }
 
-    private void refreshCharts() {
-        chartsContainer.removeAll();
+    private VerticalLayout buildKpiSection() {
+        VerticalLayout section = new VerticalLayout();
+        section.setPadding(false);
+        section.setSpacing(false);
+        section.setWidthFull();
 
-        // Chart 1: Balance vs Deposits
-        Div balanceCard = createChartCard("Portfolio Balance vs Deposits", createBalanceChart());
-        chartsContainer.add(balanceCard);
+        // --- Investments row ---
+        H4 investLabel = new H4("Investments");
+        investLabel.addClassName("kpi-section-label");
+        section.add(investLabel);
+        section.add(buildInvestmentKpiRow());
 
-        // Chart 2: Budget Income/Expense
-        Div budgetCard = createChartCard("Monthly Income vs Expense",
-                createBudgetChart());
-        chartsContainer.add(budgetCard);
+        // --- Savings row ---
+        H4 savingsLabel = new H4("Savings");
+        savingsLabel.addClassName("kpi-section-label");
+        section.add(savingsLabel);
+        section.add(buildSavingsKpiRow());
 
-        // Chart 3: Asset Allocation
-        Div allocationCard = createChartCard("Asset Allocation by Wallet",
-                createAllocationChart());
-        chartsContainer.add(allocationCard);
-
-        // Chart 4: Monthly Returns Heatmap
-        Div heatmapCard = createChartCard("Monthly Returns Heatmap",
-                createHeatmap());
-        chartsContainer.add(heatmapCard);
+        return section;
     }
 
-    private HorizontalLayout buildKpiCards() {
+    private HorizontalLayout buildInvestmentKpiRow() {
         HorizontalLayout row = new HorizontalLayout();
         row.addClassName("invest-kpi-row");
         row.setWidthFull();
 
-        // Calculate metrics
-        BigDecimal totalBalance = BigDecimal.ZERO;
-        BigDecimal totalDeposits = BigDecimal.ZERO;
+        BigDecimal investBalance = BigDecimal.ZERO;
+        BigDecimal investDeposits = BigDecimal.ZERO;
 
-        for (Wallet wallet : wallets) {
-            BigDecimal valuePLN = currencyConverter.convert(
-                    wallet.getCurrentValue(),
-                    CurrencyConverter.Currency.of(wallet.getCurrency()),
-                    CurrencyConverter.Currency.PLN
-            );
-            totalBalance = totalBalance.add(valuePLN);
-
-            BigDecimal depositsPLN = currencyConverter.convert(
-                    wallet.getTotalDeposits().subtract(wallet.getTotalWithdrawals()),
-                    CurrencyConverter.Currency.of(wallet.getCurrency()),
-                    CurrencyConverter.Currency.PLN
-            );
-            totalDeposits = totalDeposits.add(depositsPLN);
+        for (Wallet w : investmentWallets) {
+            investBalance = investBalance.add(toPLN(w.getCurrentValue(), w.getCurrency()));
+            investDeposits = investDeposits.add(
+                    toPLN(w.getTotalDeposits().subtract(w.getTotalWithdrawals()), w.getCurrency()));
         }
 
-        BigDecimal totalReturn = totalBalance.subtract(totalDeposits);
-        BigDecimal returnRate = totalDeposits.compareTo(BigDecimal.ZERO) > 0 ?
-                totalReturn.divide(totalDeposits, 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100)) :
-                BigDecimal.ZERO;
+        BigDecimal investReturn = investBalance.subtract(investDeposits);
+        BigDecimal investReturnRate = investDeposits.compareTo(BigDecimal.ZERO) > 0
+                ? investReturn.divide(investDeposits, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                : BigDecimal.ZERO;
 
-        // Calculate CAGR
-        long months = calculateMonthsSpan();
-        double years = Math.max(months / 12.0, 0.1); // Avoid division by zero
-        BigDecimal cagr = calculationService.calculateCAGR(totalDeposits, totalBalance, years);
-        BigDecimal cagrPct = cagr.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+        long months = calculateMonthsSpan(investmentWallets);
+        double years = Math.max(months / 12.0, 0.1);
+        BigDecimal cagr = calculationService.calculateCAGR(investDeposits, investBalance, years)
+                .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
 
-        // Calculate TWR using aggregated time series with proper carry-forward
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> timeSeries =
-                calculationService.buildAggregatedTimeSeries(wallets, this::convertToPLN);
-        BigDecimal twr = calculationService.calculateAggregatedTWR(timeSeries);
-        BigDecimal twrPct = twr.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+                calculationService.buildAggregatedTimeSeries(investmentWallets, this::convertToPLN);
+        BigDecimal twr = calculationService.calculateAggregatedTWR(timeSeries)
+                .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
 
-        // Create cards
-        row.add(createKpiCard("Total Balance", currencyFormat.format(totalBalance),
-                VaadinIcon.WALLET, null));
-        row.add(createKpiCard("Net Deposits", currencyFormat.format(totalDeposits),
-                VaadinIcon.PIGGY_BANK, null));
-        row.add(createKpiCard("Total Return", currencyFormat.format(totalReturn),
-                totalReturn.compareTo(BigDecimal.ZERO) >= 0 ? VaadinIcon.TRENDING_UP : VaadinIcon.TRENDING_DOWN,
-                totalReturn.compareTo(BigDecimal.ZERO) >= 0 ? "positive" : "negative"));
-        row.add(createKpiCard("Return Rate", returnRate.setScale(2, RoundingMode.HALF_UP) + "%",
-                VaadinIcon.CHART, returnRate.compareTo(BigDecimal.ZERO) >= 0 ? "positive" : "negative"));
-        row.add(createKpiCard("CAGR", cagrPct + "%",
-                VaadinIcon.LINE_CHART, cagrPct.compareTo(BigDecimal.ZERO) >= 0 ? "positive" : "negative",
-                "CAGR (Compound Annual Growth Rate)\n" +
-                        "Annual return accounting for compound interest.\n" +
-                        "Formula: (Ending Value / Starting Value)^(1/years) - 1\n" +
-                        "Shows the average annual growth of the portfolio."));
-        row.add(createKpiCard("TWR", twrPct + "%",
-                VaadinIcon.CHART_LINE, twrPct.compareTo(BigDecimal.ZERO) >= 0 ? "positive" : "negative",
-                "TWR (Time-Weighted Return)\n" +
-                        "Time-weighted return – eliminates the effect of contributions/withdrawals.\n" +
-                        "Formula: Π(1 + Ri) - 1, where Ri is the return in period i\n" +
-                        "Shows the actual efficiency of the investment."));
+        row.add(createKpiCard("Investment Balance", currencyFormat.format(investBalance), VaadinIcon.WALLET, null));
+        row.add(createKpiCard("Net Deposits", currencyFormat.format(investDeposits), VaadinIcon.PIGGY_BANK, null));
+        row.add(createKpiCard("Total Return", currencyFormat.format(investReturn),
+                investReturn.signum() >= 0 ? VaadinIcon.TRENDING_UP : VaadinIcon.TRENDING_DOWN,
+                investReturn.signum() >= 0 ? "positive" : "negative"));
+        row.add(createKpiCard("Return Rate", investReturnRate.setScale(2, RoundingMode.HALF_UP) + "%",
+                VaadinIcon.CHART, investReturnRate.signum() >= 0 ? "positive" : "negative"));
+        row.add(createKpiCard("CAGR", cagr + "%", VaadinIcon.LINE_CHART,
+                cagr.signum() >= 0 ? "positive" : "negative",
+                "CAGR (Compound Annual Growth Rate)\nAnnual return accounting for compound interest.\nFormula: (Ending Value / Starting Value)^(1/years) - 1\nCalculated for investment wallets only."));
+        row.add(createKpiCard("TWR", twr + "%", VaadinIcon.CHART_LINE,
+                twr.signum() >= 0 ? "positive" : "negative",
+                "TWR (Time-Weighted Return)\nEliminates the effect of contributions/withdrawals.\nFormula: Π(1 + Ri) - 1\nCalculated for investment wallets only."));
 
         return row;
     }
 
-    private long calculateMonthsSpan() {
+    private HorizontalLayout buildSavingsKpiRow() {
+        HorizontalLayout row = new HorizontalLayout();
+        row.addClassName("invest-kpi-row");
+        row.setWidthFull();
+
+        BigDecimal savingsBalance = BigDecimal.ZERO;
+        BigDecimal savingsDeposits = BigDecimal.ZERO;
+        BigDecimal investBalance = BigDecimal.ZERO;
+        BigDecimal investDeposits = BigDecimal.ZERO;
+
+        for (Wallet w : savingsWallets) {
+            savingsBalance = savingsBalance.add(toPLN(w.getCurrentValue(), w.getCurrency()));
+            savingsDeposits = savingsDeposits.add(
+                    toPLN(w.getTotalDeposits().subtract(w.getTotalWithdrawals()), w.getCurrency()));
+        }
+        for (Wallet w : investmentWallets) {
+            investBalance = investBalance.add(toPLN(w.getCurrentValue(), w.getCurrency()));
+            investDeposits = investDeposits.add(
+                    toPLN(w.getTotalDeposits().subtract(w.getTotalWithdrawals()), w.getCurrency()));
+        }
+
+        BigDecimal netWorth = savingsBalance.add(investBalance);
+        BigDecimal savingsGrowth = savingsBalance.subtract(savingsDeposits);
+
+        row.add(createKpiCard("Savings Balance", currencyFormat.format(savingsBalance), VaadinIcon.PIGGY_BANK, null));
+        row.add(createKpiCard("Savings Growth", currencyFormat.format(savingsGrowth),
+                savingsGrowth.signum() >= 0 ? VaadinIcon.TRENDING_UP : VaadinIcon.TRENDING_DOWN,
+                savingsGrowth.signum() >= 0 ? "positive" : "negative"));
+        row.add(createKpiCard("Net Worth", currencyFormat.format(netWorth), VaadinIcon.MONEY, null,
+                "Total portfolio value: all investment + savings wallets combined."));
+
+        return row;
+    }
+
+    private long calculateMonthsSpan(List<Wallet> wallets) {
         Optional<LocalDate> minDate = wallets.stream()
                 .flatMap(w -> w.getSnapshots().stream())
                 .map(WalletSnapshot::getSnapshotDate)
                 .min(LocalDate::compareTo);
-
         Optional<LocalDate> maxDate = wallets.stream()
                 .flatMap(w -> w.getSnapshots().stream())
                 .map(WalletSnapshot::getSnapshotDate)
@@ -264,6 +270,41 @@ public class MainDashboardView extends VerticalLayout {
             return ChronoUnit.MONTHS.between(minDate.get(), maxDate.get()) + 1;
         }
         return 1;
+    }
+
+    private void refreshCharts() {
+        chartsContainer.removeAll();
+
+        // Chart 1: Investment Balance vs Deposits
+        chartsContainer.add(createChartCard("Investment Portfolio Balance vs Deposits", createBalanceChart(investmentWallets)));
+
+        // Chart 2: Net Worth (all wallets)
+        chartsContainer.add(createChartCard("Net Worth (Investments + Savings)", createBalanceChart(allWallets)));
+
+        // Chart 3: Budget Income/Expense
+        chartsContainer.add(createChartCard("Monthly Income vs Expense", createBudgetChart()));
+
+        // Chart 4: Asset Allocation by type
+        chartsContainer.add(createChartCard("Asset Allocation by Wallet", createAllocationChart()));
+
+        // Chart 5: Monthly Returns Heatmap (investments only)
+        chartsContainer.add(createChartCard("Monthly Returns Heatmap (Investments)", createHeatmap(investmentWallets)));
+    }
+
+    private Div createChartCard(String title, com.vaadin.flow.component.Component chart) {
+        Div card = new Div();
+        card.addClassName("invest-chart-card");
+        card.addClassName("invest-fade-in");
+
+        H3 titleEl = new H3(title);
+        titleEl.addClassName("chart-title");
+
+        Div chartWrapper = new Div(chart);
+        chartWrapper.setWidthFull();
+        chartWrapper.setHeight("300px");
+
+        card.add(titleEl, chartWrapper);
+        return card;
     }
 
     private Div createKpiCard(String title, String value, VaadinIcon iconType, String trendClass) {
@@ -289,7 +330,6 @@ public class MainDashboardView extends VerticalLayout {
 
         card.add(icon, titleEl, valueEl);
 
-        // Add tooltip if provided
         if (tooltip != null && !tooltip.isEmpty()) {
             card.getElement().setAttribute("title", tooltip);
             card.addClassName("kpi-has-tooltip");
@@ -298,31 +338,16 @@ public class MainDashboardView extends VerticalLayout {
         return card;
     }
 
-    private Div createChartCard(String title, com.vaadin.flow.component.Component chart) {
-        Div card = new Div();
-        card.addClassName("invest-chart-card");
-        card.addClassName("invest-fade-in");
-
-        H3 titleEl = new H3(title);
-        titleEl.addClassName("chart-title");
-
-        Div chartWrapper = new Div(chart);
-        chartWrapper.setWidthFull();
-        chartWrapper.setHeight("300px");
-
-        card.add(titleEl, chartWrapper);
-        return card;
+    private BigDecimal toPLN(BigDecimal amount, String currency) {
+        if (amount == null) return BigDecimal.ZERO;
+        return currencyConverter.convert(amount, CurrencyConverter.Currency.of(currency), CurrencyConverter.Currency.PLN);
     }
 
     private BigDecimal convertToPLN(BigDecimal amount, String currency) {
-        if (amount == null) return BigDecimal.ZERO;
-        return currencyConverter.convert(amount,
-                CurrencyConverter.Currency.of(currency),
-                CurrencyConverter.Currency.PLN);
+        return toPLN(amount, currency);
     }
 
-    private com.vaadin.flow.component.Component createBalanceChart() {
-        // Use aggregated time series with proper carry-forward
+    private com.vaadin.flow.component.Component createBalanceChart(List<Wallet> wallets) {
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> timeSeries =
                 calculationService.buildAggregatedTimeSeries(wallets, this::convertToPLN);
 
@@ -330,7 +355,6 @@ public class MainDashboardView extends VerticalLayout {
             return new Span("No data for selected period");
         }
 
-        // Filter by date range and build output lists
         List<String> dates = new ArrayList<>();
         List<BigDecimal> balances = new ArrayList<>();
         List<BigDecimal> cumDeposits = new ArrayList<>();
@@ -340,14 +364,10 @@ public class MainDashboardView extends VerticalLayout {
 
         for (Map.Entry<LocalDate, InvestmentCalculationService.PortfolioPoint> entry : timeSeries.entrySet()) {
             LocalDate date = entry.getKey();
-
-            // Apply date filter
             if (date.isBefore(filterStartDate) || date.isAfter(filterEndDate)) {
-                // Still accumulate deposits for proper cumulative calculation
                 runningDeposits = runningDeposits.add(entry.getValue().cashFlow());
                 continue;
             }
-
             dates.add(date.format(formatter));
             balances.add(entry.getValue().balance());
             runningDeposits = runningDeposits.add(entry.getValue().cashFlow());
@@ -383,19 +403,18 @@ public class MainDashboardView extends VerticalLayout {
     }
 
     private com.vaadin.flow.component.Component createAllocationChart() {
-        if (wallets.isEmpty()) {
+        if (allWallets.isEmpty()) {
             return new Span("No wallets found");
         }
 
         AssetAllocationChart chart = new AssetAllocationChart(
-                wallets, currencyConverter, AssetAllocationChart.GroupBy.WALLET);
+                allWallets, currencyConverter, AssetAllocationChart.GroupBy.WALLET);
         chart.setWidth("100%");
         chart.setHeight("280px");
         return chart;
     }
 
-    private com.vaadin.flow.component.Component createHeatmap() {
-        // Use aggregated time series for proper monthly returns
+    private com.vaadin.flow.component.Component createHeatmap(List<Wallet> wallets) {
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> timeSeries =
                 calculationService.buildAggregatedTimeSeries(wallets, this::convertToPLN);
 
@@ -403,7 +422,6 @@ public class MainDashboardView extends VerticalLayout {
             return new Span("Not enough data for heatmap");
         }
 
-        // Calculate monthly returns from aggregated data
         Map<String, BigDecimal> monthlyReturns = new LinkedHashMap<>();
         List<LocalDate> dates = new ArrayList<>(timeSeries.keySet());
 
@@ -414,19 +432,13 @@ public class MainDashboardView extends VerticalLayout {
             InvestmentCalculationService.PortfolioPoint prev = timeSeries.get(prevDate);
             InvestmentCalculationService.PortfolioPoint curr = timeSeries.get(currDate);
 
-            BigDecimal prevBalance = prev.balance();
-            BigDecimal currBalance = curr.balance();
-            BigDecimal cashFlow = curr.cashFlow();
-
-            // Calculate return adjusted for cash flow
-            BigDecimal beginValue = prevBalance.add(cashFlow);
+            BigDecimal beginValue = prev.balance().add(curr.cashFlow());
             if (beginValue.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal returnPct = currBalance.subtract(beginValue)
+                BigDecimal returnPct = curr.balance().subtract(beginValue)
                         .divide(beginValue, 4, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100));
 
-                String key = String.format("%d-%02d",
-                        currDate.getYear(), currDate.getMonthValue());
+                String key = String.format("%d-%02d", currDate.getYear(), currDate.getMonthValue());
                 monthlyReturns.put(key, returnPct);
             }
         }

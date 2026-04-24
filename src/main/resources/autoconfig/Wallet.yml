@@ -37,6 +37,15 @@ columns:
     inTable: true
     required: true
 
+  - field: walletType
+    displayName: "Wallet Type"
+    internalName: "walletType"
+    strValues: [ "INVESTMENT", "SAVINGS", "BONDS", "CRYPTO", "CASH" ]
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+
   - field: compareWithSP500
     displayName: "Compare with S&P 500"
     internalName: "compareWithSP500"
