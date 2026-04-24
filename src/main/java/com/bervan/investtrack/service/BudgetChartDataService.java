@@ -189,6 +189,42 @@ public class BudgetChartDataService {
         );
     }
 
+    /**
+     * Get average monthly expense per category for a given year.
+     * Average = total / number of distinct months that had entries in that category.
+     */
+    public Map<String, BigDecimal> getAverageCategoryExpenses(int year) {
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+        if (endDate.isAfter(LocalDate.now())) {
+            endDate = LocalDate.now();
+        }
+
+        List<BudgetEntry> entries = loadEntries(startDate, endDate);
+
+        Map<String, BigDecimal> totals = new HashMap<>();
+        Map<String, Set<String>> categoryMonths = new HashMap<>();
+
+        for (BudgetEntry entry : entries) {
+            if (!"Expense".equals(entry.getEntryType()) || entry.getCategory() == null
+                    || entry.getValue() == null || entry.getEntryDate() == null) continue;
+            String cat = entry.getCategory();
+            totals.merge(cat, entry.getValue().abs(), BigDecimal::add);
+            categoryMonths.computeIfAbsent(cat, k -> new HashSet<>())
+                    .add(formatYearMonth(YearMonth.from(entry.getEntryDate())));
+        }
+
+        return totals.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().divide(
+                                BigDecimal.valueOf(categoryMonths.get(e.getKey()).size()),
+                                2, java.math.RoundingMode.HALF_UP),
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new));
+    }
+
     public Set<String> getAllCategories(LocalDate startDate, LocalDate endDate) {
         return loadEntries(startDate, endDate).stream()
                 .map(BudgetEntry::getCategory)

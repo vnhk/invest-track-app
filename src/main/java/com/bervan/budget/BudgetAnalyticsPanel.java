@@ -17,6 +17,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class BudgetAnalyticsPanel extends VerticalLayout {
@@ -27,6 +28,8 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
     private final CheckboxGroup<String> categoryFilter = new CheckboxGroup<>();
     private final Div chartContainer = new Div();
     private final Div rankingContainer = new Div();
+    private final Div avgPieContainer = new Div();
+    private int avgPieYear = LocalDate.now().getYear();
 
     public BudgetAnalyticsPanel(BudgetChartDataService chartDataService) {
         this.chartDataService = chartDataService;
@@ -66,12 +69,15 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
 
         chartContainer.setWidthFull();
         rankingContainer.setWidthFull();
+        avgPieContainer.setWidthFull();
 
         add(new H4("Budget Analytics"), controlsRow, categoryButtons, categoryFilter,
-                chartContainer, new Hr(), rankingContainer);
+                chartContainer, new Hr(), rankingContainer,
+                new Hr(), buildAvgPieSection());
 
         reloadCategories();
         refresh();
+        refreshAvgPie();
     }
 
     private void reloadCategories() {
@@ -124,6 +130,101 @@ public class BudgetAnalyticsPanel extends VerticalLayout {
         columns.setWidthFull();
         columns.setFlexGrow(1, columns.getComponentAt(0), columns.getComponentAt(1));
         rankingContainer.add(columns);
+    }
+
+    private VerticalLayout buildAvgPieSection() {
+        VerticalLayout section = new VerticalLayout();
+        section.setPadding(false);
+        section.setSpacing(true);
+        section.setWidthFull();
+
+        H4 title = new H4("Average Monthly Expenses by Category");
+        title.getStyle().set("margin-bottom", "4px");
+
+        int currentYear = LocalDate.now().getYear();
+
+        Button btnCurrent = new Button(String.valueOf(currentYear));
+        btnCurrent.addClassName("glass-btn");
+        btnCurrent.addClassName("glass-btn-primary");
+
+        Button btnPrev = new Button(String.valueOf(currentYear - 1));
+        btnPrev.addClassName("glass-btn");
+
+        btnCurrent.addClickListener(e -> {
+            avgPieYear = currentYear;
+            btnCurrent.addClassName("glass-btn-primary");
+            btnPrev.removeClassName("glass-btn-primary");
+            refreshAvgPie();
+        });
+
+        btnPrev.addClickListener(e -> {
+            avgPieYear = currentYear - 1;
+            btnPrev.addClassName("glass-btn-primary");
+            btnCurrent.removeClassName("glass-btn-primary");
+            refreshAvgPie();
+        });
+
+        HorizontalLayout yearButtons = new HorizontalLayout(btnCurrent, btnPrev);
+        yearButtons.setSpacing(true);
+
+        section.add(title, yearButtons, avgPieContainer);
+        return section;
+    }
+
+    private void refreshAvgPie() {
+        avgPieContainer.removeAll();
+        Map<String, BigDecimal> data = chartDataService.getAverageCategoryExpenses(avgPieYear);
+        if (data.isEmpty()) {
+            avgPieContainer.add(new Span("No expense data for " + avgPieYear));
+            return;
+        }
+
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setAlignItems(Alignment.CENTER);
+
+        BudgetCategoryAvgPieChart pie = new BudgetCategoryAvgPieChart(data);
+        pie.setWidth("420px");
+        pie.setHeight("320px");
+
+        VerticalLayout legend = buildAvgLegend(data);
+        legend.setWidth("auto");
+        row.setFlexGrow(1, legend);
+
+        row.add(pie, legend);
+        avgPieContainer.add(row);
+    }
+
+    private VerticalLayout buildAvgLegend(Map<String, BigDecimal> data) {
+        VerticalLayout col = new VerticalLayout();
+        col.setPadding(false);
+        col.setSpacing(false);
+
+        BigDecimal total = data.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        for (Map.Entry<String, BigDecimal> entry : data.entrySet()) {
+            int pct = total.compareTo(BigDecimal.ZERO) > 0
+                    ? entry.getValue().multiply(BigDecimal.valueOf(100))
+                    .divide(total, 0, RoundingMode.HALF_UP).intValue()
+                    : 0;
+
+            Span name = new Span(entry.getKey());
+            name.getStyle().set("flex", "1").set("font-size", "13px");
+
+            Span amount = new Span(String.format("%,.2f  (%d%%)", entry.getValue(), pct));
+            amount.getStyle().set("font-weight", "600").set("font-size", "13px")
+                    .set("color", "rgba(239,68,68,0.9)").set("min-width", "130px").set("text-align", "right");
+
+            HorizontalLayout legendRow = new HorizontalLayout(name, amount);
+            legendRow.setWidthFull();
+            legendRow.setAlignItems(Alignment.CENTER);
+            legendRow.getStyle()
+                    .set("padding", "3px 0")
+                    .set("border-bottom", "1px solid var(--bervan-border-color, rgba(255,255,255,0.05))");
+            col.add(legendRow);
+        }
+
+        return col;
     }
 
     private VerticalLayout buildRankingColumn(String title, List<BudgetChartDataService.CategoryTotal> items, boolean income) {
