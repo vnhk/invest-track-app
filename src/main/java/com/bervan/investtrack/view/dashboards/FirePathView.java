@@ -5,6 +5,7 @@ import com.bervan.investtrack.model.WalletType;
 import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.view.charts.FireProjectionChart;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -358,33 +359,88 @@ public class FirePathView extends VerticalLayout {
         Div card = new Div();
         card.addClassName("fire-card");
 
+        double currentBalance = totals.totalBalance().doubleValue();
+        double defaultTotalSavings = Math.ceil(avgMonthlyInvestDeposit + avgMonthlySavingsDeposit);
+
         H3 title = new H3("Goal progress and variance");
         title.addClassName("card-title");
 
-        Span sliderLabel = new Span("How many years do you want to invest?");
-        sliderLabel.addClassName("section-label");
+        // Mode toggle
+        final boolean[] isManual = {false};
+        Button autoBtn = new Button("Auto");
+        Button manualBtn = new Button("Manual");
+        autoBtn.addThemeName("primary");
+        autoBtn.getStyle().set("margin-right", "8px");
+        HorizontalLayout modeToggle = new HorizontalLayout(new Span("Mode:"), autoBtn, manualBtn);
+        modeToggle.setAlignItems(Alignment.CENTER);
+        modeToggle.addClassName("fire-mode-toggle");
 
-        NumberField yearsSlider = new NumberField();
-        yearsSlider.setMin(0.0);
-        yearsSlider.setMax(30.0);
-        yearsSlider.setValue(5.0);
-        yearsSlider.setStep(1);
-        yearsSlider.setWidthFull();
-        yearsSlider.setStepButtonsVisible(true);
+        // Shared: years
+        NumberField yearsField = new NumberField();
+        yearsField.setMin(1.0);
+        yearsField.setMax(30.0);
+        yearsField.setValue(5.0);
+        yearsField.setStep(1);
+        yearsField.setStepButtonsVisible(true);
+        yearsField.setWidth("160px");
 
-        // "How much to save in total" defaults to investment deposits + savings deposits
-        double defaultTotalSavings = Math.ceil(avgMonthlyInvestDeposit + avgMonthlySavingsDeposit);
+        // Auto controls
+        NumberField autoTotalField = new NumberField();
+        autoTotalField.setValue(defaultTotalSavings);
+        autoTotalField.setMin(0);
+        autoTotalField.setMax(1000000.0);
+        autoTotalField.setStep(1000);
+        autoTotalField.setStepButtonsVisible(true);
+        autoTotalField.setWidth("200px");
 
-        Span howMuchYouCanSaveInTotalLabel = new Span("How much to save in total (investments + savings)?");
-        howMuchYouCanSaveInTotalLabel.addClassName("section-label");
-        NumberField howMuchYouCanSaveInTotal = new NumberField();
-        howMuchYouCanSaveInTotal.setMin(avgMonthlyInvestDeposit);
-        howMuchYouCanSaveInTotal.setMax(1000000.0);
-        howMuchYouCanSaveInTotal.setValue(defaultTotalSavings);
-        howMuchYouCanSaveInTotal.setStep(1000);
-        howMuchYouCanSaveInTotal.setWidthFull();
-        howMuchYouCanSaveInTotal.setStepButtonsVisible(true);
+        VerticalLayout autoControls = new VerticalLayout(
+                new Span("Total monthly savings (investments + savings) (PLN):"),
+                autoTotalField
+        );
+        autoControls.setPadding(false);
+        autoControls.setSpacing(false);
 
+        // Manual controls
+        final boolean[] updating = {false};
+
+        NumberField manualTotalField = new NumberField();
+        manualTotalField.setValue(defaultTotalSavings);
+        manualTotalField.setMin(0);
+        manualTotalField.setMax(1000000.0);
+        manualTotalField.setStep(1000);
+        manualTotalField.setStepButtonsVisible(true);
+        manualTotalField.setWidth("200px");
+
+        NumberField manualInvestField = new NumberField();
+        manualInvestField.setValue(Math.ceil(avgMonthlyInvestDeposit));
+        manualInvestField.setMin(0);
+        manualInvestField.setMax(defaultTotalSavings);
+        manualInvestField.setStep(100);
+        manualInvestField.setStepButtonsVisible(true);
+        manualInvestField.setWidth("200px");
+
+        NumberField manualSavingsField = new NumberField();
+        manualSavingsField.setValue(Math.ceil(avgMonthlySavingsDeposit));
+        manualSavingsField.setMin(0);
+        manualSavingsField.setMax(defaultTotalSavings);
+        manualSavingsField.setStep(100);
+        manualSavingsField.setStepButtonsVisible(true);
+        manualSavingsField.setWidth("200px");
+
+        VerticalLayout manualControls = new VerticalLayout(
+                new Span("Total monthly savings (PLN):"), manualTotalField,
+                new Span("Monthly to investments (Investment + Crypto + Bonds) (PLN):"), manualInvestField,
+                new Span("Monthly to savings accounts (PLN):"), manualSavingsField
+        );
+        manualControls.setPadding(false);
+        manualControls.setSpacing(false);
+        manualControls.setVisible(false);
+
+        // Chart container — only this gets rebuilt on changes
+        Div chartContainer = new Div();
+        chartContainer.setWidthFull();
+
+        // Metrics built once from historical data
         HorizontalLayout metrics = new HorizontalLayout();
         metrics.addClassName("metrics-row");
         metrics.setWidthFull();
@@ -394,11 +450,9 @@ public class FirePathView extends VerticalLayout {
         nf.setMaximumFractionDigits(0);
 
         BigDecimal monthlyReturnBd = BigDecimal.valueOf(monthlyReturn * 100).setScale(2, RoundingMode.HALF_UP);
-
         double nextYearInvestFV = futureValue(totals.investBalance().doubleValue(), avgMonthlyInvestDeposit, monthlyReturn, 12);
         double nextYearSavingsFV = totals.savingsBalance().doubleValue() + avgMonthlySavingsDeposit * 12;
         double nextYearCombined = nextYearInvestFV + nextYearSavingsFV;
-
         double nextYearCombinedPlus20 = futureValue(totals.investBalance().doubleValue(), avgMonthlyInvestDeposit * 1.2, monthlyReturn, 12)
                 + totals.savingsBalance().doubleValue() + avgMonthlySavingsDeposit * 1.2 * 12;
 
@@ -413,63 +467,84 @@ public class FirePathView extends VerticalLayout {
                 createMetric("Monthly investment return", monthlyReturnBd + "%")
         );
 
-        ChartData result = getChartData(totals, avgMonthlyInvestDeposit, avgMonthlySavingsDeposit, monthlyReturn,
-                yearsSlider.getValue().intValue(), howMuchYouCanSaveInTotal.getValue());
-        FireProjectionChart chart = createFireChart(result, avgMonthlyInvestDeposit, howMuchYouCanSaveInTotal.getValue());
-
         Div bottomInfo = new Div();
         bottomInfo.addClassName("bottom-info");
         bottomInfo.setText("Target: " + nf.format(fireTarget) + ".");
 
-        howMuchYouCanSaveInTotal.addValueChangeListener(ev -> {
-            chartInputDataChanged(totals, avgMonthlyInvestDeposit, avgMonthlySavingsDeposit, monthlyReturn,
-                    yearsSlider.getValue(), ev.getValue(),
-                    card, title, sliderLabel, yearsSlider, metrics, bottomInfo,
-                    howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal);
+        Runnable refreshChart = () -> {
+            double invest, savings;
+            if (isManual[0]) {
+                invest = manualInvestField.getValue() != null ? manualInvestField.getValue() : 0;
+                savings = manualSavingsField.getValue() != null ? manualSavingsField.getValue() : 0;
+            } else {
+                double total = autoTotalField.getValue() != null ? autoTotalField.getValue() : defaultTotalSavings;
+                invest = avgMonthlyInvestDeposit;
+                savings = Math.max(0, total - invest);
+            }
+            int years = yearsField.getValue() != null ? yearsField.getValue().intValue() : 5;
+            ChartData data = getChartData(totals, invest, savings, monthlyReturn, years);
+            FireProjectionChart newChart = createFireChart(data, invest, invest + savings, currentBalance);
+            chartContainer.removeAll();
+            chartContainer.add(newChart);
+        };
+
+        refreshChart.run();
+
+        yearsField.addValueChangeListener(e -> { if (e.getValue() != null) refreshChart.run(); });
+        autoTotalField.addValueChangeListener(e -> { if (e.getValue() != null) refreshChart.run(); });
+
+        manualTotalField.addValueChangeListener(e -> {
+            if (updating[0] || e.getValue() == null || e.getValue() <= 0) return;
+            updating[0] = true;
+            double newTotal = e.getValue();
+            double oldTotal = e.getOldValue() != null && e.getOldValue() > 0 ? e.getOldValue() : defaultTotalSavings;
+            double ratio = newTotal / oldTotal;
+            Double currInvest = manualInvestField.getValue();
+            Double currSavings = manualSavingsField.getValue();
+            manualInvestField.setMax(newTotal);
+            manualSavingsField.setMax(newTotal);
+            if (currInvest != null) manualInvestField.setValue(Math.min(Math.round(currInvest * ratio * 10.0) / 10.0, newTotal));
+            if (currSavings != null) manualSavingsField.setValue(Math.min(Math.round(currSavings * ratio * 10.0) / 10.0, newTotal));
+            updating[0] = false;
+            refreshChart.run();
         });
 
-        yearsSlider.addValueChangeListener(ev -> {
-            chartInputDataChanged(totals, avgMonthlyInvestDeposit, avgMonthlySavingsDeposit, monthlyReturn,
-                    ev.getValue(), howMuchYouCanSaveInTotal.getValue(),
-                    card, title, sliderLabel, yearsSlider, metrics, bottomInfo,
-                    howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal);
+        manualInvestField.addValueChangeListener(e -> { if (!updating[0] && e.getValue() != null) refreshChart.run(); });
+        manualSavingsField.addValueChangeListener(e -> { if (!updating[0] && e.getValue() != null) refreshChart.run(); });
+
+        autoBtn.addClickListener(e -> {
+            isManual[0] = false;
+            autoBtn.addThemeName("primary");
+            manualBtn.removeThemeName("primary");
+            autoControls.setVisible(true);
+            manualControls.setVisible(false);
+            refreshChart.run();
         });
 
-        card.add(title, chart, new HorizontalLayout(
-                new VerticalLayout(sliderLabel, yearsSlider),
-                new VerticalLayout(howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal)
-        ), metrics, bottomInfo);
+        manualBtn.addClickListener(e -> {
+            isManual[0] = true;
+            manualBtn.addThemeName("primary");
+            autoBtn.removeThemeName("primary");
+            autoControls.setVisible(false);
+            manualControls.setVisible(true);
+            refreshChart.run();
+        });
+
+        card.add(title, modeToggle, chartContainer,
+                new HorizontalLayout(
+                        new VerticalLayout(new Span("How many years do you want to invest?"), yearsField),
+                        autoControls,
+                        manualControls
+                ),
+                metrics, bottomInfo);
         return card;
     }
 
-    private void chartInputDataChanged(PortfolioTotals totals, double avgMonthlyInvestDeposit,
-                                        double avgMonthlySavingsDeposit, double monthlyReturn,
-                                        Double years, Double totalSavings,
-                                        Div card, H3 title, Span sliderLabel, NumberField yearsSlider,
-                                        HorizontalLayout metrics, Div bottomInfo,
-                                        Span howMuchYouCanSaveInTotalLabel, NumberField howMuchYouCanSaveInTotal) {
-        synchronized (this) {
-            ChartData charData = getChartData(totals, avgMonthlyInvestDeposit, avgMonthlySavingsDeposit,
-                    monthlyReturn, years.intValue(), totalSavings);
-            card.removeAll();
-            card.add(title,
-                    createFireChart(charData, avgMonthlyInvestDeposit, totalSavings),
-                    new HorizontalLayout(
-                            new VerticalLayout(sliderLabel, yearsSlider),
-                            new VerticalLayout(howMuchYouCanSaveInTotalLabel, howMuchYouCanSaveInTotal)
-                    ), metrics, bottomInfo);
-        }
-    }
-
-    /**
-     * Generates projection data with separate investment and savings tracks.
-     * Total savings per month is split: investments get avgMonthlyInvestDeposit (or scaled variant),
-     * savings get the remainder up to totalMonthlyBudget.
-     */
-    private ChartData getChartData(PortfolioTotals totals, double avgMonthlyInvestDeposit,
-                                    double avgMonthlySavingsDeposit, double monthlyReturn,
-                                    int yearsToProject, double totalMonthlyBudget) {
-
+    private ChartData getChartData(PortfolioTotals totals,
+                                    double monthlyInvest,
+                                    double monthlySavings,
+                                    double monthlyReturn,
+                                    int yearsToProject) {
         double investCurrent = totals.investBalance().doubleValue();
         double savingsCurrent = totals.savingsBalance().doubleValue();
 
@@ -478,43 +553,23 @@ public class FirePathView extends VerticalLayout {
         List<Double> plus20 = new ArrayList<>();
         List<Double> minus20 = new ArrayList<>();
         List<Double> onlyDeposits = new ArrayList<>();
-        List<Double> savingsLine = new ArrayList<>();
 
-        double monthlyInvest80 = Math.min(avgMonthlyInvestDeposit * 0.80, totalMonthlyBudget);
-        double monthlyInvest100 = Math.min(avgMonthlyInvestDeposit, totalMonthlyBudget);
-        double monthlyInvest120 = Math.min(avgMonthlyInvestDeposit * 1.20, totalMonthlyBudget);
+        double invest80 = monthlyInvest * 0.80;
+        double invest120 = monthlyInvest * 1.20;
 
         for (int y = 0; y <= yearsToProject; y++) {
             int months = y * 12;
             years.add(y);
 
-            // Baseline: invest avgMonthlyInvestDeposit, save the rest
-            double baseSavingsMonthly = Math.max(0, totalMonthlyBudget - monthlyInvest100);
-            double baseInvestFV = futureValue(investCurrent, monthlyInvest100, monthlyReturn, months);
-            double baseSavingsFV = savingsCurrent + baseSavingsMonthly * months;
-            baseline.add(baseInvestFV + baseSavingsFV);
+            double savingsFV = savingsCurrent + monthlySavings * months;
 
-            // +20% investment deposit
-            double plusSavingsMonthly = Math.max(0, totalMonthlyBudget - monthlyInvest120);
-            double plusInvestFV = futureValue(investCurrent, monthlyInvest120, monthlyReturn, months);
-            double plusSavingsFV = savingsCurrent + plusSavingsMonthly * months;
-            plus20.add(plusInvestFV + plusSavingsFV);
-
-            // -20% investment deposit
-            double minusSavingsMonthly = Math.max(0, totalMonthlyBudget - monthlyInvest80);
-            double minusInvestFV = futureValue(investCurrent, monthlyInvest80, monthlyReturn, months);
-            double minusSavingsFV = savingsCurrent + minusSavingsMonthly * months;
-            minus20.add(minusInvestFV + minusSavingsFV);
-
-            // Only deposits (invest nothing, all goes to savings)
-            double onlyDepFV = savingsCurrent + investCurrent + totalMonthlyBudget * months;
-            onlyDeposits.add(onlyDepFV);
-
-            // Pure savings track (just savings accounts, no investments)
-            savingsLine.add(savingsCurrent + avgMonthlySavingsDeposit * months);
+            baseline.add(futureValue(investCurrent, monthlyInvest, monthlyReturn, months) + savingsFV);
+            plus20.add(futureValue(investCurrent, invest120, monthlyReturn, months) + savingsFV);
+            minus20.add(futureValue(investCurrent, invest80, monthlyReturn, months) + savingsFV);
+            onlyDeposits.add(investCurrent + savingsCurrent + (monthlyInvest + monthlySavings) * months);
         }
 
-        return new ChartData(investCurrent + savingsCurrent, years, baseline, plus20, minus20, onlyDeposits, savingsLine);
+        return new ChartData(investCurrent + savingsCurrent, years, baseline, plus20, minus20, onlyDeposits);
     }
 
     private Component createMetric(String label, String value) {
@@ -535,7 +590,8 @@ public class FirePathView extends VerticalLayout {
         return currencyConverter.convert(amount, fromCurrency, toCurrency);
     }
 
-    private FireProjectionChart createFireChart(ChartData data, double avgInvestmentForAMonth, double totalSavingForAMonth) {
+    private FireProjectionChart createFireChart(ChartData data, double avgInvestmentForAMonth,
+                                                  double totalSavingForAMonth, double currentBalance) {
         FireProjectionChart chart = new FireProjectionChart(
                 data.years(),
                 data.baseline(),
@@ -543,7 +599,8 @@ public class FirePathView extends VerticalLayout {
                 data.minus20(),
                 data.onlyDeposits(),
                 avgInvestmentForAMonth,
-                totalSavingForAMonth
+                totalSavingForAMonth,
+                currentBalance
         );
         chart.setWidth("100%");
         chart.setHeight("400px");
@@ -556,8 +613,7 @@ public class FirePathView extends VerticalLayout {
             List<Double> baseline,
             List<Double> plus20,
             List<Double> minus20,
-            List<Double> onlyDeposits,
-            List<Double> savingsLine
+            List<Double> onlyDeposits
     ) {}
 
     private static class StageDef {

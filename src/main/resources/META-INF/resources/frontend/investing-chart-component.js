@@ -158,7 +158,7 @@ window.renderWalletEarningsBalance = (canvas, dates, walletEarnings) => {
     });
 };
 
-window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, onlyDeposits, avgInvestmentForAMonth, totalSavingForAMonth) => {
+window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus20, onlyDeposits, avgInvestmentForAMonth, totalSavingForAMonth, currentBalance) => {
 
     let textColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--chart-text-color')
@@ -182,29 +182,19 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
     if (existingChart) existingChart.destroy();
     const ctx = canvas.getContext('2d');
 
-    avgInvestmentForAMonth = Math.round(avgInvestmentForAMonth);
-    totalSavingForAMonth = Math.round(totalSavingForAMonth);
-    let monthly80 = Math.round(avgInvestmentForAMonth * 0.8);
-    let monthly120 = Math.round(avgInvestmentForAMonth * 1.2);
-    let monthly120_otherSavings = 0;
-
-    if (monthly120 > totalSavingForAMonth) {
-        monthly120 = Math.round(totalSavingForAMonth);
-    } else {
-        monthly120_otherSavings = Math.round(totalSavingForAMonth - monthly120);
-    }
-
-    let currentlyNotInvested = Math.round(totalSavingForAMonth - avgInvestmentForAMonth);
-    let monthly80_notInvested = Math.round(totalSavingForAMonth - monthly80);
+    let invest = Math.round(avgInvestmentForAMonth);
+    let total = Math.round(totalSavingForAMonth);
+    let savings = Math.max(0, total - invest);
+    let invest80 = Math.round(invest * 0.8);
+    let invest120 = Math.round(invest * 1.2);
 
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: yearsLabels,
             datasets: [
-
                 {
-                    label: 'Currently (' + avgInvestmentForAMonth + ' invested, ' + currentlyNotInvested + ' not invested)',
+                    label: 'Baseline (' + invest + ' invest + ' + savings + ' savings/mo)',
                     data: baseline,
                     borderColor: line1,
                     backgroundColor: line1,
@@ -212,7 +202,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: '+20% deposits (' + monthly120 + ' invested, ' + monthly120_otherSavings + ' not invested)',
+                    label: '+20% invest (' + invest120 + ' invest/mo)',
                     data: plus20,
                     borderColor: line2,
                     backgroundColor: line2,
@@ -220,7 +210,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: '-20% deposits (' + monthly80 + ' invested, ' + monthly80_notInvested + ' not invested)',
+                    label: '-20% invest (' + invest80 + ' invest/mo)',
                     data: minus20,
                     borderColor: line3,
                     backgroundColor: line3,
@@ -229,7 +219,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     fill: false
                 },
                 {
-                    label: 'Only deposits (' + totalSavingForAMonth + ' savings)',
+                    label: 'No investment growth (' + total + '/mo deposits only)',
                     data: onlyDeposits,
                     borderColor: 'red',
                     backgroundColor: 'red',
@@ -252,6 +242,7 @@ window.renderFireProjectionChart = (canvas, yearsLabels, baseline, plus20, minus
                     grid: {color: textColor}
                 },
                 y: {
+                    suggestedMin: parseFloat(currentBalance),
                     ticks: {color: textColor},
                     grid: {color: textColor}
                 }
