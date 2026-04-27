@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @CssImport("./invest-track.css")
+@Deprecated
 public abstract class AbstractStockPriceAlertsView extends AbstractBervanTableView<UUID, StockPriceAlert> {
     public static final String ROUTE_NAME = "/invest-track-app/price-alerts";
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

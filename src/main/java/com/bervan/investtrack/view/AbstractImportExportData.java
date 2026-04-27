@@ -9,6 +9,7 @@ import com.bervan.logging.JsonLogger;
 
 import java.util.UUID;
 
+@Deprecated
 public abstract class AbstractImportExportData extends AbstractDataIEView<UUID, WalletSnapshot> {
     public static final String ROUTE_NAME = "/invest-track-app/import-export-data";
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

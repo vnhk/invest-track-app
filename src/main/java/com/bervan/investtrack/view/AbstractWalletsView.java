@@ -14,6 +14,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.util.UUID;
 
 @CssImport("./invest-track.css")
+@Deprecated
 public abstract class AbstractWalletsView extends AbstractBervanTableView<UUID, Wallet> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets";
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

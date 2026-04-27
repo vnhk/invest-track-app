@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @CssImport("./invest-track.css")
+@Deprecated
 public abstract class AbstractWalletView extends AbstractPageView implements HasUrlParameter<String> {
     public static final String ROUTE_NAME = "/invest-track-app/wallets/";
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

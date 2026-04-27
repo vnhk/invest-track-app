@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Deprecated
 public abstract class AbstractReportsRecommendationsView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/recommendations";
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
