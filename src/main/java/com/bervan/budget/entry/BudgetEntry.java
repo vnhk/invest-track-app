@@ -28,8 +28,6 @@ public class BudgetEntry extends BervanBaseEntity<UUID> implements PersistableTa
     private Boolean deleted = false;
     private LocalDateTime modificationDate;
     private String category;
-//    @CollectionTable(name = "budget_entry_owners")
-    //    private List<String> entryOwners = new ArrayList<>();
     private String currency;
     private BigDecimal value;
     private LocalDate entryDate;

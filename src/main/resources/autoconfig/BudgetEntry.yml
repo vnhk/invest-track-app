@@ -40,16 +40,6 @@ columns:
     min: 3
     max: 100
 
-  - field: entryOwners
-    displayName: "Owners"
-    internalName: entryOwners
-    inSaveForm: true
-    inEditForm: true
-    inTable: false
-    required: true
-    min: 3
-    max: 100
-
   - field: currency
     displayName: "Currency"
     internalName: currency
