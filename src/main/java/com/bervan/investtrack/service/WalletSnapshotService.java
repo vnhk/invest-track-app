@@ -23,7 +23,7 @@ public class WalletSnapshotService extends BaseService<UUID, WalletSnapshot> {
 
     public List<WalletSnapshot> findByWalletId(UUID id) {
         SearchRequest searchRequest = new SearchRequest();
-        searchRequest.addCriterion("WALLET_ID", WalletSnapshot.class, "wallet.id", SearchOperation.EQUALS_OPERATION, id.toString());
+        searchRequest.addCriterion("WALLET_ID", WalletSnapshot.class, "wallet.id", SearchOperation.EQUALS_OPERATION, id);
         return load(searchRequest, Pageable.ofSize(1000000), "snapshotDate", SortDirection.DESC, null).stream().toList();
     }
 
