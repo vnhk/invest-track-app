@@ -2,6 +2,7 @@ package com.bervan.investtrack.model;
 
 import com.bervan.common.model.BervanOwnedBaseEntity;
 import com.bervan.common.model.PersistableTableOwnedData;
+import com.bervan.core.model.BaseModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @Getter
 @Setter
-public class StockPriceAlert extends BervanOwnedBaseEntity<UUID> implements PersistableTableOwnedData<UUID> {
+public class StockPriceAlert extends BervanOwnedBaseEntity<UUID> implements PersistableTableOwnedData<UUID>, BaseModel<UUID> {
     @Id
     private UUID id;
 
