@@ -180,8 +180,8 @@ public class WalletRestController extends BaseOwnedController<Wallet, UUID> {
     }
 
     @GetMapping("/export")
-    public ResponseEntity<byte[]> export() {
-        return super.exportAll(WalletDto.class, "wallets");
+    public ResponseEntity<byte[]> export(@RequestParam MultiValueMap<String, String> allParams) {
+        return super.exportAll(allParams, WalletDto.class, "wallets", Wallet.class);
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

@@ -101,8 +101,8 @@ public class StockAlertRestController extends BaseOwnedController<StockPriceAler
     }
 
     @GetMapping("/export")
-    public ResponseEntity<byte[]> export() {
-        return super.exportAll(StockAlertDto.class, "stock-alerts");
+    public ResponseEntity<byte[]> export(@RequestParam MultiValueMap<String, String> allParams) {
+        return super.exportAll(allParams, StockAlertDto.class, "stock-alerts", StockPriceAlert.class);
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
