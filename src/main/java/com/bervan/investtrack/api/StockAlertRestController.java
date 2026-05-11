@@ -9,6 +9,7 @@ import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.service.StockPriceAlertService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -25,9 +26,10 @@ public class StockAlertRestController extends BaseOwnedController<StockPriceAler
 
     @GetMapping
     public ResponseEntity<Page<StockAlertDto>> list(
+            @RequestParam MultiValueMap<String, String> allParams,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return super.load(page, size, StockAlertDto.class);
+        return super.search(allParams, page, size, StockAlertDto.class, StockPriceAlert.class);
     }
 
     @GetMapping("/{id}")
