@@ -10,26 +10,6 @@ columns:
     min: 3
     max: 120
 
-  - field: entryType
-    displayName: "Type"
-    internalName: entryType
-    inSaveForm: true
-    inEditForm: true
-    inTable: false
-    required: true
-    strValues: [ "Expense","Income" ]
-    defaultValue: "Expense"
-    min: 3
-    max: 10
-
-  - field: isRecurring
-    displayName: "Is Recurring?"
-    internalName: isRecurring
-    inSaveForm: true
-    inEditForm: true
-    inTable: false
-    required: false
-
   - field: name
     displayName: "Name"
     internalName: name
@@ -39,6 +19,17 @@ columns:
     required: true
     min: 3
     max: 100
+
+  - field: value
+    displayName: "Value"
+    internalName: value
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    min: 0
+    max: 1000000000
+
 
   - field: currency
     displayName: "Currency"
@@ -51,16 +42,6 @@ columns:
     defaultValue: "PLN"
     min: 1
     max: 10
-
-  - field: value
-    displayName: "Value"
-    internalName: value
-    inSaveForm: true
-    inEditForm: true
-    inTable: false
-    required: true
-    min: 0
-    max: 1000000000
 
   - field: entryDate
     displayName: "Date"
@@ -81,6 +62,26 @@ columns:
     required: true
     min: 3
     max: 50
+
+  - field: entryType
+    displayName: "Type"
+    internalName: entryType
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: true
+    strValues: [ "Expense","Income" ]
+    defaultValue: "Expense"
+    min: 3
+    max: 10
+
+  - field: isRecurring
+    displayName: "Is Recurring?"
+    internalName: isRecurring
+    inSaveForm: true
+    inEditForm: true
+    inTable: false
+    required: false
 
   - field: notes
     displayName: "Notes"
