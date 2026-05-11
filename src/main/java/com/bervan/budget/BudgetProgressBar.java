@@ -2,6 +2,7 @@ package com.bervan.budget;
 
 import com.vaadin.flow.component.progressbar.ProgressBar;
 
+@Deprecated
 public class BudgetProgressBar extends ProgressBar {
 
     public BudgetProgressBar(BudgetCategory category) {

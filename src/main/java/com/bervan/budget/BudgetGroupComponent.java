@@ -3,6 +3,7 @@ package com.bervan.budget;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
+@Deprecated
 public class BudgetGroupComponent extends VerticalLayout {
 
     public BudgetGroupComponent(BudgetGroup group) {

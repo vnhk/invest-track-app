@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
+@Deprecated
 public class WalletSnapshotListView extends AbstractBervanTableView<UUID, WalletSnapshot> {
     private final Wallet wallet;
     private boolean firstLoad = true;

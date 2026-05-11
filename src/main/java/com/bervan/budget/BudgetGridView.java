@@ -28,6 +28,7 @@ import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class BudgetGridView extends AbstractPageView {
     private static final Map<String, VaadinIcon> CATEGORY_ICONS = Map.of(
             "shop", VaadinIcon.CART,

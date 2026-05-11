@@ -15,6 +15,7 @@ import java.util.UUID;
 
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class WalletBalanceSumOfDepositsCharts extends Component implements HasSize {
     public WalletBalanceSumOfDepositsCharts(List<String> dates, List<BigDecimal> walletBalance,
                                              List<BigDecimal> sumOfDeposits) {

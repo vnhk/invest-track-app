@@ -17,6 +17,7 @@ import com.vaadin.flow.function.SerializableBiConsumer;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 
+@Deprecated
 public class PriceAlertConfigColumnBuilder implements ColumnForGridBuilder {
     private static final PriceAlertConfigColumnBuilder INSTANCE = new PriceAlertConfigColumnBuilder();
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

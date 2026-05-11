@@ -17,6 +17,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 
+@Deprecated
 public class BudgetAnalyticsPanel extends VerticalLayout {
 
     private static final List<String> PALETTE = Arrays.asList(

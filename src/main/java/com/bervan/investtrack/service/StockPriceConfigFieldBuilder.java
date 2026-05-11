@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Deprecated
 public class StockPriceConfigFieldBuilder implements ComponentForFieldBuilder {
     private static StockPriceConfigFieldBuilder INSTANCE;
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");

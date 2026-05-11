@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Deprecated
 public class BudgetGridService {
 
     private final BudgetEntryService budgetEntryService;

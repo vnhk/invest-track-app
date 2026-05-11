@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class StrategyDashboardView extends VerticalLayout {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 

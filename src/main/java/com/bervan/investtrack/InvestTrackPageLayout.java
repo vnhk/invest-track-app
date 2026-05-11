@@ -6,6 +6,7 @@ import com.bervan.investtrack.view.*;
 import com.bervan.investtrack.view.dashboards.AbstractBudgetDashboardView;
 import com.vaadin.flow.component.icon.VaadinIcon;
 
+@Deprecated
 public class InvestTrackPageLayout extends MenuNavigationComponent {
 
     public InvestTrackPageLayout(String routeName, String walletName, String... notVisibleButtonRoutes) {

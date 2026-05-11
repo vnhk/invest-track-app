@@ -17,6 +17,7 @@ import java.util.*;
  */
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class BudgetTrendChart extends Component implements HasSize {
 
     /**

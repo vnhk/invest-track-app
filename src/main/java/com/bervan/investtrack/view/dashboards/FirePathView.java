@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+@Deprecated
 public class FirePathView extends VerticalLayout {
     private static final BigDecimal DEFAULT_TARGET = BigDecimal.valueOf(1_500_000L); // PLN
     private static final BigDecimal INFLATION = BigDecimal.valueOf(0.038); // 3.8% last 10 years in PL

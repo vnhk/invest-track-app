@@ -20,6 +20,7 @@ import java.util.*;
  */
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class AssetAllocationChart extends Component implements HasSize {
 
     public enum GroupBy {

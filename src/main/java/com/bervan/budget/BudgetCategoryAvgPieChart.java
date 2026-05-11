@@ -14,6 +14,7 @@ import java.util.*;
 
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class BudgetCategoryAvgPieChart extends Component implements HasSize {
 
     public BudgetCategoryAvgPieChart(Map<String, BigDecimal> categoryAverages, List<String> colors) {

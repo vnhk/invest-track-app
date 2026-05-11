@@ -10,6 +10,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 
+@Deprecated
 public abstract class AbstractBudgetView extends AbstractPageView {
     public static final String ROUTE_NAME = "/invest-track-app/budget";
 

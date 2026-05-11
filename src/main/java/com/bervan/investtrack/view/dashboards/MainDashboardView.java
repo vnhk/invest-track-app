@@ -29,6 +29,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @CssImport("./invest-track-dashboard.css")
+@Deprecated
 public class MainDashboardView extends VerticalLayout {
 
     private final WalletService walletService;

@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+@Deprecated
 public class WalletsBalanceView extends AbstractWalletsBaseDashboardView {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
     private final SP500DataService sp500DataService;

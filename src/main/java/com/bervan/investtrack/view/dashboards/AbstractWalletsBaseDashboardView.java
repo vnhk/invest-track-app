@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+@Deprecated
 public abstract class AbstractWalletsBaseDashboardView extends AbstractPageView {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 

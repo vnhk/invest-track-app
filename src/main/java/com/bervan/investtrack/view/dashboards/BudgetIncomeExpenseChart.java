@@ -19,6 +19,7 @@ import java.util.UUID;
  */
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class BudgetIncomeExpenseChart extends Component implements HasSize {
 
     public BudgetIncomeExpenseChart(Map<String, BigDecimal> income, Map<String, BigDecimal> expense) {

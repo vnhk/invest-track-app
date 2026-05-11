@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+@Deprecated
 public class WalletsEarningsView extends AbstractWalletsBaseDashboardView {
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 

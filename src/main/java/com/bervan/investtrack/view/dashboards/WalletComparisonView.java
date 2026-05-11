@@ -28,6 +28,7 @@ import java.util.Locale;
  * Multi-wallet comparison view with table and metrics
  */
 @CssImport("./invest-track-dashboard.css")
+@Deprecated
 public class WalletComparisonView extends VerticalLayout {
 
     private final List<Wallet> wallets;

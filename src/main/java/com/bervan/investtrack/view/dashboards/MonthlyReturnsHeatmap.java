@@ -13,6 +13,7 @@ import java.util.*;
  * Green for positive returns, red for negative
  */
 @CssImport("./invest-track-dashboard.css")
+@Deprecated
 public class MonthlyReturnsHeatmap extends Div {
 
     private static final String[] MONTH_NAMES = {

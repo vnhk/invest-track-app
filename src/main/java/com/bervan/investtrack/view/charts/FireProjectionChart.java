@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class FireProjectionChart extends Component implements HasSize {
 
     public FireProjectionChart(

@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @JsModule("./investing-chart-component.js")
 @Tag("canvas")
+@Deprecated
 public class StrategyBGRHistoryChart extends Component implements HasSize {
     private String strategyName;
 

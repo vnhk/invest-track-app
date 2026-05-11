@@ -3,6 +3,7 @@ package com.bervan.budget;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+@Deprecated
 public class BudgetRowComponent extends HorizontalLayout {
 
     public BudgetRowComponent(BudgetCategory category) {
