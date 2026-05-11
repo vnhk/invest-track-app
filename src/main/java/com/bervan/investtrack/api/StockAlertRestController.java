@@ -2,15 +2,18 @@ package com.bervan.investtrack.api;
 
 import com.bervan.common.config.EntityConfigValidator;
 import com.bervan.common.controller.BaseOwnedController;
+import com.bervan.common.controller.BaseOwnedController.ImportResult;
 import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.common.service.AuthService;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.service.StockPriceAlertService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -95,5 +98,15 @@ public class StockAlertRestController extends BaseOwnedController<StockPriceAler
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         return super.delete(id);
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export() {
+        return super.exportAll(StockAlertDto.class, "stock-alerts");
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportResult> importData(@RequestParam("file") MultipartFile file) {
+        return super.importAll(file, StockAlertDto.class);
     }
 }

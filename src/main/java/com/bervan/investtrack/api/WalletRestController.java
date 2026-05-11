@@ -2,6 +2,7 @@ package com.bervan.investtrack.api;
 
 import com.bervan.common.config.EntityConfigValidator;
 import com.bervan.common.controller.BaseOwnedController;
+import com.bervan.common.controller.BaseOwnedController.ImportResult;
 import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.common.service.AuthService;
 import com.bervan.investtrack.model.Wallet;
@@ -10,9 +11,11 @@ import com.bervan.investtrack.service.InvestmentCalculationService;
 import com.bervan.investtrack.service.WalletService;
 import com.bervan.investtrack.service.WalletSnapshotService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -174,5 +177,15 @@ public class WalletRestController extends BaseOwnedController<Wallet, UUID> {
         if (snapshots.stream().noneMatch(s -> s.getId().equals(snapshotId))) return ResponseEntity.notFound().build();
         ((WalletService) service).deleteSnapshot(snapshotId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export() {
+        return super.exportAll(WalletDto.class, "wallets");
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportResult> importData(@RequestParam("file") MultipartFile file) {
+        return super.importAll(file, WalletDto.class);
     }
 }
