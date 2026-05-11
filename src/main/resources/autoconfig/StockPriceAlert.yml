@@ -31,7 +31,6 @@ columns:
   - field: emails
     displayName: "Emails"
     internalName: "emails"
-    extension: "VaadinDynamicMultiDropdownBervanColumn"
     inSaveForm: true
     inEditForm: true
     inTable: true
@@ -40,7 +39,6 @@ columns:
   - field: stockPriceAlertConfig
     displayName: "Alert Configuration"
     internalName: "alertConfiguration"
-    extension: "VaadinStockPriceAlertConfigColumn"
     inSaveForm: true
     inEditForm: true
     inTable: true
