@@ -179,8 +179,8 @@ Dashboard uses `--glass-*` theme variables with fallbacks:
 --invest-glass-blur: var(--glass-blur, 16px);
 --invest-glass-border: var(--glass-border, rgba(255, 255, 255, 0.18));
 --invest-primary: var(--glass-primary, #6366f1);
---invest-success: var(--vaadin-notification-card-bgColor-success, #10b981);
---invest-danger: var(--vaadin-notification-card-bgColor-error, #ef4444);
+--invest-success: #10b981;
+--invest-danger: #ef4444;
 ```
 
 Dashboard container uses theme gradient:
@@ -240,7 +240,7 @@ TRANSACTION_TYPE = {"Deposit", "Withdrawal", "Earning", "Loss", "Dividend"}
 ## Important Notes
 1. Wallets use EAGER fetch for snapshots (performance consideration)
 2. Soft delete via `deleted` flag with `@Where` filtering
-3. Charts use HTML5 Canvas via Vaadin JsModule
+3. Charts use HTML5 Canvas (React frontend)
 4. Long-running reports execute in async threads with SecurityContext
 5. **Tab switching fix**: `AbstractBudgetDashboardView` tracks `currentTabLabel` to preserve tab selection when dropdowns change
 6. **Aggregated time series**: `InvestmentCalculationService.buildAggregatedTimeSeries()` implements carry-forward for wallets with different snapshot dates
