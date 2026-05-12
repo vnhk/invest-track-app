@@ -13,12 +13,12 @@ import java.util.UUID;
 public interface StockPriceAlertRepository extends BaseRepository<StockPriceAlert, UUID> {
     List<StockPriceAlert> findAllByDeletedIsFalseOrDeletedNull();
 
-    @Query("SELECT DISTINCT c FROM StockPriceAlert p JOIN p.emails c WHERE (p.deleted IS FALSE OR p.deleted IS NULL) AND p = :stockPriceAlert")
+    @Query("SELECT DISTINCT c FROM StockPriceAlert p JOIN p.emails c WHERE (p.deleted = false OR p.deleted IS NULL) AND p = :stockPriceAlert")
     List<String> loadAllEmails(StockPriceAlert stockPriceAlert);
 
-    @Query("SELECT DISTINCT c FROM StockPriceAlert p JOIN p.emails c WHERE (p.deleted IS FALSE OR p.deleted IS NULL)")
+    @Query("SELECT DISTINCT c FROM StockPriceAlert p JOIN p.emails c WHERE (p.deleted = false OR p.deleted IS NULL)")
     List<String> loadAllEmails();
 
-    @Query("SELECT DISTINCT  p.stockPriceAlertConfig FROM StockPriceAlert p WHERE (p.deleted IS FALSE OR p.deleted IS NULL) AND p = :stockPriceAlert")
+    @Query("SELECT DISTINCT  p.stockPriceAlertConfig FROM StockPriceAlert p WHERE (p.deleted = false OR p.deleted IS NULL) AND p = :stockPriceAlert")
     StockPriceAlertConfig loadStockPriceAlertConfig(StockPriceAlert stockPriceAlert);
 }
