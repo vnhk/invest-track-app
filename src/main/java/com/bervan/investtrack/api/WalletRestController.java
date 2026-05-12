@@ -2,7 +2,7 @@ package com.bervan.investtrack.api;
 
 import com.bervan.common.config.EntityConfigValidator;
 import com.bervan.common.controller.BaseOwnedController;
-import com.bervan.common.controller.BaseOwnedController.ImportResult;
+import com.bervan.common.controller.ImportResult;
 import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.common.service.AuthService;
 import com.bervan.investtrack.model.Wallet;

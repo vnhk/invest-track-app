@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.bervan.common.controller.ValidationErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -27,13 +28,7 @@ public class BudgetEntryRestController {
         this.validator = validator;
     }
 
-    record BudgetEntryDto(
-            UUID id, String name, String category, String currency, BigDecimal value,
-            LocalDate entryDate, String paymentMethod, String entryType, String notes,
-            Boolean isRecurring, LocalDateTime modificationDate
-    ) {}
-
-    record ValidationErrorResponse(List<EntityConfigValidator.FieldError> errors) {}
+    // Use top-level DTO class BudgetEntryDto and common ValidationErrorResponse
 
     private BudgetEntryDto toDto(BudgetEntry e) {
         return new BudgetEntryDto(e.getId(), e.getName(), e.getCategory(), e.getCurrency(), e.getValue(),
@@ -60,7 +55,7 @@ public class BudgetEntryRestController {
                 .filter(e -> dateFrom == null || (e.getEntryDate() != null && !e.getEntryDate().isBefore(LocalDate.parse(dateFrom))))
                 .filter(e -> dateTo == null || (e.getEntryDate() != null && !e.getEntryDate().isAfter(LocalDate.parse(dateTo))))
                 .map(this::toDto)
-                .sorted(Comparator.comparing(BudgetEntryDto::entryDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(BudgetEntryDto::getEntryDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
 
         int total = dtos.size();
@@ -82,32 +77,50 @@ public class BudgetEntryRestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> req) {
-
-        List<EntityConfigValidator.FieldError> errors = validator.validate("BudgetEntry", req);
-        if (!errors.isEmpty()) return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors));
-
-        BudgetEntry entry = new BudgetEntry();
-        entry.setId(UUID.randomUUID());
-        applyFields(entry, req);
-        entry.setModificationDate(LocalDateTime.now());
-        entry.setDeleted(false);
-        BudgetEntry saved = budgetEntryService.save(entry);
+    public ResponseEntity<?> create(@RequestBody BudgetEntryDto req) {
+        // map DTO -> entity, validate, save
+        BudgetEntry model = new BudgetEntry();
+        if (req.getId() != null) model.setId(req.getId()); else model.setId(UUID.randomUUID());
+        applyFieldsFromDto(model, req);
+        Map<String, Object> fields = new HashMap<>();
+        if (req.getName() != null) fields.put("name", req.getName());
+        if (req.getCategory() != null) fields.put("category", req.getCategory());
+        if (req.getCurrency() != null) fields.put("currency", req.getCurrency());
+        if (req.getValue() != null) fields.put("value", req.getValue());
+        if (req.getEntryDate() != null) fields.put("entryDate", req.getEntryDate().toString());
+        if (req.getPaymentMethod() != null) fields.put("paymentMethod", req.getPaymentMethod());
+        if (req.getEntryType() != null) fields.put("entryType", req.getEntryType());
+        if (req.getNotes() != null) fields.put("notes", req.getNotes());
+        if (req.getIsRecurring() != null) fields.put("isRecurring", req.getIsRecurring());
+        List<EntityConfigValidator.FieldError> errors = validator.validate("BudgetEntry", fields);
+        if (!errors.isEmpty()) return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors));
+        model.setModificationDate(LocalDateTime.now());
+        model.setDeleted(false);
+        BudgetEntry saved = budgetEntryService.save(model);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Map<String, Object> req) {
-
-        List<EntityConfigValidator.FieldError> errors = validator.validate("BudgetEntry", req);
-        if (!errors.isEmpty()) return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors));
-
+    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody BudgetEntryDto req) {
+        if (req.getId() == null) req.setId(id);
         Optional<BudgetEntry> match = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE)).stream()
                 .filter(e -> e.getId().equals(id)).findFirst();
         if (match.isEmpty()) return ResponseEntity.notFound().build();
 
         BudgetEntry entry = match.get();
-        applyFields(entry, req);
+        applyFieldsFromDto(entry, req);
+        Map<String, Object> fields2 = new HashMap<>();
+        if (req.getName() != null) fields2.put("name", req.getName());
+        if (req.getCategory() != null) fields2.put("category", req.getCategory());
+        if (req.getCurrency() != null) fields2.put("currency", req.getCurrency());
+        if (req.getValue() != null) fields2.put("value", req.getValue());
+        if (req.getEntryDate() != null) fields2.put("entryDate", req.getEntryDate().toString());
+        if (req.getPaymentMethod() != null) fields2.put("paymentMethod", req.getPaymentMethod());
+        if (req.getEntryType() != null) fields2.put("entryType", req.getEntryType());
+        if (req.getNotes() != null) fields2.put("notes", req.getNotes());
+        if (req.getIsRecurring() != null) fields2.put("isRecurring", req.getIsRecurring());
+        List<EntityConfigValidator.FieldError> errors2 = validator.validate("BudgetEntry", fields2);
+        if (!errors2.isEmpty()) return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors2));
         entry.setModificationDate(LocalDateTime.now());
         BudgetEntry saved = budgetEntryService.save(entry);
         return ResponseEntity.ok(toDto(saved));
@@ -122,15 +135,15 @@ public class BudgetEntryRestController {
         return ResponseEntity.noContent().build();
     }
 
-    private void applyFields(BudgetEntry entry, Map<String, Object> req) {
-        if (req.containsKey("name")) entry.setName((String) req.get("name"));
-        if (req.containsKey("category")) entry.setCategory((String) req.get("category"));
-        if (req.containsKey("currency")) entry.setCurrency((String) req.get("currency"));
-        if (req.containsKey("value")) entry.setValue(new BigDecimal(req.get("value").toString()));
-        if (req.containsKey("entryDate")) entry.setEntryDate(LocalDate.parse((String) req.get("entryDate")));
-        if (req.containsKey("paymentMethod")) entry.setPaymentMethod((String) req.get("paymentMethod"));
-        if (req.containsKey("entryType")) entry.setEntryType((String) req.get("entryType"));
-        if (req.containsKey("notes")) entry.setNotes((String) req.get("notes"));
-        if (req.containsKey("isRecurring")) entry.setIsRecurring((Boolean) req.get("isRecurring"));
+    private void applyFieldsFromDto(BudgetEntry entry, BudgetEntryDto req) {
+        if (req.getName() != null) entry.setName(req.getName());
+        if (req.getCategory() != null) entry.setCategory(req.getCategory());
+        if (req.getCurrency() != null) entry.setCurrency(req.getCurrency());
+        if (req.getValue() != null) entry.setValue(req.getValue());
+        if (req.getEntryDate() != null) entry.setEntryDate(req.getEntryDate());
+        if (req.getPaymentMethod() != null) entry.setPaymentMethod(req.getPaymentMethod());
+        if (req.getEntryType() != null) entry.setEntryType(req.getEntryType());
+        if (req.getNotes() != null) entry.setNotes(req.getNotes());
+        if (req.getIsRecurring() != null) entry.setIsRecurring(req.getIsRecurring());
     }
 }
