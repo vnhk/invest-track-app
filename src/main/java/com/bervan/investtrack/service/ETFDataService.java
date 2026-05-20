@@ -31,9 +31,12 @@ import java.util.*;
  * All data is cached for 24 hours.
  */
 @Service
-public class SP500DataService {
+public class ETFDataService {
     private static final String YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart/";
-    private static final String SP500_TICKER  = "%5EGSPC";     // ^GSPC
+    public static final String SP500_TICKER  = "%5EGSPC";     // ^GSPC
+    public static final String WIG20_TICKER  = "%5EWIG20";    // ^WIG20
+    public static final String NASDAQ_TICKER = "%5ENDX";      // ^NDX
+    public static final String DJI_TICKER    = "%5EDJI";      // ^DJI
     private static final String USDPLN_TICKER = "USDPLN%3DX"; // USDPLN=X  (PLN per 1 USD, e.g. 4.2)
     private static final String USDEUR_TICKER = "USDEUR%3DX"; // USDEUR=X  (EUR per 1 USD, e.g. 0.92)
     private static final String INTERVAL_RANGE = "?interval=1mo&range=25y";
@@ -44,6 +47,9 @@ public class SP500DataService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private Map<YearMonth, BigDecimal> cachedSP500  = null;
+    private Map<YearMonth, BigDecimal> cachedWig20  = null;
+    private Map<YearMonth, BigDecimal> cachedNasdaq = null;
+    private Map<YearMonth, BigDecimal> cachedDji    = null;
     private Map<YearMonth, BigDecimal> cachedUsdPln = null;
     private Map<YearMonth, BigDecimal> cachedUsdEur = null;
     private long cacheTimestamp = 0L;
@@ -61,17 +67,29 @@ public class SP500DataService {
     public List<BigDecimal> calculateBenchmarkValues(List<String> dates,
                                                       List<BigDecimal> monthlyNetDeposits,
                                                       String portfolioCurrency) {
+        return calculateBenchmarkValuesForTicker(SP500_TICKER, "USD", dates, monthlyNetDeposits, portfolioCurrency);
+    }
+
+    /**
+     * Calculates benchmark portfolio values for a specific ticker and index currency, with historical FX conversion.
+     */
+    public List<BigDecimal> calculateBenchmarkValuesForTicker(String ticker,
+                                                              String indexCurrency,
+                                                              List<String> dates,
+                                                              List<BigDecimal> monthlyNetDeposits,
+                                                              String portfolioCurrency) {
         if (dates == null || dates.isEmpty() || monthlyNetDeposits == null) {
             return Collections.emptyList();
         }
 
         refreshCacheIfNeeded();
-        if (cachedSP500.isEmpty()) {
+        Map<YearMonth, BigDecimal> indexPrices = getCacheForTicker(ticker);
+        if (indexPrices == null || indexPrices.isEmpty()) {
             return Collections.emptyList();
         }
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        BigDecimal units = BigDecimal.ZERO;          // fractional S&P 500 units held
+        BigDecimal units = BigDecimal.ZERO;          // fractional units of index held
         List<BigDecimal> result = new ArrayList<>(dates.size());
         BigDecimal lastValue = BigDecimal.ZERO;
 
@@ -85,21 +103,25 @@ public class SP500DataService {
             }
 
             YearMonth ym = YearMonth.from(date);
-            BigDecimal sp500Price = findNearest(cachedSP500, ym);
-            BigDecimal fxRate    = getFxRate(portfolioCurrency, ym);  // foreign-currency units per 1 USD
+            BigDecimal indexPrice = findNearest(indexPrices, ym);
 
-            if (sp500Price == null || sp500Price.compareTo(BigDecimal.ZERO) <= 0
-                    || fxRate == null || fxRate.compareTo(BigDecimal.ZERO) <= 0) {
+            if (indexPrice == null || indexPrice.compareTo(BigDecimal.ZERO) <= 0) {
                 result.add(lastValue);
                 continue;
             }
 
             BigDecimal netFlow = i < monthlyNetDeposits.size() ? monthlyNetDeposits.get(i) : BigDecimal.ZERO;
             if (netFlow != null && netFlow.compareTo(BigDecimal.ZERO) != 0) {
-                BigDecimal netFlowUsd = toUsd(netFlow.abs(), portfolioCurrency, fxRate);
-                BigDecimal unitsDelta = netFlowUsd.divide(sp500Price, 10, RoundingMode.HALF_UP);
+                // Convert flow from portfolioCurrency to indexCurrency
+                BigDecimal netFlowIndex = convertCurrency(netFlow.abs(), portfolioCurrency, indexCurrency, ym);
+                if (netFlowIndex == null) {
+                    result.add(lastValue);
+                    continue;
+                }
+
+                BigDecimal unitsDelta = netFlowIndex.divide(indexPrice, 10, RoundingMode.HALF_UP);
                 if (netFlow.compareTo(BigDecimal.ZERO) > 0) {
-                    // Deposit: buy fractional S&P 500 units
+                    // Deposit: buy fractional index units
                     units = units.add(unitsDelta);
                 } else {
                     // Withdrawal: sell units; clamp to 0 to avoid negative holdings
@@ -107,13 +129,44 @@ public class SP500DataService {
                 }
             }
 
-            // Benchmark value in portfolio currency
-            BigDecimal valueUsd = units.multiply(sp500Price);
-            lastValue = fromUsd(valueUsd, portfolioCurrency, fxRate).setScale(2, RoundingMode.HALF_UP);
+            // Benchmark value in index currency
+            BigDecimal valueIndex = units.multiply(indexPrice);
+            // Convert benchmark value from indexCurrency to portfolioCurrency
+            BigDecimal valuePortfolio = convertCurrency(valueIndex, indexCurrency, portfolioCurrency, ym);
+            if (valuePortfolio == null) {
+                result.add(lastValue);
+                continue;
+            }
+
+            lastValue = valuePortfolio.setScale(2, RoundingMode.HALF_UP);
             result.add(lastValue);
         }
 
         return result;
+    }
+
+    private Map<YearMonth, BigDecimal> getCacheForTicker(String ticker) {
+        return switch (ticker) {
+            case SP500_TICKER -> cachedSP500;
+            case WIG20_TICKER -> cachedWig20;
+            case NASDAQ_TICKER -> cachedNasdaq;
+            case DJI_TICKER -> cachedDji;
+            default -> Collections.emptyMap();
+        };
+    }
+
+    private BigDecimal convertCurrency(BigDecimal amount, String fromCurr, String toCurr, YearMonth ym) {
+        if (fromCurr.equalsIgnoreCase(toCurr)) {
+            return amount;
+        }
+        BigDecimal rateFrom = getFxRate(fromCurr, ym);
+        BigDecimal rateTo   = getFxRate(toCurr, ym);
+        if (rateFrom == null || rateFrom.compareTo(BigDecimal.ZERO) <= 0
+                || rateTo == null || rateTo.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        BigDecimal amountUsd = amount.divide(rateFrom, 10, RoundingMode.HALF_UP);
+        return amountUsd.multiply(rateTo);
     }
 
     // ── internals ─────────────────────────────────────────────────────────────
@@ -122,20 +175,23 @@ public class SP500DataService {
         if (cachedSP500 != null && System.currentTimeMillis() - cacheTimestamp < CACHE_TTL_MS) {
             return;
         }
-        cachedSP500  = fetchSafe(SP500_TICKER,  "S&P 500");
-        cachedUsdPln = fetchSafe(USDPLN_TICKER, "USD/PLN");
-        cachedUsdEur = fetchSafe(USDEUR_TICKER, "USD/EUR");
+        cachedSP500  = fetchSafe(SP500_TICKER,  "S&P 500", cachedSP500);
+        cachedWig20  = fetchSafe(WIG20_TICKER,  "WIG20", cachedWig20);
+        cachedNasdaq = fetchSafe(NASDAQ_TICKER, "NASDAQ-100", cachedNasdaq);
+        cachedDji    = fetchSafe(DJI_TICKER,    "Dow Jones", cachedDji);
+        cachedUsdPln = fetchSafe(USDPLN_TICKER, "USD/PLN", cachedUsdPln);
+        cachedUsdEur = fetchSafe(USDEUR_TICKER, "USD/EUR", cachedUsdEur);
         cacheTimestamp = System.currentTimeMillis();
     }
 
-    private Map<YearMonth, BigDecimal> fetchSafe(String ticker, String name) {
+    private Map<YearMonth, BigDecimal> fetchSafe(String ticker, String name, Map<YearMonth, BigDecimal> fallbackMap) {
         try {
             Map<YearMonth, BigDecimal> data = fetchFromYahoo(ticker);
             log.info("Fetched {} monthly {} data points", data.size(), name);
             return data;
         } catch (Exception e) {
             log.warn("Could not fetch {} data: {}", name, e.getMessage());
-            return cachedSP500 != null ? cachedSP500 : Collections.emptyMap(); // keep stale if available
+            return fallbackMap != null ? fallbackMap : Collections.emptyMap(); // keep stale if available
         }
     }
 

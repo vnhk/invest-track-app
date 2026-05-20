@@ -23,16 +23,19 @@ public class InvestDashboardRestController {
     private final InvestmentCalculationService calculationService;
     private final BudgetChartDataService budgetChartDataService;
     private final CurrencyConverter currencyConverter;
+    private final ETFDataService ETFDataService;
 
     public InvestDashboardRestController(WalletService walletService, WalletSnapshotService snapshotService,
                                           InvestmentCalculationService calculationService,
                                           BudgetChartDataService budgetChartDataService,
-                                          CurrencyConverter currencyConverter) {
+                                          CurrencyConverter currencyConverter,
+                                          ETFDataService ETFDataService) {
         this.walletService = walletService;
         this.snapshotService = snapshotService;
         this.calculationService = calculationService;
         this.budgetChartDataService = budgetChartDataService;
         this.currencyConverter = currencyConverter;
+        this.ETFDataService = ETFDataService;
     }
 
     @GetMapping
@@ -87,12 +90,12 @@ public class InvestDashboardRestController {
 
         // ── Time series ─────────────────────────────────────────────────────────
         // investment wallets only
-        List<Map<String, Object>> investTimeSeries = buildTimeSeries(investTs);
+        List<Map<String, Object>> investTimeSeries = buildTimeSeriesWithBenchmarks(investTs);
 
         // all wallets (net worth)
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> allTs =
                 calculationService.buildAggregatedTimeSeries(allWallets, this::toPln);
-        List<Map<String, Object>> netWorthTimeSeries = buildTimeSeries(allTs);
+        List<Map<String, Object>> netWorthTimeSeries = buildTimeSeriesWithBenchmarks(allTs);
 
         // ── Asset allocation ────────────────────────────────────────────────────
         List<Map<String, Object>> allocation = new ArrayList<>();
@@ -134,6 +137,27 @@ public class InvestDashboardRestController {
                     .toList();
             BigDecimal cum = BigDecimal.ZERO;
             List<Map<String, Object>> series = new ArrayList<>();
+
+            List<String> datesDdMmYyyy = new ArrayList<>();
+            List<BigDecimal> netDeposits = new ArrayList<>();
+            java.time.format.DateTimeFormatter bfmt = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            for (WalletSnapshot snap : snaps) {
+                datesDdMmYyyy.add(snap.getSnapshotDate().format(bfmt));
+                BigDecimal dep = snap.getMonthlyDeposit() != null ? snap.getMonthlyDeposit() : BigDecimal.ZERO;
+                BigDecimal wdr = snap.getMonthlyWithdrawal() != null ? snap.getMonthlyWithdrawal() : BigDecimal.ZERO;
+                netDeposits.add(dep.subtract(wdr));
+            }
+
+            List<BigDecimal> sp500Vals = ETFDataService.calculateBenchmarkValuesForTicker(
+                    ETFDataService.SP500_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
+            List<BigDecimal> wig20Vals = ETFDataService.calculateBenchmarkValuesForTicker(
+                    ETFDataService.WIG20_TICKER, "PLN", datesDdMmYyyy, netDeposits, w.getCurrency());
+            List<BigDecimal> nasdaqVals = ETFDataService.calculateBenchmarkValuesForTicker(
+                    ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
+            List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
+                    ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
+
+            int idx = 0;
             for (WalletSnapshot snap : snaps) {
                 BigDecimal dep = snap.getMonthlyDeposit() != null ? snap.getMonthlyDeposit() : BigDecimal.ZERO;
                 BigDecimal wdr = snap.getMonthlyWithdrawal() != null ? snap.getMonthlyWithdrawal() : BigDecimal.ZERO;
@@ -143,7 +167,19 @@ public class InvestDashboardRestController {
                 pt.put("date", snap.getSnapshotDate().toString());
                 pt.put("balance", toPln(pv, w.getCurrency()).setScale(2, RoundingMode.HALF_UP));
                 pt.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
+
+                BigDecimal sp500Pln = idx < sp500Vals.size() ? toPln(sp500Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+                BigDecimal wig20Pln = idx < wig20Vals.size() ? toPln(wig20Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+                BigDecimal nasdaqPln = idx < nasdaqVals.size() ? toPln(nasdaqVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+                BigDecimal djiPln = idx < djiVals.size() ? toPln(djiVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+
+                pt.put("sp500", sp500Pln.setScale(2, RoundingMode.HALF_UP));
+                pt.put("wig20", wig20Pln.setScale(2, RoundingMode.HALF_UP));
+                pt.put("nasdaq", nasdaqPln.setScale(2, RoundingMode.HALF_UP));
+                pt.put("dji", djiPln.setScale(2, RoundingMode.HALF_UP));
+
                 series.add(pt);
+                idx++;
             }
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("walletId", w.getId().toString());
@@ -222,6 +258,45 @@ public class InvestDashboardRestController {
             point.put("balance", e.getValue().balance().setScale(2, RoundingMode.HALF_UP));
             point.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
             list.add(point);
+        }
+        return list;
+    }
+
+    private List<Map<String, Object>> buildTimeSeriesWithBenchmarks(
+            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ts) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        BigDecimal cum = BigDecimal.ZERO;
+
+        List<String> datesDdMmYyyy = new ArrayList<>();
+        List<BigDecimal> netDeposits = new ArrayList<>();
+        java.time.format.DateTimeFormatter bfmt = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        for (LocalDate date : ts.keySet()) {
+            datesDdMmYyyy.add(date.format(bfmt));
+            netDeposits.add(ts.get(date).cashFlow());
+        }
+
+        List<BigDecimal> sp500Vals = ETFDataService.calculateBenchmarkValuesForTicker(
+                ETFDataService.SP500_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
+        List<BigDecimal> wig20Vals = ETFDataService.calculateBenchmarkValuesForTicker(
+                ETFDataService.WIG20_TICKER, "PLN", datesDdMmYyyy, netDeposits, "PLN");
+        List<BigDecimal> nasdaqVals = ETFDataService.calculateBenchmarkValuesForTicker(
+                ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
+        List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
+                ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
+
+        int i = 0;
+        for (Map.Entry<LocalDate, InvestmentCalculationService.PortfolioPoint> e : ts.entrySet()) {
+            cum = cum.add(e.getValue().cashFlow());
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("date", e.getKey().toString());
+            point.put("balance", e.getValue().balance().setScale(2, RoundingMode.HALF_UP));
+            point.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
+            point.put("sp500", i < sp500Vals.size() ? sp500Vals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            point.put("wig20", i < wig20Vals.size() ? wig20Vals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            point.put("nasdaq", i < nasdaqVals.size() ? nasdaqVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            point.put("dji", i < djiVals.size() ? djiVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            list.add(point);
+            i++;
         }
         return list;
     }

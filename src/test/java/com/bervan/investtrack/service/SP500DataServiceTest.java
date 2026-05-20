@@ -24,16 +24,31 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SP500DataServiceTest {
 
-    private SP500DataService service;
+    private ETFDataService service;
 
     @BeforeEach
     void setUp() throws Exception {
-        service = new SP500DataService();
+        service = new ETFDataService();
 
         Map<YearMonth, BigDecimal> sp500 = new TreeMap<>();
         sp500.put(YearMonth.of(2024, 1), new BigDecimal("5000"));
         sp500.put(YearMonth.of(2024, 2), new BigDecimal("6000"));
         sp500.put(YearMonth.of(2024, 3), new BigDecimal("6000"));
+
+        Map<YearMonth, BigDecimal> wig20 = new TreeMap<>();
+        wig20.put(YearMonth.of(2024, 1), new BigDecimal("2000"));
+        wig20.put(YearMonth.of(2024, 2), new BigDecimal("2200"));
+        wig20.put(YearMonth.of(2024, 3), new BigDecimal("2200"));
+
+        Map<YearMonth, BigDecimal> nasdaq = new TreeMap<>();
+        nasdaq.put(YearMonth.of(2024, 1), new BigDecimal("15000"));
+        nasdaq.put(YearMonth.of(2024, 2), new BigDecimal("16000"));
+        nasdaq.put(YearMonth.of(2024, 3), new BigDecimal("16000"));
+
+        Map<YearMonth, BigDecimal> dji = new TreeMap<>();
+        dji.put(YearMonth.of(2024, 1), new BigDecimal("35000"));
+        dji.put(YearMonth.of(2024, 2), new BigDecimal("36000"));
+        dji.put(YearMonth.of(2024, 3), new BigDecimal("36000"));
 
         Map<YearMonth, BigDecimal> usdPln = new TreeMap<>();
         usdPln.put(YearMonth.of(2024, 1), new BigDecimal("4.0"));
@@ -46,6 +61,9 @@ class SP500DataServiceTest {
         usdEur.put(YearMonth.of(2024, 3), new BigDecimal("0.9"));
 
         setField(service, "cachedSP500", sp500);
+        setField(service, "cachedWig20", wig20);
+        setField(service, "cachedNasdaq", nasdaq);
+        setField(service, "cachedDji", dji);
         setField(service, "cachedUsdPln", usdPln);
         setField(service, "cachedUsdEur", usdEur);
         setField(service, "cacheTimestamp", System.currentTimeMillis());
@@ -209,6 +227,36 @@ class SP500DataServiceTest {
         // Unknown currency → fxRate null → skipped, returns lastValue=0 for each
         assertEquals(1, result.size());
         assertEquals(0, BigDecimal.ZERO.compareTo(result.get(0)));
+    }
+
+    @Test
+    void wig20_plnDeposit_wig20IsPln() {
+        // deposit 2000 PLN when WIG20=2000 → 1.0 units of WIG20
+        // month 2: WIG20=2200 → benchmark value = 1.0 * 2200 = 2200 PLN
+        List<String> dates = List.of("01-01-2024", "01-02-2024");
+        List<BigDecimal> deposits = List.of(new BigDecimal("2000"), BigDecimal.ZERO);
+
+        List<BigDecimal> result = service.calculateBenchmarkValuesForTicker(
+                ETFDataService.WIG20_TICKER, "PLN", dates, deposits, "PLN");
+
+        assertEquals(2, result.size());
+        assertEquals(0, new BigDecimal("2000.00").compareTo(result.get(0)));
+        assertEquals(0, new BigDecimal("2200.00").compareTo(result.get(1)));
+    }
+
+    @Test
+    void nasdaq_usdDeposit_nasdaqIsUsd() {
+        // deposit 15000 USD when Nasdaq=15000 → 1.0 units of Nasdaq
+        // month 2: Nasdaq=16000 → benchmark value = 1.0 * 16000 = 16000 USD
+        List<String> dates = List.of("01-01-2024", "01-02-2024");
+        List<BigDecimal> deposits = List.of(new BigDecimal("15000"), BigDecimal.ZERO);
+
+        List<BigDecimal> result = service.calculateBenchmarkValuesForTicker(
+                ETFDataService.NASDAQ_TICKER, "USD", dates, deposits, "USD");
+
+        assertEquals(2, result.size());
+        assertEquals(0, new BigDecimal("15000.00").compareTo(result.get(0)));
+        assertEquals(0, new BigDecimal("16000.00").compareTo(result.get(1)));
     }
 
     // ── helper ────────────────────────────────────────────────────────────────
