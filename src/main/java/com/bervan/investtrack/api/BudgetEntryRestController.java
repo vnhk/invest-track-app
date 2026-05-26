@@ -3,18 +3,22 @@ package com.bervan.investtrack.api;
 import com.bervan.budget.entry.BudgetEntry;
 import com.bervan.budget.entry.BudgetEntryService;
 import com.bervan.common.config.EntityConfigValidator;
+import com.bervan.common.controller.ValidationErrorResponse;
+import com.bervan.investtrack.service.ReceiptScanningService;
+import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.bervan.common.controller.ValidationErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/invest-track/budget-entries")
@@ -22,10 +26,15 @@ public class BudgetEntryRestController {
 
     private final BudgetEntryService budgetEntryService;
     private final EntityConfigValidator validator;
+    private final ReceiptScanningService receiptScanningService;
+    private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
-    public BudgetEntryRestController(BudgetEntryService budgetEntryService, EntityConfigValidator validator) {
+    public BudgetEntryRestController(BudgetEntryService budgetEntryService,
+                                     EntityConfigValidator validator,
+                                     ReceiptScanningService receiptScanningService) {
         this.budgetEntryService = budgetEntryService;
         this.validator = validator;
+        this.receiptScanningService = receiptScanningService;
     }
 
     // Use top-level DTO class BudgetEntryDto and common ValidationErrorResponse
@@ -66,6 +75,11 @@ public class BudgetEntryRestController {
 
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
+        List<String> categories = getAvailableCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    private List<String> getAvailableCategories() {
         Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
         List<String> categories = all.stream()
                 .map(BudgetEntry::getCategory)
@@ -73,14 +87,15 @@ public class BudgetEntryRestController {
                 .distinct()
                 .sorted()
                 .toList();
-        return ResponseEntity.ok(categories);
+        return categories;
     }
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody BudgetEntryDto req) {
         // map DTO -> entity, validate, save
         BudgetEntry model = new BudgetEntry();
-        if (req.getId() != null) model.setId(req.getId()); else model.setId(UUID.randomUUID());
+        if (req.getId() != null) model.setId(req.getId());
+        else model.setId(UUID.randomUUID());
         applyFieldsFromDto(model, req);
         Map<String, Object> fields = new HashMap<>();
         if (req.getName() != null) fields.put("name", req.getName());
@@ -93,7 +108,8 @@ public class BudgetEntryRestController {
         if (req.getNotes() != null) fields.put("notes", req.getNotes());
         if (req.getIsRecurring() != null) fields.put("isRecurring", req.getIsRecurring());
         List<EntityConfigValidator.FieldError> errors = validator.validate("BudgetEntry", fields);
-        if (!errors.isEmpty()) return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors));
+        if (!errors.isEmpty())
+            return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors));
         model.setModificationDate(LocalDateTime.now());
         model.setDeleted(false);
         BudgetEntry saved = budgetEntryService.save(model);
@@ -120,7 +136,8 @@ public class BudgetEntryRestController {
         if (req.getNotes() != null) fields2.put("notes", req.getNotes());
         if (req.getIsRecurring() != null) fields2.put("isRecurring", req.getIsRecurring());
         List<EntityConfigValidator.FieldError> errors2 = validator.validate("BudgetEntry", fields2);
-        if (!errors2.isEmpty()) return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors2));
+        if (!errors2.isEmpty())
+            return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors2));
         entry.setModificationDate(LocalDateTime.now());
         BudgetEntry saved = budgetEntryService.save(entry);
         return ResponseEntity.ok(toDto(saved));
@@ -135,6 +152,51 @@ public class BudgetEntryRestController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/scan-receipt")
+    public ResponseEntity<?> scanReceipt(@RequestBody ReceiptScanRequest req) {
+        if (req.base64Image == null || req.base64Image.isBlank()) {
+            return ResponseEntity.badRequest().body(new ValidationErrorResponse(
+                    List.of(new EntityConfigValidator.FieldError("base64Image", "Image data is required"))
+            ));
+        }
+
+        List<String> categories = getAvailableCategories();
+
+        List<ReceiptScanningService.ParsedReceiptEntry> parsed = new ArrayList<>();
+        try {
+            parsed = receiptScanningService.scanReceipt(req.base64Image, categories);
+        } catch (IOException e) {
+            log.error("Failed to scan receipt", e);
+        }
+
+        if (parsed.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+
+        List<BudgetEntryDto> result = parsed.stream().map(p -> {
+            LocalDate entryDate = p.getDate() != null ? p.getDate() : LocalDate.now();
+
+            BudgetEntry entry = new BudgetEntry();
+            entry.setId(UUID.randomUUID());
+            entry.setName(p.getName() != null ? p.getName() : "Receipt item");
+            entry.setCategory(p.getCategory() != null ? p.getCategory() : "Uncategorized");
+            entry.setCurrency(p.getCurrency() != null ? p.getCurrency() : "PLN");
+            entry.setValue(p.getValue() != null ? p.getValue() : BigDecimal.ZERO);
+            entry.setEntryDate(entryDate);
+            entry.setPaymentMethod("Card");
+            entry.setEntryType("Expense");
+            entry.setIsRecurring(false);
+            entry.setNotes(p.getNotes());
+            entry.setModificationDate(LocalDateTime.now());
+            entry.setDeleted(false);
+            BudgetEntry saved = budgetEntryService.save(entry);
+            return toDto(saved);
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
     private void applyFieldsFromDto(BudgetEntry entry, BudgetEntryDto req) {
         if (req.getName() != null) entry.setName(req.getName());
         if (req.getCategory() != null) entry.setCategory(req.getCategory());
@@ -145,5 +207,26 @@ public class BudgetEntryRestController {
         if (req.getEntryType() != null) entry.setEntryType(req.getEntryType());
         if (req.getNotes() != null) entry.setNotes(req.getNotes());
         if (req.getIsRecurring() != null) entry.setIsRecurring(req.getIsRecurring());
+    }
+
+    public static class ReceiptScanRequest {
+        public String base64Image;
+        public LocalDate entryDate;
+
+        public ReceiptScanRequest() {
+        }
+
+        public ReceiptScanRequest(String base64Image, LocalDate entryDate) {
+            this.base64Image = base64Image;
+            this.entryDate = entryDate;
+        }
+
+        public String getBase64Image() {
+            return base64Image;
+        }
+
+        public LocalDate getEntryDate() {
+            return entryDate;
+        }
     }
 }
