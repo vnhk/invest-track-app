@@ -89,6 +89,8 @@ public class ReceiptScanningService {
             return Collections.emptyList();
         }
 
+        log.info("OpenAI response successfully received.");
+
         // Clean response if markdown code block was returned despite instructions
         String cleanedResponse = response.trim();
         if (cleanedResponse.startsWith("```")) {

@@ -175,10 +175,10 @@ public class BudgetEntryRestController {
 
 
         List<BudgetEntryDto> result = parsed.stream().map(p -> {
-            LocalDate entryDate = p.getDate() != null ? p.getDate() : LocalDate.now();
+            LocalDate entryDate = p.getDate() != null ? p.getDate() : (req.entryDate != null ? req.entryDate : LocalDate.now());
 
             BudgetEntry entry = new BudgetEntry();
-            entry.setId(UUID.randomUUID());
+            // entry.setId(UUID.randomUUID()); // Do not set ID for preview
             entry.setName(p.getName() != null ? p.getName() : "Receipt item");
             entry.setCategory(p.getCategory() != null ? p.getCategory() : "Uncategorized");
             entry.setCurrency(p.getCurrency() != null ? p.getCurrency() : "PLN");
@@ -190,8 +190,8 @@ public class BudgetEntryRestController {
             entry.setNotes(p.getNotes());
             entry.setModificationDate(LocalDateTime.now());
             entry.setDeleted(false);
-            BudgetEntry saved = budgetEntryService.save(entry);
-            return toDto(saved);
+            // Do not persist, just return DTO
+            return toDto(entry);
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
