@@ -1,69 +1,30 @@
 package com.bervan.investtrack.service;
 
-import com.bervan.common.service.OpenAIService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.bervan.common.service.BaseScanningService;
 import lombok.Getter;
 import lombok.Setter;
-import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
 @Service
-public class ReceiptScanningService {
+public class ReceiptScanningService extends BaseScanningService {
     private static final Logger log = LoggerFactory.getLogger(ReceiptScanningService.class);
-    private final OpenAIService openAIService;
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    @Value("${openai.api.key}")
-    private String apiKey;
 
-    public ReceiptScanningService() {
-        this.openAIService = new OpenAIService("You are an expert receipt parser and financial category classifier.");
+    public ReceiptScanningService(@Value("${openai.api.key}") String apiKey) {
+        super("You are an expert receipt parser and financial category classifier.", apiKey);
     }
 
+
     public List<ParsedReceiptEntry> scanReceipt(String base64Image, List<String> availableCategories) throws IOException {
-        String mimeType = "image/jpeg";
-        String base64Data = base64Image;
-
-        if (base64Image.startsWith("data:")) {
-            int commaIndex = base64Image.indexOf(",");
-            if (commaIndex != -1) {
-                String prefix = base64Image.substring(0, commaIndex);
-                if (prefix.contains(":") && prefix.contains(";")) {
-                    mimeType = prefix.substring(prefix.indexOf(":") + 1, prefix.indexOf(";"));
-                }
-                base64Data = base64Image.substring(commaIndex + 1);
-            }
-        }
-
-        byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        Thumbnails.of(new ByteArrayInputStream(imageBytes))
-                .size(900, 900)
-                .outputFormat("jpg")
-                .outputQuality(0.8)
-                .keepAspectRatio(true)
-                .toOutputStream(baos);
-
-        byte[] compressedBytes = baos.toByteArray();
-
         String prompt = "Analyze the attached receipt image and extract the transactions.\n" +
                 "Group the purchased items logically into one or more budget entries.\n" +
                 "Try to classify each group into one of the existing categories: " + availableCategories.toString() + ".\n" +
@@ -80,33 +41,19 @@ public class ReceiptScanningService {
                 " - 'notes': String (list some of the key items included, or specific item details)\n" +
                 "Make sure the currency matches the receipt's currency. If you don't see currency assume it's PLN.";
 
-        String compressedBase64 = Base64.getEncoder().encodeToString(compressedBytes);
         log.info("Sending receipt image to OpenAI for analysis...");
-        String response = openAIService.askAIWithImage(prompt, compressedBase64, mimeType, OpenAIService.GPT_4O_MINI, 0.1, apiKey);
+        String response = super.askAIWithImage(base64Image, prompt);
 
         if (response == null) {
-            log.error("Failed to get response from OpenAI or API key is not configured.");
+            log.error("Failed to receive a response from OpenAI.");
             return Collections.emptyList();
         }
 
-        log.info("OpenAI response successfully received.");
+        log.info("OpenAI receipt response successfully received.");
 
-        // Clean response if markdown code block was returned despite instructions
-        String cleanedResponse = response.trim();
-        if (cleanedResponse.startsWith("```")) {
-            if (cleanedResponse.startsWith("```json")) {
-                cleanedResponse = cleanedResponse.substring(7);
-            } else {
-                cleanedResponse = cleanedResponse.substring(3);
-            }
-            if (cleanedResponse.endsWith("```")) {
-                cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length() - 3);
-            }
-            cleanedResponse = cleanedResponse.trim();
-        }
 
         try {
-            ParsedReceiptEntry[] entries = objectMapper.readValue(cleanedResponse, ParsedReceiptEntry[].class);
+            ParsedReceiptEntry[] entries = objectMapper.readValue(response, ParsedReceiptEntry[].class);
             return Arrays.asList(entries);
         } catch (Exception e) {
             log.error("Failed to parse JSON response from OpenAI: {}", response, e);
