@@ -25,11 +25,22 @@ public class ReceiptScanningService extends BaseScanningService {
 
 
     public List<ParsedReceiptEntry> scanReceipt(String base64Image, List<String> availableCategories) throws IOException {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        String tomorrowString = tomorrow.toString();
+        int currentYear = tomorrow.getYear();
+
         String prompt = "Analyze the attached receipt image and extract the transactions.\n" +
                 "Group the purchased items logically into one or more budget entries.\n" +
                 "Try to classify each group into one of the existing categories: " + availableCategories.toString() + ".\n" +
-                "If an item (like a grill, electronics, clothing) clearly belongs to a different category than food/groceries, SPLIT it into a separate entry with its own price and a suitable category.\n" +
+                "Category hints:\n" +
+                " - Shopping: groceries, cosmetics, household products, cleaning supplies, everyday shopping.\n" +
+                " - Food: restaurant meals, takeaway food, food delivery, cafes, bars.\n" +
+                "If an item (like a grill, electronics, clothing, furniture, tools) clearly belongs to a different category than groceries or household shopping, SPLIT it into a separate entry with its own price and a suitable category.\n" +
                 "The sum of all entries must equal the total amount on the receipt.\n" +
+                "Receipt dates are ALWAYS between January 1st of " + (currentYear - 1) + " and " + tomorrowString + ".\n" +
+                "In 99% of cases the receipt year is " + currentYear + ". Only use " + (currentYear - 1) + " if the receipt clearly indicates that year.\n" +
+                "The receipt date can NEVER be later than " + tomorrowString + ".\n" +
+                "If the year is missing, unclear, or ambiguous, assume the year is " + currentYear + ".\n" +
                 "Return the result STRICTLY as a JSON array of objects.\n" +
                 "Do NOT wrap the JSON in ```json markdown code blocks. Return ONLY valid, minified raw JSON.\n" +
                 "Each object in the array must have the following fields:\n" +
@@ -40,7 +51,6 @@ public class ReceiptScanningService extends BaseScanningService {
                 " - 'date': java LocalDate\n" +
                 " - 'notes': String (list some of the key items included, or specific item details)\n" +
                 "Make sure the currency matches the receipt's currency. If you don't see currency assume it's PLN.";
-
         log.info("Sending receipt image to OpenAI for analysis...");
         String response = super.askAIWithImage(base64Image, prompt);
 
