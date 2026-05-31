@@ -1,6 +1,5 @@
 package com.bervan.investtrack.service;
 
-import com.bervan.logging.JsonLogger;
 import com.bervan.common.search.SearchRequest;
 import com.bervan.common.search.SearchService;
 import com.bervan.common.search.model.SearchOperation;
@@ -9,7 +8,7 @@ import com.bervan.common.service.EmailService;
 import com.bervan.investtrack.model.StockPriceAlert;
 import com.bervan.investtrack.model.StockPriceAlertConfig;
 import com.bervan.investtrack.service.scrap.ScrapStockPriceService;
-import lombok.extern.slf4j.Slf4j;
+import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
