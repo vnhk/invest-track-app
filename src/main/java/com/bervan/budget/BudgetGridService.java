@@ -26,10 +26,6 @@ public class BudgetGridService {
         this.currencyConverter = currencyConverter;
     }
 
-    private String getDateRootName(BudgetEntry e) {
-        return e.getEntryDate().getMonthValue() + "-" + e.getEntryDate().getYear();
-    }
-
     public List<BudgetEntry> loadAllRecurringLastMonth() {
         SearchRequest request = new SearchRequest();
         request.addCriterion("IS_RECURRING_CRITERIA", BudgetEntry.class, "isRecurring", SearchOperation.EQUALS_OPERATION, true);
@@ -54,12 +50,17 @@ public class BudgetGridService {
 
     public BudgetEntry getCopyForNewDate(LocalDate newDate, BudgetEntry entry) {
         BudgetEntry newBudgetEntry = new BudgetEntry(null, entry.getName(), false, LocalDateTime.now(), entry.getCategory(),
-                entry.getCurrency(), entry.getValue(), newDate, entry.getPaymentMethod(), entry.getEntryType(), entry.getNotes(), entry.getIsRecurring());
+                entry.getCurrency(), entry.getValue(), newDate, entry.getPaymentMethod(), entry.getEntryType(), entry.getNotes(), entry.getIsRecurring(), entry.getTags());
         return newBudgetEntry;
     }
 
     public BudgetEntry getItem(UUID id) {
         return budgetEntryService.findById(id);
+    }
+
+    public boolean shouldCopyRecurring() {
+        List<BudgetEntry> budgetEntries = loadAllRecurringLastMonth();
+        return !budgetEntries.isEmpty();
     }
 
     public void copyRecurringToAnotherDate(LocalDate newDate) {

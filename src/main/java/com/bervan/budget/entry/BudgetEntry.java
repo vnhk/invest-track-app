@@ -1,5 +1,6 @@
 package com.bervan.budget.entry;
 
+import com.bervan.budget.BudgetEntryTag;
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
 import jakarta.persistence.*;
@@ -10,8 +11,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 // Low-Code START
@@ -35,6 +36,13 @@ public class BudgetEntry extends BervanBaseEntity<UUID> implements PersistableTa
     private String entryType;
     private String notes;
     private Boolean isRecurring;
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "budget_entry_tags",
+            joinColumns = @JoinColumn(name = "budget_entry_id"),
+            inverseJoinColumns = @JoinColumn(name = "budget_tag_id")
+    )
+    private Set<BudgetEntryTag> tags = new HashSet<>();
 
     // Default constructor
     public BudgetEntry() {

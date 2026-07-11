@@ -1,5 +1,6 @@
 package com.bervan.investtrack.api;
 
+import com.bervan.budget.BudgetEntryTag;
 import com.bervan.budget.entry.BudgetEntry;
 import com.bervan.budget.entry.BudgetEntryService;
 import com.bervan.common.config.EntityConfigValidator;
@@ -40,8 +41,11 @@ public class BudgetEntryRestController {
     // Use top-level DTO class BudgetEntryDto and common ValidationErrorResponse
 
     private BudgetEntryDto toDto(BudgetEntry e) {
+        // TODO: add multiple selection in react and replace comma separated logic
+        String commaSeparatedTags = e.getTags().stream().map(BudgetEntryTag::getName).collect(Collectors.joining(", "));
+
         return new BudgetEntryDto(e.getId(), e.getName(), e.getCategory(), e.getCurrency(), e.getValue(),
-                e.getEntryDate(), e.getPaymentMethod(), e.getEntryType(), e.getNotes(),
+                e.getEntryDate(), e.getPaymentMethod(), e.getEntryType(), e.getNotes(), commaSeparatedTags,
                 e.getIsRecurring(), e.getModificationDate());
     }
 
@@ -79,6 +83,12 @@ public class BudgetEntryRestController {
         return ResponseEntity.ok(categories);
     }
 
+    @GetMapping("/tags")
+    public ResponseEntity<List<BudgetTagDto>> getTags() {
+        List<BudgetTagDto> tags = getAllTagsDto();
+        return ResponseEntity.ok(tags);
+    }
+
     private List<String> getAvailableCategories() {
         Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
         List<String> categories = all.stream()
@@ -88,6 +98,23 @@ public class BudgetEntryRestController {
                 .sorted()
                 .toList();
         return categories;
+    }
+
+    private List<BudgetTagDto> getAllTagsDto() {
+        List<BudgetEntryTag> tags = getAllTags();
+        return tags.stream().map(tag -> new BudgetTagDto(tag.getId(), tag.getName())).toList();
+    }
+
+    private List<BudgetEntryTag> getAllTags() {
+        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
+        List<BudgetEntryTag> tags = all.stream()
+                .map(BudgetEntry::getTags)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .sorted()
+                .toList();
+        return tags;
     }
 
     @PostMapping
@@ -107,6 +134,7 @@ public class BudgetEntryRestController {
         if (req.getEntryType() != null) fields.put("entryType", req.getEntryType());
         if (req.getNotes() != null) fields.put("notes", req.getNotes());
         if (req.getIsRecurring() != null) fields.put("isRecurring", req.getIsRecurring());
+        if (req.getTags() != null) fields.put("tags", req.getTags());
         List<EntityConfigValidator.FieldError> errors = validator.validate("BudgetEntry", fields);
         if (!errors.isEmpty())
             return ResponseEntity.badRequest().body(new com.bervan.common.controller.ValidationErrorResponse(errors));
@@ -207,6 +235,39 @@ public class BudgetEntryRestController {
         if (req.getEntryType() != null) entry.setEntryType(req.getEntryType());
         if (req.getNotes() != null) entry.setNotes(req.getNotes());
         if (req.getIsRecurring() != null) entry.setIsRecurring(req.getIsRecurring());
+        if (req.getTags() != null) {
+            // TODO: add multiple selection in react and replace comma separated logic
+            String[] tags = req.getTags().split(",");
+
+            // Clear old tags (but they won't be deleted from database)
+            entry.getTags().clear();
+            
+            for (String tagName : tags) {
+                tagName = tagName.trim();
+                if (tagName.isBlank()) continue;
+                
+                BudgetEntryTag found = findOrCreateTag(tagName);
+                entry.getTags().add(found);
+            }
+        }
+    }
+
+    private BudgetEntryTag findOrCreateTag(String tagName) {
+        // Search in all existing entries for this tag name
+        Set<BudgetEntry> allEntries = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
+        for (BudgetEntry e : allEntries) {
+            for (BudgetEntryTag tag : e.getTags()) {
+                if (tagName.equals(tag.getName())) {
+                    // Return existing tag - it can be shared between entries
+                    return tag;
+                }
+            }
+        }
+
+        // Create new tag if not found
+        BudgetEntryTag newTag = new BudgetEntryTag();
+        newTag.setName(tagName);
+        return newTag;
     }
 
     public static class ReceiptScanRequest {

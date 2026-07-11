@@ -11,6 +11,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -27,13 +28,15 @@ public class BudgetEntryDto implements BaseDTO<UUID> {
     private String paymentMethod;
     private String entryType;
     private String notes;
+    private String tags; // comma separated temp, will be replaced with Set<BudgetTagDto> in the future when react is ready for multiple selection
+    // TODO: add multiple selection in react and replace comma separated logic
     private Boolean isRecurring;
     private LocalDateTime modificationDate;
 
     @Override
     public Class<? extends BaseModel<UUID>> dtoTarget() {
         @SuppressWarnings("unchecked")
-        Class<? extends BaseModel<UUID>> t = (Class<? extends BaseModel<UUID>>)(Class<?>) BudgetEntry.class;
+        Class<? extends BaseModel<UUID>> t = (Class<? extends BaseModel<UUID>>) (Class<?>) BudgetEntry.class;
         return t;
     }
 }

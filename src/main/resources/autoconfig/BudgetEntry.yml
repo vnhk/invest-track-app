@@ -83,6 +83,14 @@ columns:
     inTable: false
     required: false
 
+  - field: tags
+    displayName: "Tags"
+    internalName: tags
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+
   - field: notes
     displayName: "Notes"
     internalName: notes
@@ -92,4 +100,3 @@ columns:
     required: false
     min: 0
     max: 1000
-
