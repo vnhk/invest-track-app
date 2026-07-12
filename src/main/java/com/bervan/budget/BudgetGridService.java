@@ -54,10 +54,6 @@ public class BudgetGridService {
         return newBudgetEntry;
     }
 
-    public BudgetEntry getItem(UUID id) {
-        return budgetEntryService.findById(id);
-    }
-
     public boolean shouldCopyRecurring() {
         List<BudgetEntry> budgetEntries = loadAllRecurringLastMonth();
         return !budgetEntries.isEmpty();

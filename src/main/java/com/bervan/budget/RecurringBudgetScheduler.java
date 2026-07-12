@@ -23,7 +23,7 @@ public class RecurringBudgetScheduler {
     /**
      * Copies all recurring entries to the new month
      */
-    @Scheduled(cron = "0 0 1 * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public void addRecurringEntriesForNewMonth() {
         LocalDate today = LocalDate.now();
 
