@@ -21,18 +21,12 @@ public class RecurringBudgetScheduler {
     }
 
     /**
+     * Runs at 00:01 on the 1st day of every month
      * Copies all recurring entries to the new month
      */
-    @Scheduled(cron = "0 */5 * * * *")
+    @Scheduled(cron = "0 1 0 1 * *")
     public void addRecurringEntriesForNewMonth() {
         LocalDate today = LocalDate.now();
-
-        // try to run every day, but check if it's already created
-        if (!budgetGridService.shouldCopyRecurring()) {
-            log.info("Skipping recurring entries copy for month: {}", today.getMonth());
-            return;
-        }
-
         log.info("Running scheduled recurring entries copy for month: {}", today.getMonth());
 
         try {
@@ -45,11 +39,11 @@ public class RecurringBudgetScheduler {
 
     /**
      * Manual trigger to add recurring entries for a specific month
-     *
-     * @param targetDate the date to copy recurring entries to
      */
-    public void addRecurringForMonth(LocalDate targetDate) {
-        log.info("Manually adding recurring entries for: {}", targetDate);
-        budgetGridService.copyRecurringToAnotherDate(targetDate);
+
+    @Scheduled(cron = "0 0 17 12 7 *")
+    public void addRecurringForMonth() {
+        log.info("Manually adding recurring entries for: {}", LocalDate.now().getMonth());
+        addRecurringEntriesForNewMonth();
     }
 }

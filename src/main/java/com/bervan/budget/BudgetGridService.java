@@ -54,11 +54,6 @@ public class BudgetGridService {
         return newBudgetEntry;
     }
 
-    public boolean shouldCopyRecurring() {
-        List<BudgetEntry> budgetEntries = loadAllRecurringLastMonth();
-        return !budgetEntries.isEmpty();
-    }
-
     public void copyRecurringToAnotherDate(LocalDate newDate) {
         List<BudgetEntry> budgetEntries = loadAllRecurringLastMonth();
         for (BudgetEntry budgetEntry : budgetEntries) {
