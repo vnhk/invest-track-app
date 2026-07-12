@@ -41,7 +41,7 @@ public class RecurringBudgetScheduler {
      * Manual trigger to add recurring entries for a specific month
      */
 
-    @Scheduled(cron = "0 0 17 12 7 *")
+//    @Scheduled(cron = "0 0 17 12 7 *")
     public void addRecurringForMonth() {
         log.info("Manually adding recurring entries for: {}", LocalDate.now().getMonth());
         addRecurringEntriesForNewMonth();
