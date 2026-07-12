@@ -4,15 +4,21 @@ import com.bervan.budget.BudgetEntryTag;
 import com.bervan.budget.entry.BudgetEntry;
 import com.bervan.budget.entry.BudgetEntryService;
 import com.bervan.common.config.EntityConfigValidator;
+import com.bervan.common.controller.BaseController;
+import com.bervan.common.controller.ImportResult;
 import com.bervan.common.controller.ValidationErrorResponse;
+import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.investtrack.service.ReceiptScanningService;
 import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -23,7 +29,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/invest-track/budget-entries")
-public class BudgetEntryRestController {
+public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID> {
 
     private final BudgetEntryService budgetEntryService;
     private final EntityConfigValidator validator;
@@ -32,7 +38,9 @@ public class BudgetEntryRestController {
 
     public BudgetEntryRestController(BudgetEntryService budgetEntryService,
                                      EntityConfigValidator validator,
-                                     ReceiptScanningService receiptScanningService) {
+                                     ReceiptScanningService receiptScanningService,
+                                     BervanDTOMapper bervanDTOMapper) {
+        super(budgetEntryService, bervanDTOMapper, validator, "BudgetEntry");
         this.budgetEntryService = budgetEntryService;
         this.validator = validator;
         this.receiptScanningService = receiptScanningService;
@@ -77,6 +85,16 @@ public class BudgetEntryRestController {
         return ResponseEntity.ok(new PageImpl<>(dtos.subList(from, to), PageRequest.of(page, size), total));
     }
 
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@RequestParam MultiValueMap<String, String> allParams) {
+        return super.exportAll(allParams, BudgetEntryDto.class, "budget-entries", BudgetEntry.class);
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportResult> importData(@RequestParam("file") MultipartFile file) {
+        return super.importAll(file, BudgetEntryRequestDto.class);
+    }
+
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
         List<String> categories = getAvailableCategories();
@@ -89,36 +107,8 @@ public class BudgetEntryRestController {
         return ResponseEntity.ok(tags);
     }
 
-    private List<String> getAvailableCategories() {
-        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
-        List<String> categories = all.stream()
-                .map(BudgetEntry::getCategory)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted()
-                .toList();
-        return categories;
-    }
-
-    private List<BudgetTagDto> getAllTagsDto() {
-        List<BudgetEntryTag> tags = getAllTags();
-        return tags.stream().map(tag -> new BudgetTagDto(tag.getId(), tag.getName())).toList();
-    }
-
-    private List<BudgetEntryTag> getAllTags() {
-        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
-        List<BudgetEntryTag> tags = all.stream()
-                .map(BudgetEntry::getTags)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .filter(Objects::nonNull)
-                .sorted()
-                .toList();
-        return tags;
-    }
-
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody BudgetEntryDto req) {
+    public ResponseEntity<?> create(@RequestBody BudgetEntryRequestDto req) {
         // map DTO -> entity, validate, save
         BudgetEntry model = new BudgetEntry();
         if (req.getId() != null) model.setId(req.getId());
@@ -145,7 +135,7 @@ public class BudgetEntryRestController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody BudgetEntryDto req) {
+    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody BudgetEntryRequestDto req) {
         if (req.getId() == null) req.setId(id);
         Optional<BudgetEntry> match = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE)).stream()
                 .filter(e -> e.getId().equals(id)).findFirst();
@@ -169,6 +159,34 @@ public class BudgetEntryRestController {
         entry.setModificationDate(LocalDateTime.now());
         BudgetEntry saved = budgetEntryService.save(entry);
         return ResponseEntity.ok(toDto(saved));
+    }
+
+    private List<BudgetTagDto> getAllTagsDto() {
+        List<BudgetEntryTag> tags = getAllTags();
+        return tags.stream().map(tag -> new BudgetTagDto(tag.getId(), tag.getName())).toList();
+    }
+
+    private List<String> getAvailableCategories() {
+        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
+        List<String> categories = all.stream()
+                .map(BudgetEntry::getCategory)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        return categories;
+    }
+
+    private List<BudgetEntryTag> getAllTags() {
+        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
+        List<BudgetEntryTag> tags = all.stream()
+                .map(BudgetEntry::getTags)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .sorted()
+                .toList();
+        return tags;
     }
 
     @DeleteMapping("/{id}")
@@ -225,7 +243,7 @@ public class BudgetEntryRestController {
         return ResponseEntity.ok(result);
     }
 
-    private void applyFieldsFromDto(BudgetEntry entry, BudgetEntryDto req) {
+    private void applyFieldsFromDto(BudgetEntry entry, BudgetEntryRequestDto req) {
         if (req.getName() != null) entry.setName(req.getName());
         if (req.getCategory() != null) entry.setCategory(req.getCategory());
         if (req.getCurrency() != null) entry.setCurrency(req.getCurrency());
@@ -241,11 +259,11 @@ public class BudgetEntryRestController {
 
             // Clear old tags (but they won't be deleted from database)
             entry.getTags().clear();
-            
+
             for (String tagName : tags) {
                 tagName = tagName.trim();
                 if (tagName.isBlank()) continue;
-                
+
                 BudgetEntryTag found = findOrCreateTag(tagName);
                 entry.getTags().add(found);
             }

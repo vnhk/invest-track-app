@@ -18,7 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BudgetEntryDto implements BaseDTO<UUID> {
+public class BudgetEntryRequestDto implements BaseDTO<UUID> {
     private UUID id;
     private String name;
     private String category;
@@ -28,7 +28,7 @@ public class BudgetEntryDto implements BaseDTO<UUID> {
     private String paymentMethod;
     private String entryType;
     private String notes;
-    @FieldMapperConfig(mapper = BudgetTagToDtoMapper.class) //this in resp, create requestDto and use second mapper
+    @FieldMapperConfig(mapper = BudgetTagDtoToModelMapper.class)
     private String tags; // comma separated temp will be replaced with Set<BudgetTagDto> in the future when react is ready for multiple selection
     // TODO: add multiple selection in react and replace comma separated logic
     private Boolean isRecurring;

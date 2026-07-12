@@ -3,6 +3,7 @@ package com.bervan.budget.entry;
 import com.bervan.budget.BudgetEntryTag;
 import com.bervan.common.model.BervanBaseEntity;
 import com.bervan.common.model.PersistableTableData;
+import com.bervan.core.model.BaseModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,7 +22,7 @@ import java.util.UUID;
 @Setter
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @AllArgsConstructor
-public class BudgetEntry extends BervanBaseEntity<UUID> implements PersistableTableData<UUID> {
+public class BudgetEntry extends BervanBaseEntity<UUID> implements PersistableTableData<UUID>, BaseModel<UUID> {
 
     @Id
     private UUID id;
