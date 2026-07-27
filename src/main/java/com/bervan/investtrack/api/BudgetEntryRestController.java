@@ -8,6 +8,7 @@ import com.bervan.common.controller.BaseController;
 import com.bervan.common.controller.ImportResult;
 import com.bervan.common.controller.ValidationErrorResponse;
 import com.bervan.common.mapper.BervanDTOMapper;
+import com.bervan.common.search.model.SortDirection;
 import com.bervan.investtrack.service.ReceiptScanningService;
 import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Page;
@@ -63,8 +64,7 @@ public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID>
             @RequestParam MultiValueMap<String, String> allParams
 
     ) {
-
-        return super.search(allParams, page, size, BudgetEntryDto.class, BudgetEntry.class);
+        return super.search(allParams, page, size, BudgetEntryDto.class, BudgetEntry.class, "entryDate", SortDirection.DESC);
     }
 
     @GetMapping("/export")
