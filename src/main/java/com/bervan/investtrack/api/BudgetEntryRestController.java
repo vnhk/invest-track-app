@@ -11,7 +11,6 @@ import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.investtrack.service.ReceiptScanningService;
 import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -61,28 +60,11 @@ public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID>
     public ResponseEntity<Page<BudgetEntryDto>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "entryDate") String sort,
-            @RequestParam(defaultValue = "desc") String direction,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String entryType,
-            @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo
+            @RequestParam MultiValueMap<String, String> allParams
+
     ) {
 
-        Set<BudgetEntry> all = budgetEntryService.load(PageRequest.of(0, Integer.MAX_VALUE));
-        List<BudgetEntryDto> dtos = all.stream()
-                .filter(e -> category == null || category.equals(e.getCategory()))
-                .filter(e -> entryType == null || entryType.equals(e.getEntryType()))
-                .filter(e -> dateFrom == null || (e.getEntryDate() != null && !e.getEntryDate().isBefore(LocalDate.parse(dateFrom))))
-                .filter(e -> dateTo == null || (e.getEntryDate() != null && !e.getEntryDate().isAfter(LocalDate.parse(dateTo))))
-                .map(this::toDto)
-                .sorted(Comparator.comparing(BudgetEntryDto::getEntryDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .toList();
-
-        int total = dtos.size();
-        int from = Math.min(page * size, total);
-        int to = Math.min(from + size, total);
-        return ResponseEntity.ok(new PageImpl<>(dtos.subList(from, to), PageRequest.of(page, size), total));
+        return super.search(allParams, page, size, BudgetEntryDto.class, BudgetEntry.class);
     }
 
     @GetMapping("/export")
