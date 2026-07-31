@@ -81,7 +81,8 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
         return snapshots.stream()
                 .map(WalletSnapshot::getMonthlyDeposit)
                 .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .subtract(getTotalWithdrawals());
     }
 
     @Transient
