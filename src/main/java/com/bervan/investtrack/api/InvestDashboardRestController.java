@@ -6,7 +6,9 @@ import com.bervan.investtrack.service.*;
 import com.bervan.investtrack.service.CurrencyConverter.Currency;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,10 +28,10 @@ public class InvestDashboardRestController {
     private final ETFDataService ETFDataService;
 
     public InvestDashboardRestController(WalletService walletService, WalletSnapshotService snapshotService,
-                                          InvestmentCalculationService calculationService,
-                                          BudgetChartDataService budgetChartDataService,
-                                          CurrencyConverter currencyConverter,
-                                          ETFDataService ETFDataService) {
+                                         InvestmentCalculationService calculationService,
+                                         BudgetChartDataService budgetChartDataService,
+                                         CurrencyConverter currencyConverter,
+                                         ETFDataService ETFDataService) {
         this.walletService = walletService;
         this.snapshotService = snapshotService;
         this.calculationService = calculationService;
@@ -58,7 +60,7 @@ public class InvestDashboardRestController {
         for (Wallet w : investWallets) {
             investBalance = investBalance.add(toPln(w.getCurrentValue(), w.getCurrency()));
             investNetDeposits = investNetDeposits.add(
-                    toPln(w.getTotalDeposits().subtract(w.getTotalWithdrawals()), w.getCurrency()));
+                    toPln(w.getTotalDeposits(), w.getCurrency()));
         }
         BigDecimal investReturn = investBalance.subtract(investNetDeposits);
         BigDecimal investReturnPct = investNetDeposits.compareTo(BigDecimal.ZERO) > 0
@@ -83,7 +85,7 @@ public class InvestDashboardRestController {
         for (Wallet w : savingsWallets) {
             savingsBalance = savingsBalance.add(toPln(w.getCurrentValue(), w.getCurrency()));
             savingsNetDeposits = savingsNetDeposits.add(
-                    toPln(w.getTotalDeposits().subtract(w.getTotalWithdrawals()), w.getCurrency()));
+                    toPln(w.getTotalDeposits(), w.getCurrency()));
         }
         BigDecimal savingsGrowth = savingsBalance.subtract(savingsNetDeposits);
         BigDecimal netWorth = investBalance.add(savingsBalance);

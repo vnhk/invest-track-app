@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +107,7 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
         BigDecimal netInvestment = calculateNetInvestment();
         if (netInvestment.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal totalReturn = calculateTotalReturn();
-            return totalReturn.divide(netInvestment, 4, java.math.RoundingMode.HALF_UP)
+            return totalReturn.divide(netInvestment, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
         } else {
             return BigDecimal.ZERO;
@@ -118,7 +119,7 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
     }
 
     public BigDecimal calculateNetInvestment() {
-        return getTotalDeposits().subtract(getTotalWithdrawals());
+        return getTotalDeposits();
     }
 
     public boolean isInvestmentLike() {
