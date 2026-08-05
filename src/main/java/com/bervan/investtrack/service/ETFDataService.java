@@ -185,12 +185,11 @@ public class ETFDataService {
         cachedDji = fetchSafe(DJI_TICKER, "Dow Jones", cachedDji);
         cachedUsdEur = fetchSafe(USDEUR_TICKER, "USD/EUR", cachedUsdEur);
         //based on SP500 cached
-        cachedFixedDeposit3_5 = calculateFixedDeposit(FIXED_DEPOSIT_TICKER, 3.5, 12); // 3.5% annual interest, monthly compounding
+        cachedFixedDeposit3_5 = calculateFixedDeposit(3.5, 12); // 3.5% annual interest, monthly compounding
         cacheTimestamp = System.currentTimeMillis();
     }
 
     private Map<YearMonth, BigDecimal> calculateFixedDeposit(
-            String fixedDepositTicker,
             double annualInterest,
             int compoundingFrequency) {
 
