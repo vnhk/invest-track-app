@@ -78,7 +78,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("1000"), BigDecimal.ZERO);
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "USD");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "USD");
 
         assertEquals(2, result.size());
         assertEquals(0, new BigDecimal("1000.00").compareTo(result.get(0)),
@@ -94,7 +94,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("1000"), new BigDecimal("600"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "USD");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "USD");
 
         assertEquals(0, new BigDecimal("1000.00").compareTo(result.get(0)));
         assertEquals(0, new BigDecimal("1800.00").compareTo(result.get(1)),
@@ -114,7 +114,7 @@ class SP500DataServiceTest {
                 new BigDecimal("-500"),
                 BigDecimal.ZERO);
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "USD");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "USD");
 
         assertEquals(3, result.size());
         assertEquals(0, new BigDecimal("1000.00").compareTo(result.get(0)));
@@ -132,7 +132,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("1000"), new BigDecimal("-9999"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "USD");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "USD");
 
         assertEquals(0, BigDecimal.ZERO.compareTo(result.get(1)),
                 "Benchmark should clamp to 0 when withdrawal exceeds holdings");
@@ -143,7 +143,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(BigDecimal.ZERO, BigDecimal.ZERO);
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "USD");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "USD");
 
         result.forEach(v -> assertEquals(0, BigDecimal.ZERO.compareTo(v)));
     }
@@ -158,7 +158,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("4000"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "PLN");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "PLN");
 
         assertEquals(0, new BigDecimal("4000.00").compareTo(result.get(0)),
                 "4000 PLN deposited at fx=4.0, SP500=5000 → benchmark = 4000 PLN");
@@ -171,7 +171,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("4000"), BigDecimal.ZERO);
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "PLN");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "PLN");
 
         assertEquals(0, new BigDecimal("4800.00").compareTo(result.get(1)),
                 "0.2 units * 6000 * fx(4.0) = 4800 PLN");
@@ -186,7 +186,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024", "01-02-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("4000"), new BigDecimal("-2400"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "PLN");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "PLN");
 
         assertEquals(0, new BigDecimal("2400.00").compareTo(result.get(1)),
                 "After 2400 PLN withdrawal: 0.1 units * 6000 * 4.0 = 2400 PLN");
@@ -202,7 +202,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("900"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "EUR");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "EUR");
 
         assertEquals(0, new BigDecimal("900.00").compareTo(result.get(0)),
                 "900 EUR at fx=0.9 → depositUSD=1000 → benchmark=900 EUR");
@@ -212,8 +212,8 @@ class SP500DataServiceTest {
 
     @Test
     void emptyInput_returnsEmptyList() {
-        assertTrue(service.calculateBenchmarkValues(List.of(), List.of(), "USD").isEmpty());
-        assertTrue(service.calculateBenchmarkValues(null, List.of(), "USD").isEmpty());
+        assertTrue(service.calculateSp500BenchmarkValues(List.of(), List.of(), "USD").isEmpty());
+        assertTrue(service.calculateSp500BenchmarkValues(null, List.of(), "USD").isEmpty());
     }
 
     @Test
@@ -222,7 +222,7 @@ class SP500DataServiceTest {
         List<String> dates = List.of("01-01-2024");
         List<BigDecimal> deposits = List.of(new BigDecimal("1000"));
 
-        List<BigDecimal> result = service.calculateBenchmarkValues(dates, deposits, "GBP");
+        List<BigDecimal> result = service.calculateSp500BenchmarkValues(dates, deposits, "GBP");
 
         // Unknown currency → fxRate null → skipped, returns lastValue=0 for each
         assertEquals(1, result.size());

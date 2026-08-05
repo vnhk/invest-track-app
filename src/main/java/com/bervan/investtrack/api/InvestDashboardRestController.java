@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -158,6 +159,8 @@ public class InvestDashboardRestController {
                     ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
             List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
                     ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
+            List<BigDecimal> fixedDeposit3_5Vals = ETFDataService.calculateBenchmarkValuesForTicker(
+                    ETFDataService.FIXED_DEPOSIT_TICKER_3_5, "PLN", datesDdMmYyyy, netDeposits, w.getCurrency());
 
             int idx = 0;
             for (WalletSnapshot snap : snaps) {
@@ -174,11 +177,14 @@ public class InvestDashboardRestController {
                 BigDecimal wig20Pln = idx < wig20Vals.size() ? toPln(wig20Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
                 BigDecimal nasdaqPln = idx < nasdaqVals.size() ? toPln(nasdaqVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
                 BigDecimal djiPln = idx < djiVals.size() ? toPln(djiVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+                BigDecimal fixedDeposit3_5Pln = idx < fixedDeposit3_5Vals.size() ? toPln(fixedDeposit3_5Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
+
 
                 pt.put("sp500", sp500Pln.setScale(2, RoundingMode.HALF_UP));
                 pt.put("wig20", wig20Pln.setScale(2, RoundingMode.HALF_UP));
                 pt.put("nasdaq", nasdaqPln.setScale(2, RoundingMode.HALF_UP));
                 pt.put("dji", djiPln.setScale(2, RoundingMode.HALF_UP));
+                pt.put("fixedDeposit3_5", fixedDeposit3_5Pln.setScale(2, RoundingMode.HALF_UP));
 
                 series.add(pt);
                 idx++;
@@ -271,7 +277,7 @@ public class InvestDashboardRestController {
 
         List<String> datesDdMmYyyy = new ArrayList<>();
         List<BigDecimal> netDeposits = new ArrayList<>();
-        java.time.format.DateTimeFormatter bfmt = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        DateTimeFormatter bfmt = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         for (LocalDate date : ts.keySet()) {
             datesDdMmYyyy.add(date.format(bfmt));
             netDeposits.add(ts.get(date).cashFlow());
@@ -285,6 +291,8 @@ public class InvestDashboardRestController {
                 ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
         List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
                 ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
+        List<BigDecimal> fixedDeposit3_5 = ETFDataService.calculateBenchmarkValuesForTicker(
+                ETFDataService.FIXED_DEPOSIT_TICKER_3_5, "PLN", datesDdMmYyyy, netDeposits, "PLN");
 
         int i = 0;
         for (Map.Entry<LocalDate, InvestmentCalculationService.PortfolioPoint> e : ts.entrySet()) {
@@ -297,6 +305,7 @@ public class InvestDashboardRestController {
             point.put("wig20", i < wig20Vals.size() ? wig20Vals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
             point.put("nasdaq", i < nasdaqVals.size() ? nasdaqVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
             point.put("dji", i < djiVals.size() ? djiVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            point.put("fixedDeposit3_5", i < fixedDeposit3_5.size() ? fixedDeposit3_5.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
             list.add(point);
             i++;
         }

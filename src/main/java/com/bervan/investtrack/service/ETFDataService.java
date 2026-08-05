@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -32,11 +33,12 @@ import java.util.*;
  */
 @Service
 public class ETFDataService {
-    private static final String YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart/";
-    public static final String SP500_TICKER  = "%5EGSPC";     // ^GSPC
-    public static final String WIG20_TICKER  = "%5EWIG20";    // ^WIG20
+    public static final String SP500_TICKER = "%5EGSPC";     // ^GSPC
+    public static final String FIXED_DEPOSIT_TICKER_3_5 = "FIXED_DEPOSIT_TICKER_3_5"; // bank deposit simulation
+    public static final String WIG20_TICKER = "%5EWIG20";    // ^WIG20
     public static final String NASDAQ_TICKER = "%5ENDX";      // ^NDX
-    public static final String DJI_TICKER    = "%5EDJI";      // ^DJI
+    public static final String DJI_TICKER = "%5EDJI";      // ^DJI
+    private static final String YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart/";
     private static final String USDPLN_TICKER = "USDPLN%3DX"; // USDPLN=X  (PLN per 1 USD, e.g. 4.2)
     private static final String USDEUR_TICKER = "USDEUR%3DX"; // USDEUR=X  (EUR per 1 USD, e.g. 0.92)
     private static final String INTERVAL_RANGE = "?interval=1mo&range=25y";
@@ -46,10 +48,11 @@ public class ETFDataService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    private Map<YearMonth, BigDecimal> cachedSP500  = null;
-    private Map<YearMonth, BigDecimal> cachedWig20  = null;
+    private Map<YearMonth, BigDecimal> cachedSP500 = null;
+    private Map<YearMonth, BigDecimal> cachedFixedDeposit3_5 = null;
+    private Map<YearMonth, BigDecimal> cachedWig20 = null;
     private Map<YearMonth, BigDecimal> cachedNasdaq = null;
-    private Map<YearMonth, BigDecimal> cachedDji    = null;
+    private Map<YearMonth, BigDecimal> cachedDji = null;
     private Map<YearMonth, BigDecimal> cachedUsdPln = null;
     private Map<YearMonth, BigDecimal> cachedUsdEur = null;
     private long cacheTimestamp = 0L;
@@ -64,9 +67,9 @@ public class ETFDataService {
      * @param portfolioCurrency  "PLN", "EUR", or "USD"
      * @return benchmark values in portfolioCurrency, same length as dates; empty on data error
      */
-    public List<BigDecimal> calculateBenchmarkValues(List<String> dates,
-                                                      List<BigDecimal> monthlyNetDeposits,
-                                                      String portfolioCurrency) {
+    public List<BigDecimal> calculateSp500BenchmarkValues(List<String> dates,
+                                                          List<BigDecimal> monthlyNetDeposits,
+                                                          String portfolioCurrency) {
         return calculateBenchmarkValuesForTicker(SP500_TICKER, "USD", dates, monthlyNetDeposits, portfolioCurrency);
     }
 
@@ -151,6 +154,7 @@ public class ETFDataService {
             case WIG20_TICKER -> cachedWig20;
             case NASDAQ_TICKER -> cachedNasdaq;
             case DJI_TICKER -> cachedDji;
+            case FIXED_DEPOSIT_TICKER_3_5 -> cachedFixedDeposit3_5;
             default -> Collections.emptyMap();
         };
     }
@@ -160,7 +164,7 @@ public class ETFDataService {
             return amount;
         }
         BigDecimal rateFrom = getFxRate(fromCurr, ym);
-        BigDecimal rateTo   = getFxRate(toCurr, ym);
+        BigDecimal rateTo = getFxRate(toCurr, ym);
         if (rateFrom == null || rateFrom.compareTo(BigDecimal.ZERO) <= 0
                 || rateTo == null || rateTo.compareTo(BigDecimal.ZERO) <= 0) {
             return null;
@@ -175,13 +179,38 @@ public class ETFDataService {
         if (cachedSP500 != null && System.currentTimeMillis() - cacheTimestamp < CACHE_TTL_MS) {
             return;
         }
-        cachedSP500  = fetchSafe(SP500_TICKER,  "S&P 500", cachedSP500);
-        cachedWig20  = fetchSafe(WIG20_TICKER,  "WIG20", cachedWig20);
+        cachedSP500 = fetchSafe(SP500_TICKER, "S&P 500", cachedSP500);
+        cachedWig20 = fetchSafe(WIG20_TICKER, "WIG20", cachedWig20);
         cachedNasdaq = fetchSafe(NASDAQ_TICKER, "NASDAQ-100", cachedNasdaq);
-        cachedDji    = fetchSafe(DJI_TICKER,    "Dow Jones", cachedDji);
-        cachedUsdPln = fetchSafe(USDPLN_TICKER, "USD/PLN", cachedUsdPln);
+        cachedDji = fetchSafe(DJI_TICKER, "Dow Jones", cachedDji);
         cachedUsdEur = fetchSafe(USDEUR_TICKER, "USD/EUR", cachedUsdEur);
+        //based on SP500 cached
+        cachedFixedDeposit3_5 = calculateFixedDeposit(FIXED_DEPOSIT_TICKER, 3.5, 12); // 3.5% annual interest, monthly compounding
         cacheTimestamp = System.currentTimeMillis();
+    }
+
+    private Map<YearMonth, BigDecimal> calculateFixedDeposit(
+            String fixedDepositTicker,
+            double annualInterest,
+            int compoundingFrequency) {
+
+        Map<YearMonth, BigDecimal> fixedDepositMap = new TreeMap<>();
+        List<YearMonth> sortedYearMonth = cachedSP500.keySet().stream().sorted().toList();
+
+        fixedDepositMap.put(sortedYearMonth.get(0), BigDecimal.ONE);
+
+        BigDecimal rate = BigDecimal.valueOf(annualInterest / 100.0);
+        BigDecimal factor = BigDecimal.ONE.add(
+                rate.divide(BigDecimal.valueOf(compoundingFrequency), MathContext.DECIMAL64));
+
+        for (int i = 1; i < sortedYearMonth.size(); i++) {
+            YearMonth yearMonth = sortedYearMonth.get(i);
+            BigDecimal previousValue = fixedDepositMap.get(sortedYearMonth.get(i - 1));
+
+            fixedDepositMap.put(yearMonth, previousValue.multiply(factor));
+        }
+
+        return fixedDepositMap;
     }
 
     private Map<YearMonth, BigDecimal> fetchSafe(String ticker, String name, Map<YearMonth, BigDecimal> fallbackMap) {
@@ -218,8 +247,8 @@ public class ETFDataService {
             throw new RuntimeException("Unexpected Yahoo Finance response structure");
         }
 
-        JsonNode chartResult  = result.get(0);
-        JsonNode timestamps   = chartResult.path("timestamp");
+        JsonNode chartResult = result.get(0);
+        JsonNode timestamps = chartResult.path("timestamp");
 
         // Prefer adjclose; fall back to quote close
         JsonNode adjCloseNode = chartResult.path("indicators").path("adjclose");
@@ -241,7 +270,7 @@ public class ETFDataService {
 
             long epochSec = timestamps.get(i).asLong();
             LocalDate date = LocalDate.ofEpochDay(epochSec / 86400);
-            YearMonth ym   = YearMonth.from(date);
+            YearMonth ym = YearMonth.from(date);
             BigDecimal price = BigDecimal.valueOf(priceNode.asDouble()).setScale(6, RoundingMode.HALF_UP);
             prices.put(ym, price); // last entry per month wins
         }
@@ -268,7 +297,7 @@ public class ETFDataService {
             case "USD" -> BigDecimal.ONE;
             case "PLN" -> findNearest(cachedUsdPln != null ? cachedUsdPln : Collections.emptyMap(), ym);
             case "EUR" -> findNearest(cachedUsdEur != null ? cachedUsdEur : Collections.emptyMap(), ym);
-            default    -> null;
+            default -> null;
         };
     }
 
