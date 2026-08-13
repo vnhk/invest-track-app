@@ -1,0 +1,94 @@
+columns:
+  - field: brand
+    displayName: "Brand"
+    internalName: "brand"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 1
+    max: 512
+
+  - field: model
+    displayName: "Model"
+    internalName: "model"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    min: 1
+    max: 512
+
+  - field: vehicleType
+    displayName: "Type"
+    internalName: "vehicleType"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    strValues: ["Car", "Motorcycle", "Bike"]
+    min: 3
+    max: 255
+
+  - field: description
+    displayName: "Description"
+    internalName: "description"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+    min: 0
+    max: 512
+
+  - field: productionYear
+    displayName: "Production Year"
+    internalName: "productionYear"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    dataType: NUMBER
+    min: 1900
+    max: 3000
+
+  - field: purchasePrice
+    displayName: "Purchase Price"
+    internalName: "purchasePrice"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    dataType: NUMBER
+    min: 1
+    max: 100000000
+
+  - field: purchaseDate
+    displayName: "Purchase Date"
+    internalName: "purchaseDate"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    dataType: DATE
+
+  - field: purchaseCosts
+    displayName: "Purchase Costs"
+    internalName: "purchaseCosts"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: false
+    dataType: NUMBER
+    min: 1
+    max: 100000000
+
+  - field: currentValue
+    displayName: "Current Value"
+    internalName: "currentValue"
+    inSaveForm: true
+    inEditForm: true
+    inTable: true
+    required: true
+    dataType: NUMBER
+    min: 1
+    max: 100000000
