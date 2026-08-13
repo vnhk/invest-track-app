@@ -20,37 +20,6 @@ columns:
     min: 0
     max: 512
 
-  - field: brand
-    displayName: "Brand"
-    internalName: "brand"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: true
-    min: 1
-    max: 512
-
-  - field: model
-    displayName: "Model"
-    internalName: "model"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: true
-    min: 1
-    max: 512
-
-  - field: productionYear
-    displayName: "Production Year"
-    internalName: "productionYear"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: true
-    dataType: NUMBER
-    min: 1
-    max: 4
-
   - field: purchasePrice
     displayName: "Purchase Price"
     internalName: "purchasePrice"
