@@ -1,47 +1,41 @@
 package com.bervan.investtrack.api;
 
+import com.bervan.budget.entry.BudgetEntryService;
 import com.bervan.investtrack.model.Wallet;
 import com.bervan.investtrack.model.WalletSnapshot;
-import com.bervan.investtrack.service.*;
-import com.bervan.investtrack.service.CurrencyConverter.Currency;
+import com.bervan.investtrack.service.ETFDataService;
+import com.bervan.investtrack.service.WalletService;
+import com.bervan.investtrack.service.WalletSnapshotService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/invest-track/dashboard")
+@RequestMapping("/api/invest-track")
 public class InvestDashboardRestController {
 
     private final WalletService walletService;
     private final WalletSnapshotService snapshotService;
-    private final InvestmentCalculationService calculationService;
-    private final BudgetChartDataService budgetChartDataService;
-    private final CurrencyConverter currencyConverter;
     private final ETFDataService ETFDataService;
+    private final InvestDashboardHelper investDashboardHelper;
+    private final BudgetEntryService budgetEntryService;
 
     public InvestDashboardRestController(WalletService walletService, WalletSnapshotService snapshotService,
-                                         InvestmentCalculationService calculationService,
-                                         BudgetChartDataService budgetChartDataService,
-                                         CurrencyConverter currencyConverter,
-                                         ETFDataService ETFDataService) {
+                                         ETFDataService ETFDataService, InvestDashboardHelper investDashboardHelper, BudgetEntryService budgetEntryService) {
         this.walletService = walletService;
         this.snapshotService = snapshotService;
-        this.calculationService = calculationService;
-        this.budgetChartDataService = budgetChartDataService;
-        this.currencyConverter = currencyConverter;
         this.ETFDataService = ETFDataService;
+        this.investDashboardHelper = investDashboardHelper;
+        this.budgetEntryService = budgetEntryService;
     }
 
-    @GetMapping
+    @GetMapping(path = "/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboard() {
 
         // Load all wallets with snapshots
@@ -52,284 +46,8 @@ public class InvestDashboardRestController {
             w.getSnapshots().addAll(snapshots);
         }
 
-        List<Wallet> investWallets = allWallets.stream().filter(Wallet::isInvestmentLike).toList();
-        List<Wallet> savingsWallets = allWallets.stream().filter(w -> !w.isInvestmentLike()).toList();
-
-        // ── Investment KPIs ──────────────────────────────────────────────────────
-        BigDecimal investBalance = BigDecimal.ZERO;
-        BigDecimal investNetDeposits = BigDecimal.ZERO;
-        for (Wallet w : investWallets) {
-            investBalance = investBalance.add(toPln(w.getCurrentValue(), w.getCurrency()));
-            investNetDeposits = investNetDeposits.add(
-                    toPln(w.getTotalDeposits(), w.getCurrency()));
-        }
-        BigDecimal investReturn = investBalance.subtract(investNetDeposits);
-        BigDecimal investReturnPct = investNetDeposits.compareTo(BigDecimal.ZERO) > 0
-                ? pct(investReturn.divide(investNetDeposits, 4, RoundingMode.HALF_UP))
-                : BigDecimal.ZERO;
-
-        // TWR for investments
-        Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investTs =
-                calculationService.buildAggregatedTimeSeries(investWallets, this::toPln);
-        BigDecimal investTwr = pct(calculationService.calculateAggregatedTWR(investTs));
-
-        // CAGR for investments (first snapshot to last)
-        double investYears = monthsSpan(investWallets) / 12.0;
-        BigDecimal investCagr = BigDecimal.ZERO;
-        if (investYears > 0.1 && investNetDeposits.compareTo(BigDecimal.ZERO) > 0) {
-            investCagr = pct(calculationService.calculateCAGR(investNetDeposits, investBalance, Math.max(investYears, 0.1)));
-        }
-
-        // ── Savings KPIs ────────────────────────────────────────────────────────
-        BigDecimal savingsBalance = BigDecimal.ZERO;
-        BigDecimal savingsNetDeposits = BigDecimal.ZERO;
-        for (Wallet w : savingsWallets) {
-            savingsBalance = savingsBalance.add(toPln(w.getCurrentValue(), w.getCurrency()));
-            savingsNetDeposits = savingsNetDeposits.add(
-                    toPln(w.getTotalDeposits(), w.getCurrency()));
-        }
-        BigDecimal savingsGrowth = savingsBalance.subtract(savingsNetDeposits);
-        BigDecimal netWorth = investBalance.add(savingsBalance);
-
-        // ── Time series ─────────────────────────────────────────────────────────
-        // investment wallets only
-        List<Map<String, Object>> investTimeSeries = buildTimeSeriesWithBenchmarks(investTs);
-
-        // all wallets (net worth)
-        Map<LocalDate, InvestmentCalculationService.PortfolioPoint> allTs =
-                calculationService.buildAggregatedTimeSeries(allWallets, this::toPln);
-        List<Map<String, Object>> netWorthTimeSeries = buildTimeSeriesWithBenchmarks(allTs);
-
-        // ── Asset allocation ────────────────────────────────────────────────────
-        List<Map<String, Object>> allocation = new ArrayList<>();
-        for (Wallet w : allWallets) {
-            BigDecimal valuePln = toPln(w.getCurrentValue(), w.getCurrency());
-            if (valuePln.compareTo(BigDecimal.ZERO) > 0) {
-                Map<String, Object> entry = new LinkedHashMap<>();
-                entry.put("name", w.getName());
-                entry.put("type", w.getWalletType());
-                entry.put("valuePln", valuePln.setScale(2, RoundingMode.HALF_UP));
-                allocation.add(entry);
-            }
-        }
-
-        // ── Monthly returns heatmap (investment wallets) ─────────────────────────
-        Map<String, BigDecimal> heatmap = buildHeatmap(investTs);
-
-        // ── Budget data (last 12 months) ────────────────────────────────────────
-        LocalDate budgetFrom = LocalDate.now().minusMonths(12).withDayOfMonth(1);
-        LocalDate budgetTo = LocalDate.now();
-        BudgetChartDataService.MonthlyBudgetData monthly =
-                budgetChartDataService.getMonthlyIncomeExpense(budgetFrom, budgetTo);
-
-        List<Map<String, Object>> budgetSeries = new ArrayList<>();
-        for (String month : monthly.income().keySet()) {
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("month", month);
-            point.put("income", monthly.income().getOrDefault(month, BigDecimal.ZERO));
-            point.put("expense", monthly.expense().getOrDefault(month, BigDecimal.ZERO));
-            budgetSeries.add(point);
-        }
-
-        // ── Per-wallet time series (Balance / Earnings tabs) ───────────────────
-        List<Map<String, Object>> walletSeriesList = new ArrayList<>();
-        for (Wallet w : allWallets) {
-            List<WalletSnapshot> snaps = w.getSnapshots().stream()
-                    .filter(s -> s.getSnapshotDate() != null)
-                    .sorted(Comparator.comparing(WalletSnapshot::getSnapshotDate))
-                    .toList();
-            BigDecimal cum = BigDecimal.ZERO;
-            List<Map<String, Object>> series = new ArrayList<>();
-
-            List<String> datesDdMmYyyy = new ArrayList<>();
-            List<BigDecimal> netDeposits = new ArrayList<>();
-            java.time.format.DateTimeFormatter bfmt = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
-            for (WalletSnapshot snap : snaps) {
-                datesDdMmYyyy.add(snap.getSnapshotDate().format(bfmt));
-                BigDecimal dep = snap.getMonthlyDeposit() != null ? snap.getMonthlyDeposit() : BigDecimal.ZERO;
-                BigDecimal wdr = snap.getMonthlyWithdrawal() != null ? snap.getMonthlyWithdrawal() : BigDecimal.ZERO;
-                netDeposits.add(dep.subtract(wdr));
-            }
-
-            List<BigDecimal> sp500Vals = ETFDataService.calculateBenchmarkValuesForTicker(
-                    ETFDataService.SP500_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
-            List<BigDecimal> wig20Vals = ETFDataService.calculateBenchmarkValuesForTicker(
-                    ETFDataService.WIG20_TICKER, "PLN", datesDdMmYyyy, netDeposits, w.getCurrency());
-            List<BigDecimal> nasdaqVals = ETFDataService.calculateBenchmarkValuesForTicker(
-                    ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
-            List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
-                    ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, w.getCurrency());
-            List<BigDecimal> fixedDeposit3_5Vals = ETFDataService.calculateBenchmarkValuesForTicker(
-                    ETFDataService.FIXED_DEPOSIT_TICKER_3_5, "PLN", datesDdMmYyyy, netDeposits, w.getCurrency());
-
-            int idx = 0;
-            for (WalletSnapshot snap : snaps) {
-                BigDecimal dep = snap.getMonthlyDeposit() != null ? snap.getMonthlyDeposit() : BigDecimal.ZERO;
-                BigDecimal wdr = snap.getMonthlyWithdrawal() != null ? snap.getMonthlyWithdrawal() : BigDecimal.ZERO;
-                cum = cum.add(toPln(dep.subtract(wdr), w.getCurrency()));
-                BigDecimal pv = snap.getPortfolioValue() != null ? snap.getPortfolioValue() : BigDecimal.ZERO;
-                Map<String, Object> pt = new LinkedHashMap<>();
-                pt.put("date", snap.getSnapshotDate().toString());
-                pt.put("balance", toPln(pv, w.getCurrency()).setScale(2, RoundingMode.HALF_UP));
-                pt.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
-
-                BigDecimal sp500Pln = idx < sp500Vals.size() ? toPln(sp500Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
-                BigDecimal wig20Pln = idx < wig20Vals.size() ? toPln(wig20Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
-                BigDecimal nasdaqPln = idx < nasdaqVals.size() ? toPln(nasdaqVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
-                BigDecimal djiPln = idx < djiVals.size() ? toPln(djiVals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
-                BigDecimal fixedDeposit3_5Pln = idx < fixedDeposit3_5Vals.size() ? toPln(fixedDeposit3_5Vals.get(idx), w.getCurrency()) : BigDecimal.ZERO;
-
-
-                pt.put("sp500", sp500Pln.setScale(2, RoundingMode.HALF_UP));
-                pt.put("wig20", wig20Pln.setScale(2, RoundingMode.HALF_UP));
-                pt.put("nasdaq", nasdaqPln.setScale(2, RoundingMode.HALF_UP));
-                pt.put("dji", djiPln.setScale(2, RoundingMode.HALF_UP));
-                pt.put("fixedDeposit3_5", fixedDeposit3_5Pln.setScale(2, RoundingMode.HALF_UP));
-
-                series.add(pt);
-                idx++;
-            }
-            Map<String, Object> entry = new LinkedHashMap<>();
-            entry.put("walletId", w.getId().toString());
-            entry.put("walletName", w.getName());
-            entry.put("isInvestment", w.isInvestmentLike());
-            entry.put("returnRate", w.getReturnRate() != null ? round(pct(w.getReturnRate())) : BigDecimal.ZERO);
-            entry.put("series", series);
-            walletSeriesList.add(entry);
-        }
-
-        // ── Assemble response ───────────────────────────────────────────────────
-        Map<String, Object> result = new LinkedHashMap<>();
-
-        BigDecimal avgMonthlyDeposit = investYears > 0
-                ? investNetDeposits.divide(BigDecimal.valueOf(investYears * 12), 2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
-
-        Map<String, Object> kpi = new LinkedHashMap<>();
-        kpi.put("investBalance", round(investBalance));
-        kpi.put("investNetDeposits", round(investNetDeposits));
-        kpi.put("investReturn", round(investReturn));
-        kpi.put("investReturnPct", round(investReturnPct));
-        kpi.put("investTwr", round(investTwr));
-        kpi.put("investCagr", round(investCagr));
-        kpi.put("savingsBalance", round(savingsBalance));
-        kpi.put("savingsGrowth", round(savingsGrowth));
-        kpi.put("netWorth", round(netWorth));
-        kpi.put("avgMonthlyDeposit", round(avgMonthlyDeposit));
-        kpi.put("investMonthsSpan", (int) Math.round(investYears * 12));
-        result.put("kpi", kpi);
-
-        result.put("investTimeSeries", investTimeSeries);
-        result.put("netWorthTimeSeries", netWorthTimeSeries);
-        result.put("allocation", allocation);
-        result.put("heatmap", heatmap);
-        result.put("budget", budgetSeries);
-        result.put("walletSeries", walletSeriesList);
+        Map<String, Object> result = investDashboardHelper.getDashboard(allWallets);
 
         return ResponseEntity.ok(result);
-    }
-
-    // ── helpers ──────────────────────────────────────────────────────────────────
-
-    private BigDecimal toPln(BigDecimal amount, String currency) {
-        if (amount == null) return BigDecimal.ZERO;
-        return currencyConverter.convert(amount, Currency.of(currency), Currency.PLN);
-    }
-
-    private BigDecimal pct(BigDecimal rate) {
-        return rate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal round(BigDecimal v) {
-        return v.setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private double monthsSpan(List<Wallet> wallets) {
-        Optional<LocalDate> min = wallets.stream()
-                .flatMap(w -> w.getSnapshots().stream())
-                .map(WalletSnapshot::getSnapshotDate).min(Comparator.naturalOrder());
-        Optional<LocalDate> max = wallets.stream()
-                .flatMap(w -> w.getSnapshots().stream())
-                .map(WalletSnapshot::getSnapshotDate).max(Comparator.naturalOrder());
-        if (min.isEmpty() || max.isEmpty()) return 1;
-        return ChronoUnit.MONTHS.between(min.get(), max.get()) + 1;
-    }
-
-    private List<Map<String, Object>> buildTimeSeries(
-            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ts) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        BigDecimal cum = BigDecimal.ZERO;
-        for (Map.Entry<LocalDate, InvestmentCalculationService.PortfolioPoint> e : ts.entrySet()) {
-            cum = cum.add(e.getValue().cashFlow());
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("date", e.getKey().toString());
-            point.put("balance", e.getValue().balance().setScale(2, RoundingMode.HALF_UP));
-            point.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
-            list.add(point);
-        }
-        return list;
-    }
-
-    private List<Map<String, Object>> buildTimeSeriesWithBenchmarks(
-            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ts) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        BigDecimal cum = BigDecimal.ZERO;
-
-        List<String> datesDdMmYyyy = new ArrayList<>();
-        List<BigDecimal> netDeposits = new ArrayList<>();
-        DateTimeFormatter bfmt = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        for (LocalDate date : ts.keySet()) {
-            datesDdMmYyyy.add(date.format(bfmt));
-            netDeposits.add(ts.get(date).cashFlow());
-        }
-
-        List<BigDecimal> sp500Vals = ETFDataService.calculateBenchmarkValuesForTicker(
-                ETFDataService.SP500_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
-        List<BigDecimal> wig20Vals = ETFDataService.calculateBenchmarkValuesForTicker(
-                ETFDataService.WIG20_TICKER, "PLN", datesDdMmYyyy, netDeposits, "PLN");
-        List<BigDecimal> nasdaqVals = ETFDataService.calculateBenchmarkValuesForTicker(
-                ETFDataService.NASDAQ_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
-        List<BigDecimal> djiVals = ETFDataService.calculateBenchmarkValuesForTicker(
-                ETFDataService.DJI_TICKER, "USD", datesDdMmYyyy, netDeposits, "PLN");
-        List<BigDecimal> fixedDeposit3_5 = ETFDataService.calculateBenchmarkValuesForTicker(
-                ETFDataService.FIXED_DEPOSIT_TICKER_3_5, "PLN", datesDdMmYyyy, netDeposits, "PLN");
-
-        int i = 0;
-        for (Map.Entry<LocalDate, InvestmentCalculationService.PortfolioPoint> e : ts.entrySet()) {
-            cum = cum.add(e.getValue().cashFlow());
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("date", e.getKey().toString());
-            point.put("balance", e.getValue().balance().setScale(2, RoundingMode.HALF_UP));
-            point.put("cumDeposit", cum.setScale(2, RoundingMode.HALF_UP));
-            point.put("sp500", i < sp500Vals.size() ? sp500Vals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            point.put("wig20", i < wig20Vals.size() ? wig20Vals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            point.put("nasdaq", i < nasdaqVals.size() ? nasdaqVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            point.put("dji", i < djiVals.size() ? djiVals.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            point.put("fixedDeposit3_5", i < fixedDeposit3_5.size() ? fixedDeposit3_5.get(i).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            list.add(point);
-            i++;
-        }
-        return list;
-    }
-
-    private Map<String, BigDecimal> buildHeatmap(
-            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ts) {
-        Map<String, BigDecimal> result = new LinkedHashMap<>();
-        List<LocalDate> dates = new ArrayList<>(ts.keySet());
-        for (int i = 1; i < dates.size(); i++) {
-            LocalDate prev = dates.get(i - 1);
-            LocalDate curr = dates.get(i);
-            InvestmentCalculationService.PortfolioPoint prevPt = ts.get(prev);
-            InvestmentCalculationService.PortfolioPoint currPt = ts.get(curr);
-            BigDecimal beginValue = prevPt.balance().add(currPt.cashFlow());
-            if (beginValue.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal ret = currPt.balance().subtract(beginValue)
-                        .divide(beginValue, 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100));
-                String key = String.format("%d-%02d", curr.getYear(), curr.getMonthValue());
-                result.put(key, ret.setScale(2, RoundingMode.HALF_UP));
-            }
-        }
-        return result;
     }
 }

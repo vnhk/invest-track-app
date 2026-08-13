@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,41 @@ public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID>
 
     ) {
         return super.search(allParams, page, size, BudgetEntryDto.class, BudgetEntry.class, "entryDate", SortDirection.DESC);
+    }
+
+    @GetMapping(path = "/money-flow")
+    public ResponseEntity<MoneyFlowDto> getMoneyFlow(
+            @RequestParam MultiValueMap<String, String> allParams) {
+        ResponseEntity<Page<BudgetEntryDto>> entriesRes = super.search(allParams, 0, 10000, BudgetEntryDto.class, BudgetEntry.class, "entryDate", SortDirection.DESC);
+        List<BudgetEntryDto> entries = entriesRes.getBody().getContent();
+
+        BigDecimal cashFlowV = BigDecimal.ZERO; //cash
+        BigDecimal bankFlowV = BigDecimal.ZERO; //card + transfer
+
+        if (entries.size() == 0) {
+            return ResponseEntity.ok(new MoneyFlowDto(cashFlowV, bankFlowV, "", ""));
+        }
+
+        String fromDate = entries.get(0).getEntryDate().format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
+        String toDate = entries.get(entries.size() - 1).getEntryDate().format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
+
+        for (BudgetEntryDto entry : entries) {
+            if (entry.getPaymentMethod().equalsIgnoreCase("Cash")) {
+                if (entry.getEntryType().equalsIgnoreCase("Expense")) {
+                    cashFlowV = cashFlowV.add(entry.getValue().multiply(BigDecimal.valueOf(-1)));
+                } else {
+                    cashFlowV = cashFlowV.add(entry.getValue());
+                }
+            } else {
+                if (entry.getEntryType().equalsIgnoreCase("Expense")) {
+                    bankFlowV = bankFlowV.add(entry.getValue().multiply(BigDecimal.valueOf(-1)));
+                } else {
+                    bankFlowV = bankFlowV.add(entry.getValue());
+                }
+            }
+        }
+
+        return ResponseEntity.ok(new MoneyFlowDto(cashFlowV, bankFlowV, fromDate, toDate));
     }
 
     @GetMapping("/export")

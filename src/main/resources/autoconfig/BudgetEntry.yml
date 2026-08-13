@@ -48,6 +48,7 @@ columns:
     internalName: entryDate
     inSaveForm: true
     inEditForm: true
+    dataType: DATE
     inTable: false
     required: true
 
