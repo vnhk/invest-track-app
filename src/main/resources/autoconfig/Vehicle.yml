@@ -79,7 +79,7 @@ columns:
     inTable: true
     required: false
     dataType: NUMBER
-    min: 1
+    min: 0
     max: 100000000
 
   - field: currentValue
