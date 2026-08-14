@@ -25,9 +25,9 @@ public class ReceiptScanningService extends BaseScanningService {
 
 
     public List<ParsedReceiptEntry> scanReceipt(String base64Image, List<String> availableCategories) throws IOException {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        String tomorrowString = tomorrow.toString();
-        int currentYear = tomorrow.getYear();
+        LocalDate today = LocalDate.now();
+        String todayString = today.toString();
+        int currentYear = today.getYear();
 
         String prompt = "Analyze the attached receipt image and extract the transactions.\n" +
                 "Group the purchased items logically into one or more budget entries.\n" +
@@ -37,9 +37,9 @@ public class ReceiptScanningService extends BaseScanningService {
                 " - Food: restaurant meals, takeaway food, food delivery, cafes, bars.\n" +
                 "If an item (like a grill, electronics, clothing, furniture, tools) clearly belongs to a different category than groceries or household shopping, SPLIT it into a separate entry with its own price and a suitable category.\n" +
                 "The sum of all entries must equal the total amount on the receipt.\n" +
-                "Receipt dates are ALWAYS between January 1st of " + (currentYear - 1) + " and " + tomorrowString + ".\n" +
+                "Receipt dates are ALWAYS between January 1st of " + (currentYear - 1) + " and " + todayString + ".\n" +
                 "In 99% of cases the receipt year is " + currentYear + ". Only use " + (currentYear - 1) + " if the receipt clearly indicates that year.\n" +
-                "The receipt date can NEVER be later than " + tomorrowString + ".\n" +
+                "The receipt date can NEVER be later than " + todayString + ".\n" +
                 "If the year is missing, unclear, or ambiguous, assume the year is " + currentYear + ".\n" +
                 "Return the result STRICTLY as a JSON array of objects.\n" +
                 "Do NOT wrap the JSON in ```json markdown code blocks. Return ONLY valid, minified raw JSON.\n" +
