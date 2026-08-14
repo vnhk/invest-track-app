@@ -2,7 +2,6 @@ package com.bervan.investtrack.api;
 
 import com.bervan.core.model.BaseDTO;
 import com.bervan.core.model.BaseModel;
-import com.bervan.investtrack.model.RealEstate;
 import com.bervan.investtrack.model.Valuable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -6,7 +6,7 @@ columns:
     inEditForm: true
     inTable: true
     required: true
-    strValues: [ "Cash", "Gold", "Silver", "Jewelery", "Electronics", "Other", "Coins" ]
+    strValues: [ "Gold", "Silver", "Jewelery", "Electronics", "Other", "Coins" ]
     min: 3
     max: 255
 
