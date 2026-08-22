@@ -9,6 +9,7 @@ import com.bervan.common.controller.ImportResult;
 import com.bervan.common.controller.ValidationErrorResponse;
 import com.bervan.common.mapper.BervanDTOMapper;
 import com.bervan.common.search.model.SortDirection;
+import com.bervan.investtrack.service.CurrencyConverter;
 import com.bervan.investtrack.service.ReceiptScanningService;
 import com.bervan.logging.JsonLogger;
 import org.springframework.data.domain.Page;
@@ -35,14 +36,17 @@ public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID>
     private final BudgetEntryService budgetEntryService;
     private final EntityConfigValidator validator;
     private final ReceiptScanningService receiptScanningService;
+    private final CurrencyConverter currencyConverter;
     private final JsonLogger log = JsonLogger.getLogger(getClass(), "investments");
 
     public BudgetEntryRestController(BudgetEntryService budgetEntryService,
                                      EntityConfigValidator validator,
+                                     CurrencyConverter currencyConverter,
                                      ReceiptScanningService receiptScanningService,
                                      BervanDTOMapper bervanDTOMapper) {
         super(budgetEntryService, bervanDTOMapper, validator, "BudgetEntry");
         this.budgetEntryService = budgetEntryService;
+        this.currencyConverter = currencyConverter;
         this.validator = validator;
         this.receiptScanningService = receiptScanningService;
     }
@@ -85,17 +89,23 @@ public class BudgetEntryRestController extends BaseController<BudgetEntry, UUID>
         String toDate = entries.get(entries.size() - 1).getEntryDate().format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
 
         for (BudgetEntryDto entry : entries) {
+            String currency = entry.getCurrency();
+            BigDecimal value = entry.getValue();
+            if (!currency.equalsIgnoreCase("PLN")) {
+                value = currencyConverter.convert(value, CurrencyConverter.Currency.of(currency), CurrencyConverter.Currency.PLN);
+            }
+
             if (entry.getPaymentMethod().equalsIgnoreCase("Cash")) {
                 if (entry.getEntryType().equalsIgnoreCase("Expense")) {
-                    cashFlowV = cashFlowV.add(entry.getValue().multiply(BigDecimal.valueOf(-1)));
+                    cashFlowV = cashFlowV.add(value.multiply(BigDecimal.valueOf(-1)));
                 } else {
-                    cashFlowV = cashFlowV.add(entry.getValue());
+                    cashFlowV = cashFlowV.add(value);
                 }
             } else {
                 if (entry.getEntryType().equalsIgnoreCase("Expense")) {
-                    bankFlowV = bankFlowV.add(entry.getValue().multiply(BigDecimal.valueOf(-1)));
+                    bankFlowV = bankFlowV.add(value.multiply(BigDecimal.valueOf(-1)));
                 } else {
-                    bankFlowV = bankFlowV.add(entry.getValue());
+                    bankFlowV = bankFlowV.add(value);
                 }
             }
         }
