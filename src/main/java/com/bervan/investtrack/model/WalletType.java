@@ -4,6 +4,8 @@ public enum WalletType {
     INVESTMENT("Investment"),
     SAVINGS("Savings"),
     BONDS("Bonds"),
+    INVESTMENT_FUND("Investment Fund"),
+    PPK("PPK"),
     CRYPTO("Crypto"),
     CASH("Cash");
 
@@ -18,6 +20,6 @@ public enum WalletType {
     }
 
     public boolean isInvestmentLike() {
-        return this == INVESTMENT || this == BONDS || this == CRYPTO;
+        return this == INVESTMENT || this == BONDS || this == CRYPTO || this == INVESTMENT_FUND || this == PPK;
     }
 }

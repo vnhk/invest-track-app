@@ -40,7 +40,7 @@ columns:
   - field: walletType
     displayName: "Wallet Type"
     internalName: "walletType"
-    strValues: [ "INVESTMENT", "SAVINGS", "BONDS", "CRYPTO", "CASH" ]
+    strValues: [ "INVESTMENT", "SAVINGS", "BONDS", "CRYPTO", "CASH", "PPK", "INVESTMENT_FUND" ]
     inSaveForm: true
     inEditForm: true
     inTable: true
