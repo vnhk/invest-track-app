@@ -38,10 +38,16 @@ public class InvestDashboardHelper {
 
     public Map<String, Object> getDashboard(List<Wallet> allWallets) {
         List<Wallet> investWallets = allWallets.stream().filter(Wallet::isInvestmentLike).toList();
+        List<Wallet> ppkWallets = allWallets.stream().filter(Wallet::isPPK).toList();
+        List<Wallet> investmentFundsWallets = allWallets.stream().filter(Wallet::isInvestmentFund).toList();
         List<Wallet> savingsWallets = allWallets.stream().filter(w -> !w.isInvestmentLike()).toList();
 
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investTs =
                 calculationService.buildAggregatedTimeSeries(investWallets, this::toPln);
+        Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ppkTs =
+                calculationService.buildAggregatedTimeSeries(ppkWallets, this::toPln);
+        Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investFundTs =
+                calculationService.buildAggregatedTimeSeries(investmentFundsWallets, this::toPln);
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> allTs =
                 calculationService.buildAggregatedTimeSeries(allWallets, this::toPln);
 
@@ -49,6 +55,8 @@ public class InvestDashboardHelper {
         result.put("kpi", buildKpis(investWallets, savingsWallets, investTs));
         result.put("investTimeSeries", buildTimeSeriesWithBenchmarks(investTs));
         result.put("netWorthTimeSeries", buildTimeSeriesWithBenchmarks(allTs));
+        result.put("ppkTimeSeries", buildTimeSeriesWithBenchmarks(ppkTs));
+        result.put("investFundTimeSeries", buildTimeSeriesWithBenchmarks(investFundTs));
         result.put("allocation", buildAssetAllocation(allWallets));
         result.put("heatmap", buildHeatmap(investTs));
         result.put("budget", buildBudgetSeries());
@@ -170,30 +178,6 @@ public class InvestDashboardHelper {
         return new BenchmarkValues(sp500, wig20, nasdaq, dji, fixedDeposit3_5);
     }
 
-    private record BenchmarkValues(
-            List<BigDecimal> sp500,
-            List<BigDecimal> wig20,
-            List<BigDecimal> nasdaq,
-            List<BigDecimal> dji,
-            List<BigDecimal> fixedDeposit3_5) {
-
-        BigDecimal getBenchmarkValue(List<BigDecimal> values, int index) {
-            return (index < values.size()) ? values.get(index).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        }
-
-        BigDecimal getBenchmarkValueInPln(List<BigDecimal> values, int index, String currency, CurrencyConverter converter) {
-            if (index < values.size()) {
-                BigDecimal val = values.get(index);
-                if (val == null) return BigDecimal.ZERO;
-                return converter.convert(val, CurrencyConverter.Currency.of(currency), CurrencyConverter.Currency.PLN)
-                        .setScale(2, RoundingMode.HALF_UP);
-            }
-            return BigDecimal.ZERO;
-        }
-    }
-
-    // ── Asset Allocation ──────────────────────────────────────────────────────
-
     private List<Map<String, Object>> buildAssetAllocation(List<Wallet> allWallets) {
         List<Map<String, Object>> allocation = new ArrayList<>();
         for (Wallet w : allWallets) {
@@ -209,7 +193,7 @@ public class InvestDashboardHelper {
         return allocation;
     }
 
-    // ── Monthly Heatmap ───────────────────────────────────────────────────────
+    // ── Asset Allocation ──────────────────────────────────────────────────────
 
     private Map<String, BigDecimal> buildHeatmap(
             Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ts) {
@@ -232,7 +216,7 @@ public class InvestDashboardHelper {
         return result;
     }
 
-    // ── Budget Data ───────────────────────────────────────────────────────────
+    // ── Monthly Heatmap ───────────────────────────────────────────────────────
 
     private List<Map<String, Object>> buildBudgetSeries() {
         LocalDate budgetFrom = LocalDate.now().minusMonths(12).withDayOfMonth(1);
@@ -251,7 +235,7 @@ public class InvestDashboardHelper {
         return budgetSeries;
     }
 
-    // ── Per-Wallet Series ─────────────────────────────────────────────────────
+    // ── Budget Data ───────────────────────────────────────────────────────────
 
     private List<Map<String, Object>> buildWalletSeriesList(List<Wallet> allWallets) {
         List<Map<String, Object>> walletSeriesList = new ArrayList<>();
@@ -260,6 +244,8 @@ public class InvestDashboardHelper {
         }
         return walletSeriesList;
     }
+
+    // ── Per-Wallet Series ─────────────────────────────────────────────────────
 
     private Map<String, Object> buildSingleWalletEntry(Wallet w) {
         List<WalletSnapshot> snaps = w.getSnapshots().stream()
@@ -310,11 +296,11 @@ public class InvestDashboardHelper {
         return entry;
     }
 
-    // ── Helper Math & Conversion ──────────────────────────────────────────────
-
     private BigDecimal pct(BigDecimal rate) {
         return rate.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
     }
+
+    // ── Helper Math & Conversion ──────────────────────────────────────────────
 
     private BigDecimal toPln(BigDecimal amount, String currency) {
         if (amount == null) return BigDecimal.ZERO;
@@ -334,5 +320,27 @@ public class InvestDashboardHelper {
                 .map(WalletSnapshot::getSnapshotDate).max(Comparator.naturalOrder());
         if (min.isEmpty() || max.isEmpty()) return 1;
         return ChronoUnit.MONTHS.between(min.get(), max.get()) + 1;
+    }
+
+    private record BenchmarkValues(
+            List<BigDecimal> sp500,
+            List<BigDecimal> wig20,
+            List<BigDecimal> nasdaq,
+            List<BigDecimal> dji,
+            List<BigDecimal> fixedDeposit3_5) {
+
+        BigDecimal getBenchmarkValue(List<BigDecimal> values, int index) {
+            return (index < values.size()) ? values.get(index).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        }
+
+        BigDecimal getBenchmarkValueInPln(List<BigDecimal> values, int index, String currency, CurrencyConverter converter) {
+            if (index < values.size()) {
+                BigDecimal val = values.get(index);
+                if (val == null) return BigDecimal.ZERO;
+                return converter.convert(val, CurrencyConverter.Currency.of(currency), CurrencyConverter.Currency.PLN)
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
+            return BigDecimal.ZERO;
+        }
     }
 }

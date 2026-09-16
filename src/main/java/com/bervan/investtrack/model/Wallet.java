@@ -131,6 +131,24 @@ public class Wallet extends BervanOwnedBaseEntity<UUID> implements PersistableTa
         }
     }
 
+    public boolean isPPK() {
+        if (walletType == null) return true;
+        try {
+            return WalletType.valueOf(walletType) == WalletType.PPK;
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+    }
+
+    public boolean isInvestmentFund() {
+        if (walletType == null) return true;
+        try {
+            return WalletType.valueOf(walletType) == WalletType.INVESTMENT_FUND;
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+    }
+
     public String getTableFilterableColumnValue() {
         return name;
     }

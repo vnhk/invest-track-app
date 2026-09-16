@@ -9,6 +9,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.BiFunction;
 
 @Service
 public class InvestmentCalculationService {
@@ -235,7 +236,7 @@ public class InvestmentCalculationService {
      */
     public Map<LocalDate, PortfolioPoint> buildAggregatedTimeSeries(
             List<Wallet> wallets,
-            java.util.function.BiFunction<BigDecimal, String, BigDecimal> currencyConverter) {
+            BiFunction<BigDecimal, String, BigDecimal> currencyConverter) {
 
         // Collect all unique dates across all wallets
         Set<LocalDate> allDates = new TreeSet<>();
@@ -339,8 +340,6 @@ public class InvestmentCalculationService {
         return BigDecimal.valueOf(twrProduct - 1.0).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
-    public record PortfolioPoint(BigDecimal balance, BigDecimal cashFlow) {}
-
     /**
      * Calculate monthly returns for heatmap display
      *
@@ -389,7 +388,7 @@ public class InvestmentCalculationService {
      * Calculate period return with cash flow adjustment
      */
     private BigDecimal calculatePeriodReturn(WalletSnapshot first, WalletSnapshot last,
-                                              List<WalletSnapshot> periodSnapshots) {
+                                             List<WalletSnapshot> periodSnapshots) {
         BigDecimal startValue = first.getPortfolioValue();
         BigDecimal endValue = last.getPortfolioValue();
 
@@ -410,8 +409,12 @@ public class InvestmentCalculationService {
                 .divide(adjustedStart, SCALE, RoundingMode.HALF_UP);
     }
 
+    public record PortfolioPoint(BigDecimal balance, BigDecimal cashFlow) {
+    }
+
     /**
      * Cash flow record for XIRR calculation
      */
-    public record CashFlow(LocalDate date, BigDecimal amount) {}
+    public record CashFlow(LocalDate date, BigDecimal amount) {
+    }
 }
