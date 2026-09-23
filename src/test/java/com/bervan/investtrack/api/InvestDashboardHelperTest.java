@@ -777,7 +777,7 @@ class InvestDashboardHelperTest {
             Map<String, Object> walletEntry = walletSeriesList.get(0);
 
             // Return rate from wallet.getReturnRate(): deposits=1000, curr=1200 -> return=200/1000*100 = 20.00%
-            assertThat(walletEntry.get("returnRate")).isNotNull();
+            assertThat(walletEntry.get("returnRate")).isEqualTo(new BigDecimal("20.00"));
         }
 
         @Test

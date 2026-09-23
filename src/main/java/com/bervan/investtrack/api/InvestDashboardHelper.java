@@ -291,7 +291,7 @@ public class InvestDashboardHelper {
         entry.put("walletId", w.getId().toString());
         entry.put("walletName", w.getName());
         entry.put("isInvestment", w.isInvestmentLike());
-        entry.put("returnRate", w.getReturnRate() != null ? round(pct(w.getReturnRate())) : BigDecimal.ZERO);
+        entry.put("returnRate", w.getReturnRate() != null ? round(w.getReturnRate()) : BigDecimal.ZERO);
         entry.put("series", series);
         return entry;
     }
