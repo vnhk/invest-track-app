@@ -44,6 +44,8 @@ public class InvestDashboardHelper {
 
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investTs =
                 calculationService.buildAggregatedTimeSeries(investWallets, this::toPln);
+        Map<LocalDate, InvestmentCalculationService.PortfolioPoint> savingsTs =
+                calculationService.buildAggregatedTimeSeries(savingsWallets, this::toPln);
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> ppkTs =
                 calculationService.buildAggregatedTimeSeries(ppkWallets, this::toPln);
         Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investFundTs =
@@ -52,7 +54,7 @@ public class InvestDashboardHelper {
                 calculationService.buildAggregatedTimeSeries(allWallets, this::toPln);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("kpi", buildKpis(investWallets, savingsWallets, investTs));
+        result.put("kpi", buildKpis(investWallets, savingsWallets, investTs, savingsTs));
         result.put("investTimeSeries", buildTimeSeriesWithBenchmarks(investTs));
         result.put("netWorthTimeSeries", buildTimeSeriesWithBenchmarks(allTs));
         result.put("ppkTimeSeries", buildTimeSeriesWithBenchmarks(ppkTs));
@@ -70,7 +72,8 @@ public class InvestDashboardHelper {
     private Map<String, Object> buildKpis(
             List<Wallet> investWallets,
             List<Wallet> savingsWallets,
-            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investTs) {
+            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> investTs,
+            Map<LocalDate, InvestmentCalculationService.PortfolioPoint> savingsTs) {
 
         // Investment KPIs
         BigDecimal investBalance = sumBalance(investWallets);
@@ -92,6 +95,18 @@ public class InvestDashboardHelper {
         BigDecimal savingsBalance = sumBalance(savingsWallets);
         BigDecimal savingsNetDeposits = sumNetDeposits(savingsWallets);
         BigDecimal savingsGrowth = savingsBalance.subtract(savingsNetDeposits);
+        BigDecimal savingsReturnPct = savingsNetDeposits.compareTo(BigDecimal.ZERO) > 0
+                ? pct(savingsGrowth.divide(savingsNetDeposits, 4, RoundingMode.HALF_UP))
+                : BigDecimal.ZERO;
+
+        BigDecimal savingsTwr = pct(calculationService.calculateAggregatedTWR(savingsTs));
+
+        double savingsYears = monthsSpan(savingsWallets) / 12.0;
+        BigDecimal savingsCagr = BigDecimal.ZERO;
+        if (savingsYears > 0.1 && savingsNetDeposits.compareTo(BigDecimal.ZERO) > 0) {
+            savingsCagr = pct(calculationService.calculateCAGR(savingsNetDeposits, savingsBalance, Math.max(savingsYears, 0.1)));
+        }
+
         BigDecimal netWorth = investBalance.add(savingsBalance);
 
         BigDecimal avgMonthlyDeposit = investYears > 0
@@ -106,7 +121,12 @@ public class InvestDashboardHelper {
         kpi.put("investTwr", round(investTwr));
         kpi.put("investCagr", round(investCagr));
         kpi.put("savingsBalance", round(savingsBalance));
+        kpi.put("savingsNetDeposits", round(savingsNetDeposits));
         kpi.put("savingsGrowth", round(savingsGrowth));
+        kpi.put("savingsReturnPct", round(savingsReturnPct));
+        kpi.put("savingsTwr", round(savingsTwr));
+        kpi.put("savingsCagr", round(savingsCagr));
+        kpi.put("savingsMonthsSpan", (int) Math.round(savingsYears * 12));
         kpi.put("netWorth", round(netWorth));
         kpi.put("avgMonthlyDeposit", round(avgMonthlyDeposit));
         kpi.put("investMonthsSpan", (int) Math.round(investYears * 12));

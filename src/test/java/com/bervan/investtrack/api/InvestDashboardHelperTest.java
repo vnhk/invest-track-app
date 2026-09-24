@@ -353,12 +353,18 @@ class InvestDashboardHelperTest {
             // Savings balance = 10300 + 2000 = 12300
             // Savings net deposits = 10000 + 2000 = 12000
             // Savings growth = 12300 - 12000 = 300
+            // Savings return % = (300 / 12000) * 100 = 2.50%
             // Invest balance = 0
             // Net worth = 12300
             assertThat(kpi.get("investBalance")).isEqualTo(new BigDecimal("0.00"));
             assertThat(kpi.get("investNetDeposits")).isEqualTo(new BigDecimal("0.00"));
             assertThat(kpi.get("savingsBalance")).isEqualTo(new BigDecimal("12300.00"));
+            assertThat(kpi.get("savingsNetDeposits")).isEqualTo(new BigDecimal("12000.00"));
             assertThat(kpi.get("savingsGrowth")).isEqualTo(new BigDecimal("300.00"));
+            assertThat(kpi.get("savingsReturnPct")).isEqualTo(new BigDecimal("2.50"));
+            assertThat(kpi.get("savingsTwr")).isNotNull();
+            assertThat(kpi.get("savingsCagr")).isNotNull();
+            assertThat(kpi.get("savingsMonthsSpan")).isEqualTo(6);
             assertThat(kpi.get("netWorth")).isEqualTo(new BigDecimal("12300.00"));
 
             @SuppressWarnings("unchecked")
@@ -382,8 +388,10 @@ class InvestDashboardHelperTest {
 
             assertThat(kpi.get("investBalance")).isEqualTo(new BigDecimal("50000.00"));
             assertThat(kpi.get("savingsBalance")).isEqualTo(new BigDecimal("20000.00"));
+            assertThat(kpi.get("savingsNetDeposits")).isEqualTo(new BigDecimal("19000.00"));
             assertThat(kpi.get("netWorth")).isEqualTo(new BigDecimal("70000.00"));
             assertThat(kpi.get("savingsGrowth")).isEqualTo(new BigDecimal("1000.00"));
+            assertThat(kpi.get("savingsReturnPct")).isEqualTo(new BigDecimal("5.26"));
             assertThat(kpi.get("investReturn")).isEqualTo(new BigDecimal("10000.00"));
         }
     }
