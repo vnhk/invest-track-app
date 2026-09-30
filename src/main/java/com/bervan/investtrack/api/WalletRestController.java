@@ -116,8 +116,8 @@ public class WalletRestController extends BaseOwnedController<Wallet, UUID> {
             WalletSnapshot first = snapshots.stream().min(java.util.Comparator.comparing(WalletSnapshot::getSnapshotDate)).get();
             WalletSnapshot last = snapshots.stream().max(java.util.Comparator.comparing(WalletSnapshot::getSnapshotDate)).get();
             double years = java.time.temporal.ChronoUnit.DAYS.between(first.getSnapshotDate(), last.getSnapshotDate()) / 365.0;
-            if (years > 0 && first.getPortfolioValue().compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal cagr = calculationService.calculateCAGR(first.getPortfolioValue(), last.getPortfolioValue(), years);
+            if (years > 0) {
+                BigDecimal cagr = calculationService.calculateCAGRFromTWR(twr, years);
                 metrics.put("cagr", cagr.multiply(BigDecimal.valueOf(100)).setScale(2, scale));
             }
 

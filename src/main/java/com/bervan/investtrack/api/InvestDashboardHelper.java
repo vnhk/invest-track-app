@@ -83,12 +83,13 @@ public class InvestDashboardHelper {
                 ? pct(investReturn.divide(investNetDeposits, 4, RoundingMode.HALF_UP))
                 : BigDecimal.ZERO;
 
-        BigDecimal investTwr = pct(calculationService.calculateAggregatedTWR(investTs));
+        BigDecimal investAggTwr = calculationService.calculateAggregatedTWR(investTs);
+        BigDecimal investTwr = pct(investAggTwr);
 
         double investYears = monthsSpan(investWallets) / 12.0;
         BigDecimal investCagr = BigDecimal.ZERO;
         if (investYears > 0.1 && investNetDeposits.compareTo(BigDecimal.ZERO) > 0) {
-            investCagr = pct(calculationService.calculateCAGR(investNetDeposits, investBalance, Math.max(investYears, 0.1)));
+            investCagr = pct(calculationService.calculateCAGRFromTWR(investAggTwr, Math.max(investYears, 0.1)));
         }
 
         // Savings KPIs
@@ -99,12 +100,13 @@ public class InvestDashboardHelper {
                 ? pct(savingsGrowth.divide(savingsNetDeposits, 4, RoundingMode.HALF_UP))
                 : BigDecimal.ZERO;
 
-        BigDecimal savingsTwr = pct(calculationService.calculateAggregatedTWR(savingsTs));
+        BigDecimal savingsAggTwr = calculationService.calculateAggregatedTWR(savingsTs);
+        BigDecimal savingsTwr = pct(savingsAggTwr);
 
         double savingsYears = monthsSpan(savingsWallets) / 12.0;
         BigDecimal savingsCagr = BigDecimal.ZERO;
         if (savingsYears > 0.1 && savingsNetDeposits.compareTo(BigDecimal.ZERO) > 0) {
-            savingsCagr = pct(calculationService.calculateCAGR(savingsNetDeposits, savingsBalance, Math.max(savingsYears, 0.1)));
+            savingsCagr = pct(calculationService.calculateCAGRFromTWR(savingsAggTwr, Math.max(savingsYears, 0.1)));
         }
 
         BigDecimal netWorth = investBalance.add(savingsBalance);

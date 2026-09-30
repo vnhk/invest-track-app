@@ -39,6 +39,30 @@ public class InvestmentCalculationService {
     }
 
     /**
+     * Compound Annual Growth Rate (CAGR) based on Time-Weighted Return (TWR)
+     * For years >= 1.0: (1 + TWR)^(1/years) - 1
+     * For 0 < years < 1.0: returns TWR unannualized to prevent extreme distortions on short periods
+     *
+     * @param twr   time-weighted return as decimal (0.10 = 10%)
+     * @param years duration in years
+     * @return CAGR as decimal
+     */
+    public BigDecimal calculateCAGRFromTWR(BigDecimal twr, double years) {
+        if (twr == null || years <= 0) {
+            return BigDecimal.ZERO;
+        }
+        double twrVal = twr.doubleValue();
+        if (twrVal <= -1.0) {
+            return BigDecimal.valueOf(-1.0).setScale(SCALE, RoundingMode.HALF_UP);
+        }
+        if (years < 1.0) {
+            return twr.setScale(SCALE, RoundingMode.HALF_UP);
+        }
+        double cagr = Math.pow(1.0 + twrVal, 1.0 / years) - 1.0;
+        return BigDecimal.valueOf(cagr).setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    /**
      * CAGR adjusted for inflation
      *
      * @param startValue    initial investment value
