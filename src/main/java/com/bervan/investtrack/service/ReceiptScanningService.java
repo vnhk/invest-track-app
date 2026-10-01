@@ -37,10 +37,10 @@ public class ReceiptScanningService extends BaseScanningService {
                 " - Food: restaurant meals, takeaway food, food delivery, cafes, bars.\n" +
                 "If an item (like a grill, electronics, clothing, furniture, tools) clearly belongs to a different category than groceries or household shopping, SPLIT it into a separate entry with its own price and a suitable category.\n" +
                 "The sum of all entries must equal the total amount on the receipt.\n" +
-                "Receipt dates are ALWAYS between January 1st of " + (currentYear - 1) + " and " + todayString + ".\n" +
-                "In 99% of cases the receipt year is " + currentYear + ". Only use " + (currentYear - 1) + " if the receipt clearly indicates that year.\n" +
-                "The receipt date can NEVER be later than " + todayString + ".\n" +
-                "If the year is missing, unclear, or ambiguous, assume the year is " + currentYear + ".\n" +
+                "Extract the exact transaction date printed on the receipt. Look for dates in common formats like DD.MM.YYYY, DD-MM-YYYY, DD/MM/YYYY, or YYYY-MM-DD.\n" +
+                "If only day and month are printed, assume the current year " + currentYear + ".\n" +
+                "If the receipt date is completely missing, unreadable, or in the future, fallback to today's date: " + todayString + ".\n" +
+                "Receipt date must NEVER be in the future (today is " + todayString + ").\n" +
                 "Return the result STRICTLY as a JSON array of objects.\n" +
                 "Do NOT wrap the JSON in ```json markdown code blocks. Return ONLY valid, minified raw JSON.\n" +
                 "Each object in the array must have the following fields:\n" +
@@ -48,7 +48,7 @@ public class ReceiptScanningService extends BaseScanningService {
                 " - 'category': String (must be one of the existing categories if it matches, otherwise a new precise category)\n" +
                 " - 'value': Double/BigDecimal (positive value, representing the cost)\n" +
                 " - 'currency': String (e.g., 'PLN', 'EUR', 'USD')\n" +
-                " - 'date': java LocalDate\n" +
+                " - 'date': String in ISO format 'YYYY-MM-DD' (e.g. '" + todayString + "')\n" +
                 " - 'notes': String (list some of the key items included, or specific item details)\n" +
                 "Make sure the currency matches the receipt's currency. If you don't see currency assume it's PLN.";
         log.info("Sending receipt image to OpenAI for analysis...");
