@@ -8,6 +8,7 @@ import com.bervan.history.model.BaseRepository;
 import com.bervan.investtrack.model.RealEstate;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
@@ -15,8 +16,11 @@ import java.util.UUID;
 @Service
 public class RealEstateService extends BaseService<UUID, RealEstate> {
 
-    protected RealEstateService(BaseRepository<RealEstate, UUID> repository, SearchService searchService) {
+    private final RealEstateSnapshotService snapshotService;
+
+    protected RealEstateService(BaseRepository<RealEstate, UUID> repository, SearchService searchService, RealEstateSnapshotService snapshotService) {
         super(repository, searchService);
+        this.snapshotService = snapshotService;
     }
 
     @Override
@@ -27,7 +31,6 @@ public class RealEstateService extends BaseService<UUID, RealEstate> {
             if (!loaded.isEmpty()) {
                 throw new IllegalArgumentException("RealEstate with name " + name + " already exists");
             }
-
         }
         return super.save(data);
     }
@@ -36,5 +39,22 @@ public class RealEstateService extends BaseService<UUID, RealEstate> {
         SearchRequest request = new SearchRequest();
         request.addCriterion("RealEstate_NAME", RealEstate.class, "name", SearchOperation.EQUALS_OPERATION, name);
         return load(request, Pageable.ofSize(1));
+    }
+
+    @Transactional
+    public void deleteRealEstate(UUID realEstateId) {
+        RealEstate realEstate = findById(realEstateId);
+        realEstate.getSnapshots().forEach(e -> snapshotService.deleteById(e.getId()));
+        super.delete(realEstate);
+    }
+
+    @Transactional
+    public void deleteSnapshot(UUID snapshotId) {
+        snapshotService.deleteById(snapshotId);
+    }
+
+    @Override
+    public RealEstate findById(UUID realEstateId) {
+        return repository.findById(realEstateId).orElseThrow(() -> new IllegalArgumentException("RealEstate with id " + realEstateId + " not found"));
     }
 }

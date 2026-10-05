@@ -20,16 +20,6 @@ columns:
     min: 3
     max: 255
 
-  - field: description
-    displayName: "Description"
-    internalName: "description"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: false
-    min: 0
-    max: 512
-
   - field: address
     displayName: "Address"
     internalName: "address"
@@ -40,44 +30,36 @@ columns:
     min: 0
     max: 512
 
-  - field: purchasePrice
-    displayName: "Purchase Price"
-    internalName: "purchasePrice"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: true
-    dataType: NUMBER
-    min: 1
-    max: 100000000
-
-  - field: purchaseDate
-    displayName: "Purchase Date"
-    internalName: "purchaseDate"
-    inSaveForm: true
-    inEditForm: true
-    inTable: true
-    required: true
-    dataType: DATE
-
-  - field: purchaseCosts
-    displayName: "Purchase Costs"
-    internalName: "purchaseCosts"
+  - field: description
+    displayName: "Description"
+    internalName: "description"
     inSaveForm: true
     inEditForm: true
     inTable: true
     required: false
-    dataType: NUMBER
     min: 0
-    max: 100000000
+    max: 512
 
   - field: currentValue
     displayName: "Current Value"
     internalName: "currentValue"
-    inSaveForm: true
-    inEditForm: true
+    inSaveForm: false
+    inEditForm: false
     inTable: true
-    required: true
     dataType: NUMBER
-    min: 1
-    max: 100000000
+
+  - field: initialValue
+    displayName: "Initial Value"
+    internalName: "initialValue"
+    inSaveForm: false
+    inEditForm: false
+    inTable: true
+    dataType: NUMBER
+
+  - field: returnRate
+    displayName: "Return Rate (%)"
+    internalName: "returnRate"
+    inSaveForm: false
+    inEditForm: false
+    inTable: true
+    dataType: NUMBER

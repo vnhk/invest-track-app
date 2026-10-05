@@ -8,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -18,12 +16,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ValuableCreateRequest implements BaseDTO<UUID> {
     private UUID id;
+    private String name;
     private String description;
     private String valuableType;
-    private BigDecimal currentValue;
-    private BigDecimal purchasePrice;
-    private BigDecimal purchaseCosts;
-    private LocalDate purchaseDate;
 
     @Override
     public Class<? extends BaseModel<UUID>> dtoTarget() {

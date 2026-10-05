@@ -2,6 +2,7 @@ package com.bervan.investtrack.api;
 
 import com.bervan.core.model.BaseDTO;
 import com.bervan.core.model.BaseModel;
+import com.bervan.core.model.PostCustomMappers;
 import com.bervan.investtrack.model.RealEstate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@PostCustomMappers(mappers = {RealEstateToRealEstateResponseDtoPostMapper.class})
 public class RealEstateResponseDto implements BaseDTO<UUID> {
     private UUID id;
     private String name;
@@ -24,9 +26,10 @@ public class RealEstateResponseDto implements BaseDTO<UUID> {
     private String realEstateType;
     private String address;
     private BigDecimal currentValue;
-    private BigDecimal purchasePrice;
-    private BigDecimal purchaseCosts;
-    private LocalDate purchaseDate;
+    private BigDecimal initialValue;
+    private BigDecimal returnRate;
+    private LocalDate initialDate;
+    private LocalDate latestDate;
     private LocalDateTime createdDate;
     private LocalDateTime modificationDate;
 

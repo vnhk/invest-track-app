@@ -8,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -22,10 +20,6 @@ public class RealEstateCreateRequest implements BaseDTO<UUID> {
     private String description;
     private String address;
     private String realEstateType;
-    private BigDecimal currentValue;
-    private BigDecimal purchasePrice;
-    private BigDecimal purchaseCosts;
-    private LocalDate purchaseDate;
 
     @Override
     public Class<? extends BaseModel<UUID>> dtoTarget() {
