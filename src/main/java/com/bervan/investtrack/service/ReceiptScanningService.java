@@ -1,10 +1,9 @@
 package com.bervan.investtrack.service;
 
 import com.bervan.common.service.BaseScanningService;
+import com.bervan.logging.JsonLogger;
 import lombok.Getter;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +16,7 @@ import java.util.List;
 
 @Service
 public class ReceiptScanningService extends BaseScanningService {
-    private static final Logger log = LoggerFactory.getLogger(ReceiptScanningService.class);
+    private static final JsonLogger log = JsonLogger.getLogger(ReceiptScanningService.class, "investments");
 
     public ReceiptScanningService(@Value("${openai.api.key}") String apiKey) {
         super("You are an expert receipt parser and financial category classifier.", apiKey);
